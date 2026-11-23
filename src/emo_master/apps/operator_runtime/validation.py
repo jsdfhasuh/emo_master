@@ -42,7 +42,7 @@ def validationProject(root: Path) -> ProjectDocument:
         "production": {"mode": "continuous", "autoStart": True, "cycleIntervalMs": 50},
         "workflows": {"main": {"name": "Synthetic image", "nodes": [
             {"nodeId": "input", "kind": "workflow_input"},
-            {"nodeId": "load", "operatorId": "vision.io.image_loader"},
+            {"nodeId": "load", "operatorId": "vision.io.image_loader", "params": {"imagePath": "input.png"}},
             {"nodeId": "blob", "operatorId": "vision.analysis.blob", "params": {"drawOverlay": True}},
             {"nodeId": "count", "operatorId": "vision.collection.count"},
             {"nodeId": "save", "operatorId": "vision.io.image_saver",

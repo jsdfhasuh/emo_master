@@ -23,6 +23,7 @@ from emo_master.core.project.device_resources import deviceTarget
 from emo_master.core.project.files import isProjectFile
 from emo_master.core.project.migration import migrateProjectPayload
 from emo_master.core.project.models import ProjectDocument
+from emo_master.core.project.node_input_files import NODE_INPUT_FILES
 from emo_master.core.project.resources import DeviceParameterTarget, ParameterTarget, safeRelativePath
 from emo_master.core.project.runtime_directory import nodeFileSchema, prepareRuntimeProject
 from emo_master.core.project.snapshots import _parameters, _setPath, verifyResources
@@ -80,7 +81,10 @@ def _issues(error, document):
                     if (isinstance(target, ParameterTarget) and issue.get('workflowId') == target.workflowId
                             and issue.get('nodeId') == target.nodeId
                             and location == 'params.' + '.'.join(target.parameterPath)):
-                        issue['resourceId'] = binding.resourceId
+                        workflow = document.workflows.get(target.workflowId)
+                        node = next((n for n in workflow.nodes if n.nodeId == target.nodeId), None) if workflow else None
+                        if node and target.parameterPath != [NODE_INPUT_FILES.get(node.operatorId)]:
+                            issue['resourceId'] = binding.resourceId
     return result
 
 
@@ -140,6 +144,11 @@ def _candidatePaths(document, root, registry, deviceTypes, protectedPaths):
                 (missing if issue['code'] == 'E_RESOURCE_MISSING' else errors).append(issue)
         for binding in resources.parameterBindings:
             target = binding.target
+            if isinstance(target, ParameterTarget):
+                workflow = prepared.workflows.get(target.workflowId)
+                node = next((n for n in workflow.nodes if n.nodeId == target.nodeId), None) if workflow else None
+                if node and target.parameterPath == [NODE_INPUT_FILES.get(node.operatorId)]:
+                    continue
             resource = resources.items.get(binding.resourceId)
             if resource is None:
                 errors.append(_diagnostic('E_RESOURCE_TARGET', 'resource reference missing', document=document,
@@ -147,8 +156,6 @@ def _candidatePaths(document, root, registry, deviceTypes, protectedPaths):
                 continue
             value = str(root / resource.path)
             if isinstance(target, ParameterTarget):
-                workflow = prepared.workflows.get(target.workflowId)
-                node = next((n for n in workflow.nodes if n.nodeId == target.nodeId), None) if workflow else None
                 descriptor = registry.get(node.operatorId or '') if node else None
                 schema = descriptor.manifest.paramSchema if descriptor else {}
                 for part in target.parameterPath:

@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from copy import deepcopy
 import json
 import math
+from pathlib import Path
 import re
 from typing import Any, Iterable, cast
 
@@ -259,12 +260,14 @@ try:
 
 
     class _FilePickerControl(QWidget):
-        def __init__(self, fileMode: str, filterText: str, initialPath: str) -> None:
+        def __init__(self, fileMode: str, filterText: str, initialPath: str, projectDirectory=None) -> None:
             super().__init__()
             self._fileMode = fileMode if fileMode in ("open", "save", "directory") else "open"
             self._filterText = filterText if filterText != "" else "所有文件 (*.*)"
             self._lineEdit = QLineEdit()
             self._lineEdit.setText(initialPath)
+            self.projectDirectory = projectDirectory
+            self.lastPickedPath = ""
             from emo_master.apps.designer.ui.icon_map import icon
             self._browseButton = QPushButton()
             self._browseButton.setIcon(icon("folder-open"))
@@ -277,12 +280,31 @@ try:
             layout.addWidget(self._lineEdit)
             layout.addWidget(self._browseButton)
             self.setLayout(layout)
+            self._boundPathLabel: QLabel | None = None
+
+        def showBoundResourcePath(self, path: str) -> None:
+            if path and self._boundPathLabel is None:
+                from .widgets import WrapLabel
+                self._boundPathLabel = WrapLabel()
+                cast(QHBoxLayout, self.layout()).addWidget(self._boundPathLabel, 1)
+            if self._boundPathLabel is not None:
+                self._boundPathLabel.setText(f"资源绑定 · {path}" if path else "")
+                self._boundPathLabel.setVisible(bool(path))
+            self._lineEdit.setVisible(not path)
+            self._browseButton.setVisible(not path)
 
         def text(self) -> str:
             return self._lineEdit.text()
 
+        def setText(self, path: str) -> None:
+            self._lineEdit.setText(path)
+
         def _onBrowseClicked(self) -> None:
             currentPath = self._lineEdit.text().strip()
+            directory = self.projectDirectory() if self.projectDirectory else None
+            root = Path(directory).resolve() if directory else None
+            if root is not None:
+                currentPath = str(root / currentPath)
             if self._fileMode == "directory":
                 selectedPath = QFileDialog.getExistingDirectory(
                     self, "选择文件夹", currentPath
@@ -296,7 +318,11 @@ try:
                     self, "选择输入文件", currentPath, self._filterText
                 )
             if selectedPath != "":
-                self._lineEdit.setText(selectedPath)
+                selected = Path(selectedPath)
+                if root is not None and selected.is_relative_to(root):
+                    selectedPath = selected.relative_to(root).as_posix()
+                self.setText(selectedPath)
+                self.lastPickedPath = selectedPath
 
     class _OptionalFieldControl(QWidget):
         """Keep an absent parameter distinct from a present empty value."""
@@ -318,9 +344,11 @@ try:
     class SchemaParamForm(QWidget):
         valuesChanged: Any = Signal()
 
-        def __init__(self, *, deviceMode=False) -> None:
+        def __init__(self, *, deviceMode=False, projectInput=None, projectDirectory=None) -> None:
             super().__init__()
             self.deviceMode = deviceMode
+            self.projectInput = projectInput
+            self.projectDirectory = projectDirectory
             self._advancedFields: set[str] = set()
             self.advancedButton: QToolButton | None = None
             self._layout = QFormLayout()
@@ -339,6 +367,7 @@ try:
             self._rawSchema: dict[str, object] = {}
             self._suppliedFields: set[str] = set()
             self._workflowOptions: list[str] = []
+            self._boundResourcePaths: dict[str, str] = {}
 
         def eventFilter(self, control, event):
             if event.type() != QEvent.Wheel:
@@ -799,6 +828,13 @@ try:
             if control is not None:
                 control.setEnabled(enabled)
 
+        def showBoundResourcePaths(self, paths: dict[str, str]) -> None:
+            for name in self._boundResourcePaths.keys() | paths.keys():
+                control = self._controls.get(name)
+                if isinstance(control, _FilePickerControl):
+                    control.showBoundResourcePath(paths.get(name, ""))
+            self._boundResourcePaths = dict(paths)
+
         def getValues(self) -> dict[str, object]:
             values: dict[str, object] = {}
             for fieldName, control in self._controls.items():
@@ -833,11 +869,15 @@ try:
                     )
                     filterText = str(field.schema.get("xFilter", "所有文件 (*.*)"))
                     initialPath = "" if selectedValue is None else str(selectedValue)
-                    return _FilePickerControl(
+                    picker = _FilePickerControl(
                         fileMode=fileMode,
                         filterText=filterText,
                         initialPath=initialPath,
+                        projectDirectory=self.projectDirectory if field.name == self.projectInput else None,
                     )
+                    if field.name in self._boundResourcePaths:
+                        picker.showBoundResourcePath(self._boundResourcePaths[field.name])
+                    return picker
                 if widgetType in {"workflow-select", "workflow_select"}:
                     # Reference fields configure targets; navigation belongs to
                     # the canvas link and Designer navigation actions.

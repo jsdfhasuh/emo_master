@@ -21,7 +21,7 @@ class Resource(Model):
     path: str
     sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     size: int = Field(ge=0)
-    purpose: Literal["input_image", "model", "page_image", "icon"]
+    purpose: Literal["input_image", "model", "page_image", "icon", "input_file"]
 
     @model_validator(mode="after")
     def checkPath(self) -> Resource:

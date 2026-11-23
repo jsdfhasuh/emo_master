@@ -1,6 +1,8 @@
 """First publication of drafts uses Runtime preparation, not Designer Save/Run."""
 from copy import deepcopy
+import base64
 import hashlib
+import json
 from pathlib import Path
 from threading import Event
 import time
@@ -105,6 +107,41 @@ def testInitialDraftKeepsDiskAndResourcesAndRunsImageGraph(initialRuntime, tmp_p
     assert started.ok, started.message
     terminal = waitForTerminal(service, started.job_id, timeoutSeconds=30)
     assert terminal.status == 'COMPLETED', terminal
+
+
+@pytest.mark.parametrize('initialRuntime', ['embedded'], indirect=True)
+@pytest.mark.parametrize('bound', [False, True], ids=['literal', 'bound'])
+def testJobLogsModelUsedByWorker(initialRuntime, tmp_path, bound):
+    from tests.plugins.test_yolo_onnx_backend import _TINY_YOLO_ONNX
+
+    service, client = initialRuntime
+    root = tmp_path / 'engineering'
+    payload = imageProject(root, bound=False)
+    data = base64.b64decode(_TINY_YOLO_ONNX)
+    (root / 'actual.onnx').write_bytes(data)
+    digest = hashlib.sha256(data).hexdigest()
+    workflow = payload['workflows']['main']
+    workflow['nodes'][2] = dict(nodeId='yolo', operatorId='vision.inference.yolo', params=dict(modelPath='actual.onnx'))
+    workflow['edges'][0]['toNode'] = 'yolo'
+    workflow['edges'][1].update(fromNode='yolo', fromPort='overlay')
+    if bound:
+        old = b'old model with different bytes'
+        (root / 'old.onnx').write_bytes(old)
+        payload['resources']['items']['model'] = dict(path='old.onnx', purpose='model', size=len(old),
+                                                       sha256=hashlib.sha256(old).hexdigest())
+        payload['resources']['parameterBindings'] = [dict(resourceId='model', target=dict(
+            workflowId='main', nodeId='yolo', parameterPath=['modelPath']))]
+    client.initializeProjectConfiguration(payload, root, 'first', runtimeInstanceId=service.runtimeInstanceId)
+    assert waitForWrite(service, client, 'first')['state'] == 'COMMITTED'
+    started = client.startJob(service.loadedProjectId, 'main')
+    assert started.ok, started.message
+    terminal = waitForTerminal(service, started.job_id, timeoutSeconds=30)
+    assert terminal.status == 'COMPLETED', terminal
+    event = next(event for event in service.eventStore.read(started.job_id)
+                 if event.eventType == 'node.completed' and event.nodeId == 'yolo')
+    diagnostics = json.loads(event.payloadJson)['diagnostics']
+    assert Path(diagnostics['modelPath']).name == digest + '.onnx'
+    assert diagnostics['modelSource'] == dict(path='actual.onnx', sha256=digest)
 
 
 def testInvalidInitialInputCanBeFixedWithoutLoadingOrStarting(initialRuntime, tmp_path):

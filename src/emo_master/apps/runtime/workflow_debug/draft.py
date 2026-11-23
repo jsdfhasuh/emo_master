@@ -18,6 +18,8 @@ def workflowDraft(request, admitted):
         for node in workflow.nodes:
             if node.kind == "operator":
                 spec = draft(request["projectJson"], projectId, key, node.nodeId, node.operatorId, admitted)
+                if spec.get("resourcePlan"):
+                    fail("E_DEBUG_UNSUPPORTED", "流程调试尚不支持工程资源绑定，请使用算子调试")
                 if spec.get("singleNodeOnly"):
                     fail("E_DEBUG_UNSUPPORTED", "operator requires explicit single-node debugging: " + node.operatorId)
                 used.add(node.operatorId)

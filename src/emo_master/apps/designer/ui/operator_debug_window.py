@@ -39,7 +39,6 @@ class OperatorDebugWindow(QDialog):
         self.editor, self.valid = editor, valid
         self.isPlc = editor.context.operatorId in {"communication.plc.slmp_read", "communication.plc.slmp_write"}
         self.connection = DebugConnection(editor.context._runtimeClient)
-        self.connection.projectDirectory = getattr(editor.context, "getProjectDirectory", lambda: "")()
         self.pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="designer-debug")
         self.controls = ThreadPoolExecutor(max_workers=1, thread_name_prefix="designer-debug-control")
         self.bridge = Completion(self)
@@ -65,8 +64,6 @@ class OperatorDebugWindow(QDialog):
         self.detailFingerprint = ""
         self.pixmap = None
         self.pendingAsset = ""
-        self.bindings = deepcopy(editor.context.collectVariableBindings())
-        self.variableDefinitions = self.currentVariables()
         self.setAttribute(Qt.WA_DeleteOnClose)
         self.setWindowTitle("算子调试 - " + editor.windowTitle())
         if self.isPlc:
@@ -91,6 +88,9 @@ class OperatorDebugWindow(QDialog):
         self.run.setIcon(icon("play"))
         self.run.clicked.connect(self.execute)
         toolbar.addWidget(self.run)
+        self.retryOpen = QPushButton("重新打开调试")
+        self.retryOpen.clicked.connect(self.openSession)
+        toolbar.addWidget(self.retryOpen)
         self.cancel = tool(self, "square", "取消本次执行", self.cancelExecution)
         self.reset = tool(self, "refresh-cw", "重置会话状态和输入", self.resetSession)
         self.copyVariables = tool(self, "upload", "复制生产持久变量当前值", self.copyState)
@@ -202,13 +202,30 @@ class OperatorDebugWindow(QDialog):
         self.timer.timeout.connect(self.poll)
         self.timer.start(250)
         self.refreshControls()
+        self.openSession()
+
+    def openSession(self):
+        if (self.busy or self.closing or self.disposed or self.connection.identity
+                or self.state not in {"STARTING", "RESOURCE_BUSY"}):
+            return
+        if not self.valid() or not self.connection.attached():
+            self.close()
+            return
+        editor = self.editor
+        self.state = "STARTING"
+        self.status.setText("连接 Runtime…")
         try:
+            self.connection.projectDirectory = getattr(editor.context, "getProjectDirectory", lambda: "")()
+            self.bindings = deepcopy(editor.context.collectVariableBindings())
+            self.variableDefinitions = self.currentVariables()
             payload = editor.context._variablePreviewProject()
             node = next(row for row in payload["workflows"][editor.key.workflowId]["nodes"] if row["nodeId"] == editor.key.nodeId)
             node["params"] = editor.collectParams()
             self.submit("open", lambda: self.connection.open(payload, editor.key, editor.context.operatorId))
         except Exception as error:
+            self.state = "FAULTED"
             self.error(error)
+            self.refreshControls()
 
     def submit(self, name, work, *, control=False):
         if self.disposed or (self.busy and not control) or (name == 'poll' and self.polling):
@@ -337,6 +354,7 @@ class OperatorDebugWindow(QDialog):
             self.logs.clear()
             self.logDetail.clear()
         self.debugSessionId, self.debugGeneration = identity
+        self.parameters.showBoundResourcePaths(session.get("boundResourceParams", {}))
 
     def selectedOutputPort(self):
         return self.outputPorts.currentData(Qt.UserRole + 1) or self.outputPorts.currentText()
@@ -366,6 +384,7 @@ class OperatorDebugWindow(QDialog):
         ready = (self.state == "READY" and not self.busy and not self.closing
                  and not self.connection.uncertain and self.artifacts.pendingInput is None)
         self.run.setEnabled(ready)
+        self.retryOpen.setVisible(self.state == "RESOURCE_BUSY" and not self.closing)
         self.reset.setEnabled(ready)
         self.copyVariables.setEnabled(ready)
         self.inputBody.setEnabled(ready)
@@ -617,6 +636,9 @@ class OperatorDebugWindow(QDialog):
                 self.updateResultLabel()
             if name == "open":
                 self.state = "FAULTED"
+                if getattr(error, "code", None) == "E_RESOURCE_BUSY" and not self.connection.identity:
+                    self.state = "RESOURCE_BUSY"
+                    self.status.setText("Runtime 正被占用。请在运行任务或其他调试会话结束后点击“重新打开调试”。")
             if name == "close":
                 self.closeSent = False
                 self.closing = False

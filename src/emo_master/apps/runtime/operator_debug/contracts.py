@@ -11,6 +11,8 @@ from emo_master.core.project.global_variables import (
     definitions, resolveParams, validateBindings, validateEffectiveParams, variablePorts,
 )
 from emo_master.core.project.models import WorkflowNode
+from emo_master.core.project.node_input_files import NODE_INPUT_FILES
+from emo_master.core.project.resources import ResourceBinding, ResourcePlan
 
 MAX_REQUEST_BYTES = 768 * 1024
 MAX_INLINE_BYTES = 64 * 1024
@@ -169,6 +171,41 @@ def trustedEntries(registry):
     return admitted
 
 
+def _nodeResourcePlan(resources, workflowId, node, schema):
+    if not isinstance(resources, dict):
+        fail("E_DEBUG_CONTEXT_INVALID", "invalid resource plan")
+    selected = []
+    items = {}
+    for key in ("parameterBindings", "siteBindings"):
+        rows = resources.get(key, [])
+        if not isinstance(rows, list):
+            fail("E_DEBUG_CONTEXT_INVALID", "invalid resource bindings")
+        for row in rows:
+            if not isinstance(row, dict) or not isinstance(row.get("target", {}), dict):
+                fail("E_DEBUG_CONTEXT_INVALID", "invalid resource binding target")
+            target = row.get("target", {})
+            if target.get("workflowId") != workflowId or target.get("nodeId") != node.nodeId:
+                continue
+            if key == "parameterBindings" and target.get("parameterPath") == [NODE_INPUT_FILES.get(node.operatorId)]:
+                continue
+            if key == "siteBindings":
+                fail("E_DEBUG_UNSUPPORTED", "当前算子调试尚不支持现场字段绑定：" + str(row.get("field", "")))
+            binding = ResourceBinding.model_validate(row)
+            path = binding.target.parameterPath
+            field = schema.get("properties", {}).get(path[0], {})
+            if len(path) != 1 or field.get("xWidget") != "file" or field.get("xFileMode") != "open":
+                fail("E_RESOURCE_TARGET", "算子调试的工程资源须绑定到输入文件参数：" + ".".join(path))
+            inventory = resources.get("items", {})
+            if not isinstance(inventory, dict) or binding.resourceId not in inventory:
+                fail("E_RESOURCE_MISSING", "工程中找不到绑定的资源：" + binding.resourceId)
+            items[binding.resourceId] = inventory[binding.resourceId]
+            selected.append(binding)
+    if selected:
+        return ResourcePlan(schemaVersion=resources.get("schemaVersion", "1.0"),
+                            items=items, parameterBindings=selected)
+    return None
+
+
 def draft(raw, projectId, workflowId, nodeId, operatorId, admitted):
     for value in (projectId, workflowId, nodeId, operatorId):
         identifier(value)
@@ -200,20 +237,11 @@ def draft(raw, projectId, workflowId, nodeId, operatorId, admitted):
     occupied = [["variableId"]] if operatorId in {"vision.state.variable_read", "vision.state.variable_write"} else []
     if operatorId == "vision.state.variable_write":
         occupied.append(["operation"])
-    validateBindings(bindings, variables, admitted[operatorId]["paramSchema"], occupied=occupied)
-    resources = payload.get("resources") or {}
-    if not isinstance(resources, dict):
-        fail("E_DEBUG_CONTEXT_INVALID", "invalid resource plan")
-    for key in ("parameterBindings", "siteBindings"):
-        resourceBindings = resources.get(key, [])
-        if not isinstance(resourceBindings, list):
-            fail("E_DEBUG_CONTEXT_INVALID", "invalid resource bindings")
-        for binding in resourceBindings:
-            if not isinstance(binding, dict) or not isinstance(binding.get("target", {}), dict):
-                fail("E_DEBUG_CONTEXT_INVALID", "invalid resource binding target")
-            target = binding.get("target", {})
-            if target.get("workflowId") == workflowId and target.get("nodeId") == nodeId:
-                fail("E_DEBUG_UNSUPPORTED", "resource bindings require the A3 resource adapter")
+    schema = admitted[operatorId]["paramSchema"]
+    plan = _nodeResourcePlan(payload.get("resources") or {}, workflowId, node, schema)
+    if plan:
+        occupied.extend(binding.target.parameterPath for binding in plan.parameterBindings)
+    validateBindings(bindings, variables, schema, occupied=occupied)
     protected = []
     if operatorId == "vision.io.sqlite_writer":
         # The rest of a draft need not be executable to debug this one node.
@@ -228,7 +256,7 @@ def draft(raw, projectId, workflowId, nodeId, operatorId, admitted):
                     protected.append(path)
     return dict(admitted[operatorId], nodeId=nodeId, operatorId=operatorId, projectId=projectId,
                 workflowId=workflowId, draftDigest=digest(payload), nodeParams=node.params,
-                sqliteProtected=protected,
+                sqliteProtected=protected, resourcePlan=plan,
                 variableDefinitions={key: value.model_dump() for key, value in variables.items()},
                 variableBindings=bindings)
 
@@ -239,6 +267,7 @@ def executionParams(spec, raw, values):
         fail("E_PARAM_INVALID", "parameters must be an object")
     bindings = spec.get("variableBindings", [])
     effective = resolveParams(original, bindings, values)
+    effective.update(spec.get("boundResourceParams", {}))
     try:
         effective = validateEffectiveParams(effective, bindings, spec["paramSchema"])
     except (ValueError, TypeError) as error:

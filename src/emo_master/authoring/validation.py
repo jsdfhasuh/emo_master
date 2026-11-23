@@ -12,17 +12,19 @@ from emo_master.core.project.device_resources import deviceTarget
 from emo_master.core.project.resources import DeviceParameterTarget
 from emo_master.core.project.runtime_directory import nodeFileSchema
 from emo_master.core.project.snapshots import _parameters, parameterValidationApplies, verifyResources
+from emo_master.core.project.node_input_files import alignNodeInputFiles
 from emo_master.core.workflow.compiler import WorkflowCompiler
 from emo_master.core.workflow.errors import WorkflowCompileError, locatedValidationError
 from emo_master.core.workflow.validation import validateProjectDocument
 
 
 def localDiagnostics(draft, document, manifests):
+    root = draft.directory.resolve()
+    document = alignNodeInputFiles(document, root, bestEffort=True, refreshExisting=False)
     issues = [asdict(issue) for issue in validateProjectDocument(document)]
     missing = []
     resources = document.resources
     plan = resources.model_dump() if resources else {}
-    root = draft.directory.resolve()
 
     def report(error, code, *, workflowId='', nodeId='', fieldPath='', resourceId='', incomplete=False):
         for issue in locatedValidationError(error, getattr(error, 'code', code),

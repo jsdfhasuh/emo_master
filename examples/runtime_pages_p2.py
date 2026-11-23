@@ -22,7 +22,7 @@ def sampleProject(root, image=True, overlay=True):
         sources["image"] = dict(sources["count"], nodeId="blob", port="overlay", expectedType="image")
         components.append({"componentId": "image", "type": "image", "bindings": {"image": "image"}, "layout": {"row": 1}})
     nodes = [{"nodeId": "input", "kind": "workflow_input"},
-             {"nodeId": "load", "operatorId": "vision.io.image_loader"},
+             {"nodeId": "load", "operatorId": "vision.io.image_loader", "params": {"imagePath": "input.png"}},
              {"nodeId": "blob", "operatorId": "vision.analysis.blob", "params": {"drawOverlay": overlay, "includeContour": False}},
              {"nodeId": "count", "operatorId": "vision.collection.count"},
              {"nodeId": "output", "kind": "workflow_output"}]

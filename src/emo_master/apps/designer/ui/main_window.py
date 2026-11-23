@@ -3712,10 +3712,15 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                     return False
             else:
                 from emo_master.apps.designer.services.runtime_client import localProjectSourceChange
+                from emo_master.apps.designer.services.project_file_publication import comparisonFilePayload
                 if not online.get('recoveryError') and not localProjectSourceChange(
-                        self.runtimeClient, online, self.projectController.currentProjectFile) and not projectConfigurationChanges(
-                        online['payload'], self.pageCoordinator.session.payload()):
-                    return True
+                        self.runtimeClient, online, self.projectController.currentProjectFile):
+                    draft = self.pageCoordinator.session.payload()
+                    if not projectConfigurationChanges(online['payload'], draft):
+                        return True
+                    local = comparisonFilePayload(online['payload'], draft, self.pageCoordinator.directory)
+                    if not projectConfigurationChanges(online['payload'], local):
+                        return True
             from PySide2.QtWidgets import QDialog
             return self.pageCoordinator.configureRuntime(allowRun=True) == QDialog.Accepted
         target = self.projectController.currentProjectFile or self.currentProjectDir
@@ -5127,10 +5132,25 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         from emo_master.apps.designer.state.node_configuration import validateConfiguration
         validateConfiguration(workflow, raw, params, bindings, schema, variables,
                               self.workflowStore.projectExtensions.get("resources", {}))
+        from emo_master.core.project.node_input_files import NODE_INPUT_FILES, alignNodeInputFiles
+        field = NODE_INPUT_FILES.get(raw.get("operatorId"))
+        fileChanged = field and params.get(field) != raw.get("params", {}).get(field)
+        resources = None
+        if field and self.currentProjectDir:
+            from emo_master.core.project.models import ProjectDocument
+            document = ProjectDocument.model_validate(self.workflowStore.toPayload())
+            target = next(n for n in document.workflows[key.workflowId].nodes if n.nodeId == key.nodeId)
+            target.params = dict(params)
+            resources = alignNodeInputFiles(document, self.currentProjectDir, only={(key.workflowId, key.nodeId)},
+                                            bestEffort=not fileChanged, refreshExisting=bool(fileChanged)).resources
         if bindings:
             enableVariables(self.workflowStore)
         if not self._applyEditorParams(key, params):
             return False
+        if resources is not None:
+            self.workflowStore.projectExtensions["resources"] = resources.model_dump(mode="json")
+        if fileChanged and not self.currentProjectDir:
+            self.projectController.pendingNodeInputs.add((key.projectId, key.workflowId, key.nodeId))
         if key.workflowId == self.activeWorkflowId:
             self.flowModel.nodes[key.nodeId].globalVariableBindings = bindings
             self.workflowController.captureActiveWorkflow()

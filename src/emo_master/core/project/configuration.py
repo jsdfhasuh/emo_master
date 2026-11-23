@@ -2,6 +2,7 @@
 from copy import deepcopy
 import hashlib
 import json
+from emo_master.core.project.node_input_files import NODE_INPUT_FILES, nodeInputPathKey
 
 
 def canonical(value):
@@ -301,7 +302,19 @@ def presentationExecution(payload):
     return dict(sources=sources, scopes={key: presentation.get("resultScopes", {}).get(key) for key in sorted(scopes)})
 
 
-def executionPayload(payload):
+def workflowInputFileKeys(workflow, projectRoot=None):
+    connected = {edge["toNode"] for edge in workflow.get("edges", []) if edge["toPort"] == "videoPath"}
+    paths = set()
+    for node in workflow.get("nodes", []):
+        field = NODE_INPUT_FILES.get(node.get("operatorId"))
+        if field and not (field == "videoPath" and node["nodeId"] in connected):
+            path = nodeInputPathKey(node.get("params", {}).get(field), projectRoot)
+            if path is not None:
+                paths.add(path)
+    return paths
+
+
+def executionPayload(payload, *, projectRoot=None):
     tree = _tree(payload)
     tree.pop("project", None)
     tree["projectId"] = payload.get("project", {}).get("projectId")
@@ -313,8 +326,10 @@ def executionPayload(payload):
     resources = tree.get("resources")
     if resources:
         bound = {binding["resourceId"] for binding in resources.get("parameterBindings", [])}
+        files = {path for flow in payload.get("workflows", {}).values() for path in workflowInputFileKeys(flow, projectRoot)}
         resources["items"] = {key: value for key, value in resources.get("items", {}).items()
-                              if value.get("purpose") not in {"page_image", "icon"} or key in bound}
+                              if value.get("purpose") not in {"page_image", "icon"} or key in bound
+                              or nodeInputPathKey(value.get("path")) in files}
     for workflow in tree.get("workflows", {}).values():
         workflow.pop("layout", None)
         workflow.pop("name", None)
@@ -328,8 +343,8 @@ def executionPayload(payload):
     return tree
 
 
-def executionDigest(payload):
-    return digest(executionPayload(payload))
+def executionDigest(payload, *, projectRoot=None):
+    return digest(executionPayload(payload, projectRoot=projectRoot))
 
 
 def _copyCyclePath(target, source, parts):

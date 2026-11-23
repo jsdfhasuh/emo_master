@@ -213,6 +213,20 @@ def testStaticPageSelectionRequiresOnlyItsMissingResource():
     assert executionDigest(online) != executionDigest(local)
 
 
+@pytest.mark.parametrize("absolute", [False, True])
+def testSharedPageImageContentChangesExecutionRevisionForItsReadingWorkflow(tmp_path, absolute):
+    from emo_master.apps.runtime.project_config.impact import affectedObjects
+    online = simulatedProject()
+    online["resources"]["items"]["picture"] = dict(path="shared.png", purpose="page_image", size=10, sha256="a"*64)
+    online["workflows"]["viewer"] = deepcopy(online["workflows"]["main"])
+    online["workflows"]["main"]["nodes"].append(dict(nodeId="load", operatorId="vision.io.image_loader",
+        params=dict(imagePath=str(tmp_path / "shared.png") if absolute else "shared.png")))
+    local = deepcopy(online)
+    local["resources"]["items"]["picture"]["sha256"] = "b"*64
+    assert executionDigest(online, projectRoot=tmp_path) != executionDigest(local, projectRoot=tmp_path)
+    assert affectedObjects(online, local, projectRoot=tmp_path) == ({"main"}, set(), False)
+
+
 def testCycleParametersKeepMaterializedPathsAndDoNotMutateOnlineSnapshot():
     from types import SimpleNamespace
     from emo_master.core.project.configuration import applyCycleParameters

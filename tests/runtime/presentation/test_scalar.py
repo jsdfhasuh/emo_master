@@ -60,6 +60,32 @@ def testPreparationRejectsResourceMutationAndSemanticParameter(channel, tmp_path
         channel.prepare(project, tmp_path)
 
 
+def testPreparedJobReportsOriginalYoloPathAndVerifiedCopy(channel, tmp_path, sample):
+    import base64
+    import hashlib
+    from pathlib import Path
+    from emo_master.core.project.models import WorkflowEdge, WorkflowNode
+    from tests.plugins.test_yolo_onnx_backend import _TINY_YOLO_ONNX
+    from tests.runtime.runtime_test_utils import waitForTerminal
+
+    project = sample(tmp_path, image=False)
+    model = tmp_path / "chosen.onnx"
+    data = base64.b64decode(_TINY_YOLO_ONNX)
+    model.write_bytes(data)
+    workflow = project.workflows["main"]
+    workflow.nodes.append(WorkflowNode(nodeId="detector", operatorId="vision.inference.yolo",
+                                      params={"modelPath": model.name}))
+    workflow.edges.append(WorkflowEdge(fromNode="load", fromPort="image", toNode="detector", toPort="image"))
+    prepared = channel.prepare(project, tmp_path)
+    model.unlink()
+    job = channel.start(prepared.snapshot.snapshotId)
+    assert waitForTerminal(channel.runtime, job, timeoutSeconds=30).status == "COMPLETED"
+    event = next(e for e in channel.runtime.eventStore.read(job) if e.eventType == "node.completed" and e.nodeId == "detector")
+    diagnostic = json.loads(event.payloadJson)["diagnostics"]
+    assert Path(diagnostic["modelPath"]).parent == prepared.projectPath.parent
+    assert diagnostic["modelSource"] == {"path": model.name, "sha256": hashlib.sha256(data).hexdigest()}
+
+
 def testPreparedCopyTamperAndNextBinding(channel, tmp_path, sample):
     project = sample(tmp_path, image=False)
     first = channel.prepare(project, tmp_path)

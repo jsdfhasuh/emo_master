@@ -620,6 +620,7 @@ class DraftService:
             p._edit(replace)
 
     def _resource_binding(self, draft, command):
+        from emo_master.core.project.node_input_files import NODE_INPUT_FILES
         from emo_master.core.project.resources import ParameterTarget, DeviceParameterTarget, ResourceBinding, SiteBinding, ResourcePlan
         from emo_master.core.project.snapshots import PARAMETER_PURPOSES
         store = draft.session.workflows
@@ -650,7 +651,10 @@ class DraftService:
             if schema.get('xWidget') != 'file' or schema.get('xFileMode') != 'open':
                 raise ValueError('resource binding must target a declared input file')
             plan.parameterBindings = [item for item in plan.parameterBindings if item.target != target]
-            plan.parameterBindings.append(ResourceBinding(target=target, resourceId=command["resourceId"]))
+            if isinstance(target, ParameterTarget) and target.parameterPath == [NODE_INPUT_FILES.get(node.get("operatorId"))]:
+                node.setdefault("params", {})[target.parameterPath[0]] = resource.path
+            else:
+                plan.parameterBindings.append(ResourceBinding(target=target, resourceId=command["resourceId"]))
         elif command["type"] == "resource.unbind":
             plan.parameterBindings = [item for item in plan.parameterBindings if item.target != target]
         elif command["type"] == "site.bind":

@@ -76,6 +76,7 @@ class OperatorDebugRpcMixin:
                         if (debugKind == "operator" and not values["resourceRoot"]
                                 and runtime.loadedProjectId == request.project_id):
                             values["resourceRoot"] = runtime.loadedProjectPath or ""
+                            values["useLoadedProjectRoot"] = True
                         with manager.lock:
                             manager.admitted = trustedEntries(runtime.pluginScanResult.activeOperators)
                         payload = manager.call(action, values)

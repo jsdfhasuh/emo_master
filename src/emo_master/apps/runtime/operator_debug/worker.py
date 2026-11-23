@@ -121,7 +121,8 @@ def runOperatorDebug(specJson, commands, events, cancellation, stop, heartbeat):
                 variables.values = DebugVariables(spec.get("variableDefinitions", {}), command.get("variables", {})).values
                 token = CancellationToken(cancellation)
                 params, values, mapped, notes = resources.prepare(command["params"],
-                    materialize(command["inputs"], DebugAssets(spec["workspacePath"])), context, token)
+                    materialize(command["inputs"], DebugAssets(spec["workspacePath"])), context, token,
+                    projectInputPath=command.get("projectInputPath"))
                 ports = spec["inputPorts"] if spec["operatorId"] == "vision.io.sqlite_writer" else command["inputPorts"]
                 node = CompiledNode(spec["nodeId"], "operator", spec["operatorId"], ports,
                                     command["outputPorts"], params, paramSchema=spec["paramSchema"])

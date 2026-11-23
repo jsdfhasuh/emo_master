@@ -43,6 +43,7 @@ from emo_master.apps.runtime.operator_debug.rpc import OperatorDebugRpcMixin
 from emo_master.apps.runtime.communication.manager import CommunicationManager
 from emo_master.apps.runtime.communication.rpc import CommunicationRpcMixin
 from emo_master.apps.runtime.project_config.rpc import ProjectConfigurationRpcMixin
+from emo_master.apps.runtime.project_config.resources import jobModelSources
 from emo_master.apps.runtime.presentation.history import HistoryRpcMixin
 from emo_master.apps.runtime.presentation.output_requests import OutputRequestsRpcMixin
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as _runtime_pb2
@@ -265,7 +266,8 @@ class RuntimeService(OutputRequestsRpcMixin, RunReadRpcMixin, HistoryRpcMixin, P
         from emo_master.apps.runtime.operator_debug.manager import OperatorDebugManager
         self.operatorDebugManager = OperatorDebugManager(self.runtimeInstanceId,
             trustedEntries(self.pluginScanResult.activeOperators), resourceBusy=self._operatorDebugResourcesBusy,
-            sourceProvider=self._operatorDebugSources, variableProvider=self._operatorDebugVariables)
+            sourceProvider=self._operatorDebugSources, variableProvider=self._operatorDebugVariables,
+            loadedDocumentProvider=lambda: self.loadedDocument)
         # Never evict a request and then treat a delayed retry as a fresh run.
         # Bounded admission is reset only by a new Runtime generation.
         self._startRequests: dict[str, tuple[str, object]] = {}
@@ -769,6 +771,9 @@ class RuntimeService(OutputRequestsRpcMixin, RunReadRpcMixin, HistoryRpcMixin, P
                     usesCommunication=bool(communicationNodes(document, workflowId)),
                     deviceIds=workflowDeviceIds(document, workflowId),
                     managedConfiguration=self.projectConfiguration.current is not None,
+                    modelSources=(jobModelSources(document, self.projectConfiguration.current["payload"],
+                        (self.workspaceRoot.parent / "configuration-resources").resolve())
+                        if self.projectConfiguration.current else {}),
                     planRevision=(self.projectConfiguration.current["executionRevision"] if self.projectConfiguration.current else 0),
                     legacySnapshotPolicy=legacyPolicy,
                     inspectionEnabled=bool(inspectionId),

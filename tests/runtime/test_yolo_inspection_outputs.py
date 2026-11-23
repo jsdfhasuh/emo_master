@@ -1,5 +1,6 @@
 """Real CPU inference and preview capture, not field-model accuracy acceptance."""
 import base64
+from queue import Queue
 import threading
 from types import SimpleNamespace
 
@@ -11,7 +12,7 @@ from emo_master.apps.designer.state.project_store import loadProjectDocument, sa
 from emo_master.apps.designer.state.run_result_history import RunResultHistory
 from emo_master.apps.designer.state.workflow_store import WorkflowStore
 from emo_master.apps.runtime.context.global_variables import ReadOnlyVariables
-from emo_master.apps.runtime.jobs.worker_main import _runContinuous
+from emo_master.apps.runtime.jobs.worker_main import _eventPublisher, _runContinuous
 from emo_master.apps.runtime.preview.store import PreviewSnapshotWriter
 from emo_master.apps.runtime.workflow.cancellation import CancellationRequested, CancellationToken
 from emo_master.apps.runtime.workflow.context import RunContext
@@ -24,6 +25,18 @@ from emo_master.plugins.builtins.image_saver.operator import ImageSaverOperator
 from tests.plugins.test_yolo_onnx_backend import _TINY_YOLO_ONNX
 from tests.runtime.test_builtin_vision_operator_workflows import _edge, _registry
 from tests.runtime.test_global_variables import variable
+
+
+def testReportedModelOutsideNodeSnapshotKeepsOnlyActualPath():
+    queue = Queue()
+    publish = _eventPublisher('job', 'project', queue, modelSources={
+        ('main', 'yolo', 'prepared.onnx'): {'path': 'models/intended.onnx'},
+        ('main', 'other', 'selected.onnx'): {'path': 'models/other.onnx'},
+    })
+    diagnostics = {'modelPath': 'selected.onnx'}
+    publish('node.completed', RunContext.root('job', 'main').forNode('yolo'),
+            'completed', payload={'diagnostics': diagnostics})
+    assert queue.get_nowait()['payload']['diagnostics'] == diagnostics
 
 
 @pytest.mark.parametrize('overlayParams', [{}, {'drawOverlay': False}], ids=['default-on', 'explicit-off'])

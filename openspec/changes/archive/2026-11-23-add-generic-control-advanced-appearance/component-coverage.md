@@ -50,7 +50,7 @@ Qt 使用 `emoPart` 标识实际 QWidget 部位，Web 使用 `data-emo-part` 标
 | 页签模式 | `QTabBar[emoPart="tab"]::tab:selected` | `[data-emo-part="tab"][aria-current="page"]` | Qt 的 `tab` 部位标识 QTabBar，各页签由原生子控件规则控制。 |
 | 按钮导航模式 | `QPushButton[emoPart="action"]:checked` | `[data-emo-part="action"][aria-current="page"]` | 切页时沿用原选中状态更新。 |
 
-逐类型的 Qt 实际部位来自同一示例工程的 Runtime 控件树。Web 选择器由局部预览的拥有者及部位标识生成。[Qt 部位清单](../../../docs/testing/2026-11-20-advanced-appearance/qt-runtime-evidence.json) · [可复用代码](examples/README.md)
+逐类型的 Qt 实际部位来自同一示例工程的 Runtime 控件树。Web 选择器由局部预览的拥有者及部位标识生成。[Qt 部位清单](../../../../docs/testing/2026-11-20-advanced-appearance/qt-runtime-evidence.json) · [可复用代码](examples/README.md)
 
 ### 组件自身与嵌套组件的边界
 

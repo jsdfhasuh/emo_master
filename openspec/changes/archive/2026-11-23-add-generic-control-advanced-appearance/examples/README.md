@@ -1,6 +1,6 @@
 # 高级外观样式示例
 
-以下规则已写入高级外观示例工程及其 Web 包。回放参数见 [目标效果](target-effects.md)，界面布局参考 v0.6 图稿。[示例工程与页面包](../../../../examples/advanced_appearance/README.md)
+以下规则已写入高级外观示例工程及其 Web 包。回放参数见 [目标效果](target-effects.md)，界面布局参考 v0.6 图稿。[示例工程与页面包](../../../../../examples/advanced_appearance/README.md)
 
 ## 文件与对应效果
 
@@ -22,4 +22,4 @@ QSS 放入 Designer／Qt 当前对象代码区，CSS 放入 Web 当前对象代�
 - Qt 页面导航使用 `QTabBar[emoPart="tab"]::tab:selected` 或 `QPushButton[emoPart="action"]:checked`。Web 在当前页的 `tab` 或 `action` 上可用 `[aria-current="page"]`。
 - 图片视口使用 `viewport`，容器自身外框使用 `root`。每个对象的选择器可从高级外观窗口查询。
 
-示例生成脚本列出了每个对象的通用颜色、边框及对应两端规则。“符合”“复核样本”和“需复核”配色跟随原判定值。关闭本端规则可观察当前通用外观和状态外观。[示例生成脚本](../../../../examples/advanced_appearance/build_example.py)
+示例生成脚本列出了每个对象的通用颜色、边框及对应两端规则。“符合”“复核样本”和“需复核”配色跟随原判定值。关闭本端规则可观察当前通用外观和状态外观。[示例生成脚本](../../../../../examples/advanced_appearance/build_example.py)

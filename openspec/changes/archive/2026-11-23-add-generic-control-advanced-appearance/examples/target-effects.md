@@ -1,6 +1,6 @@
 # 目标效果与最小回放配置
 
-审查版：0.7。本文固定验收使用的参数。可编辑配置和正式 Web 包随示例一起交付。[示例工程](../../../../examples/advanced_appearance/README.md)
+审查版：0.7。本文固定验收使用的参数。可编辑配置和正式 Web 包随示例一起交付。[示例工程](../../../../../examples/advanced_appearance/README.md)
 
 ## 1. 如何使用
 

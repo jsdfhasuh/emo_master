@@ -19,7 +19,7 @@ from examples.generic_page_composition.build_example import (
 )
 
 
-STYLES = Path(__file__).resolve().parents[2] / 'openspec/changes/add-generic-control-advanced-appearance/examples'
+STYLES = Path(__file__).resolve().parents[2] / 'openspec/changes/archive/2026-11-23-add-generic-control-advanced-appearance/examples'
 
 
 def native(qss, css):

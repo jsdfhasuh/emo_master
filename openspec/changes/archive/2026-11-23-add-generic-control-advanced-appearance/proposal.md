@@ -1,5 +1,7 @@
 # 通用页面控件高级外观
 
+2026-11-23 收尾核查：本 change 的 **13 种可见组件＋2 个页头宿主按钮**已完成实现及约定验证，并已归档。当前产品核查基线为 `4f3ea2da9ddb2157d85cff195e7fb0b2f5fa3bb6`，完整 Source CI 和适用产品版本的 Web CI 均通过；15 条需求已同步至正式规格。下文保留立项背景和原定范围，实际实施、修复、归档及验证记录见 [acceptance.md](acceptance.md)。
+
 ## Why
 
 现有页面设计已具备基础外观、状态映射和页头宿主按钮配置，但工程师仍无法通过统一入口进一步定制多数页面控件。需要在现有 Designer 和 Web 编辑流程中增加常用高级选项，以及分别适用于 Qt 和浏览器的 QSS／CSS 编辑能力，并让配置在保存、数据刷新和运行显示中持续生效。
@@ -29,11 +31,11 @@
 
 ## Impact
 
-- 基线：`jsdfhasuh/emo_master` 的 `main` 在 2026-11-20 核实为 `6cbff0dcbea671663cf9ab773c6ce5c81690da35`。实施前核对本地实际 HEAD 与后续差异。
+- 计划核查基线：`jsdfhasuh/emo_master` 的 `main` 在 2026-11-20 核实为 `6cbff0dcbea671663cf9ab773c6ce5c81690da35`。实际实施、合并与收尾核查基线分别保留在验收记录中，不将最初计划基线当作最终被测版本。
 - 共享模型／契约：`emo_panel_protocol` 模型、发布模型、生成 Schema／TypeScript／SDK，以及工程发布转换。
 - 作者端：Designer 原属性面板／外观弹窗；Web 原属性区及编辑画布。
 - 渲染：Qt 公共页面渲染、页头按钮、图像自绘、集合表格、SQLite 表格／列表及页面导航；Web 对应组件和宿主按钮。
 - 数据与持久化：现有工程、Web 草稿和发布包保留两端样式；不建立自动回写 `.emoproj` 的流程。
 - 范围外：全站主题服务、页面级原生样式全局级联、CSS→QSS 自动转换、新业务动作、工作流／设备改造、Qt6／QML 迁移。
 
-逐项范围见 [component-coverage.md](component-coverage.md)，源码位置见 [source-map.md](source-map.md)。所有实施任务当前均未完成。
+逐项范围见 [component-coverage.md](component-coverage.md)，源码位置见 [source-map.md](source-map.md)。[tasks.md](tasks.md) 的实施任务已完成；首次界面验收记录与后续 CI 结果分别保留，冻结 EXE 和真实生产设备仍属于未验证范围。

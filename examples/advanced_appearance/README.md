@@ -13,7 +13,7 @@
 Designer 中选中组件，打开属性面板的“外观 → 高级外观…”，在弹窗中修改通用字段和 QSS。
 开始、停止按钮从“页面设置 · 全局外观… → 页头”的对应按钮设置进入。
 Web 加载对应 Runtime 及页面包，运行界面会应用包内 CSS。独立编辑器的草稿、保存和发布沿其现有流程。
-样式示例与目标参数见 [OpenSpec 示例](../../openspec/changes/add-generic-control-advanced-appearance/examples/README.md)。
+样式示例与目标参数见 [OpenSpec 示例](../../openspec/changes/archive/2026-11-23-add-generic-control-advanced-appearance/examples/README.md)。
 
 在仓库根目录用项目 Python 3.10 环境生成另一份示例。选择新目录可获得空白归档库。
 
@@ -33,4 +33,4 @@ $env:CHROMIUM_PATH = 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.e
 python -m examples.advanced_appearance.verify_web examples/advanced_appearance/inspection.emoproj --output .tmp/appearance-evidence
 ```
 
-本次验收截图、操作记录和已验证范围见 [OpenSpec 验收](../../openspec/changes/add-generic-control-advanced-appearance/acceptance.md)。
+本次验收截图、操作记录和已验证范围见 [OpenSpec 验收](../../openspec/changes/archive/2026-11-23-add-generic-control-advanced-appearance/acceptance.md)。

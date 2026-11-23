@@ -313,7 +313,7 @@ SDK 1.10.0 在工程 2.10 / 页面 1.3 上增加可选字段。省略时沿用�
 
 启用的本端代码应用在当前对象的默认、通用和状态外观之上。两个语言分支分别编辑，
 保存和发布时一并保留。清空代码保留当前开关与其他配置。选择器按实际控件部位显示，
-可从 Designer 和 Web 的高级外观窗口查询。[样式示例](../openspec/changes/add-generic-control-advanced-appearance/examples/README.md)
+可从 Designer 和 Web 的高级外观窗口查询。[样式示例](../openspec/changes/archive/2026-11-23-add-generic-control-advanced-appearance/examples/README.md)
 
 ### 显示终端与数据位置 1.2
 

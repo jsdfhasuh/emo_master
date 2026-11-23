@@ -1,10 +1,14 @@
-# 验收要求与待实施记录
+# 验收要求与实施记录
 
 方案版本：0.7
-代码核查基线：`6cbff0dcbea671663cf9ab773c6ce5c81690da35`
+计划代码核查基线：`6cbff0dcbea671663cf9ab773c6ce5c81690da35`
+收尾核查日期：2026-11-23
+收尾核查基线：`4f3ea2da9ddb2157d85cff195e7fb0b2f5fa3bb6`
 实施与验证的逐项记录见 [tasks.md](tasks.md)。
 
 本文件记录验收要求和结果，不是第二份任务清单。实施进度只维护在 [tasks.md](tasks.md)；完整组件范围及部位定义见 [component-coverage.md](component-coverage.md)。
+
+**当前结论：13＋2 完整范围的实现及约定验证已完成，功能与 CI 具备收尾条件。** [当前完整 Source CI](https://github.com/jsdfhasuh/emo_master/actions/runs/45017102613) 和 [适用产品版本的 Web CI](https://github.com/jsdfhasuh/emo_master/actions/runs/44990324003) 均成功。下方首次功能验收记录、截图及初期失败保留原始基线；最后的“2026-11-23 收尾核查”说明后续修复、当前证据及未验证边界。
 
 ## 1. 使用方式
 
@@ -42,7 +46,7 @@ Qt 与 Web 的结果格建议填写“待实施／通过／失败／受阻”，
 | H01 | 页头 `startControl` | 右侧 12 px 图标、6 px 间距 | 正常／悬停／按下／禁用配色 | 通过，原生四态像素及实际开始。[Designer 记录] · [Qt 就绪] | 通过，计算样式及实际开始。[Edge 回归] · [Web 就绪] |
 | H02 | 页头 `stopControl` | 独立颜色与图标配置 | 正常／悬停／按下／禁用配色 | 通过，原生四态像素，实际停止后终态 ABORTED。[Designer 记录] · [Qt 记录] | 通过，四态预览，实际对所选运行发停止请求并进入 ABORTED。[Edge 回归] · [Web 记录] |
 
-`spacer` 保持固定／弹性布局设置。Designer 原生入口验证及 Web 组件判断均将空白块留在布局入口。[Designer 记录] · [Web 编辑外观入口](../../../web_panel/frontend/src/editor/PresentationFields.tsx)
+`spacer` 保持固定／弹性布局设置。Designer 原生入口验证及 Web 组件判断均将空白块留在布局入口。[Designer 记录] · [Web 编辑外观入口](../../../../web_panel/frontend/src/editor/PresentationFields.tsx)
 
 图片与数据库类使用现有支持的数据来源。Web 数据库组件必须展示实际样例记录或数值，不能仅对“请先选择查看会话”等占位提示截图并认定该类型通过。Web 不需要为本项能力直接读取 Designer 所在电脑的本地路径。
 
@@ -100,22 +104,24 @@ Qt 与 Web 示例各自使用支持的语法。例如 Qt 的 `QHeaderView::secti
 
 只新增本功能涉及的模型往返、作用域、预览提交和渲染路径检查；复用既有测试工具。原项目必须通过的门禁照常执行，不把它们全部改造成高级外观专属测试。示例工作流只有新建／修改时才走已有编译校验，不新增调度、设备、通信或 SDK 兼容专项；不增加平台／浏览器／分辨率组合、压力、模糊测试或生产硬件验收。收尾提供必要实装截图，无需重绘全部 14 页原型。
 
-## 5. 实施完成后的交付记录
+## 5. 首次功能验收与交付记录
 
-| 项目 | 当前记录 |
+本节保留首次功能验收时的实际源码、环境与结果；后续修复和当前 CI 状态见文末收尾核查。
+
+| 项目 | 首次记录 |
 | --- | --- |
 | 实际被测源码提交 | Windows 当前分支 `main`，HEAD `1e47522ccb8451f1665852caa5ae6ff333b340bb` 加本轮工作区改动。原有四份 11 月 13 日验证记录和 `.tmp/` 已保留。 |
 | Qt 测试环境与运行方式 | Windows / Python 3.10.21 / PySide2 5.15.2.1 / Qt 5.15.2。用原生 Qt 窗口、QTest 和实际 QWidget 截图。 |
 | Web 测试环境与浏览器 | Windows / Edge 157.0.4341.42 / Playwright。一次真实网关、HTTP／WebSocket 和软件 Runtime 验收，一组独立的浏览器交互回归。 |
-| 示例工程与数据来源 | [inspection.emoproj](../../../examples/advanced_appearance/inspection.emoproj)，正式创建、保存重读及工作流编译通过。复用合成图与软件检测流程。 |
-| 对应页面发布包 | [inspection.emoweb](../../../examples/advanced_appearance/inspection.emoweb)，正式发布投影与包重读通过。 |
+| 示例工程与数据来源 | [inspection.emoproj](../../../../examples/advanced_appearance/inspection.emoproj)，正式创建、保存重读及工作流编译通过。复用合成图与软件检测流程。 |
+| 对应页面发布包 | [inspection.emoweb](../../../../examples/advanced_appearance/inspection.emoweb)，正式发布投影与包重读通过。 |
 | 两端样式示例与配置 | [QSS／CSS 示例](examples/README.md)，纳入对应示例工程。 |
 | 覆盖表和深入场景的证据位置 | 本页第 2–4 节、实际截图和出具过程记录。 |
-| 失败及未验证项 | Web 全量后端检查有一个 IPv6 TestClient 错误。冻结 EXE、远端 CI 和生产设备未执行。本机一个 Git 忽略的旧 2.9 迁移用例未纳入 Qt 页面回归。详见下方。 |
+| 首次失败与未验证项 | 首次 Web 全量后端检查出现 IPv6 TestClient 错误，当时尚未执行远端 CI；该错误不再是当前未关闭的 CI 问题，后续 Windows／Linux 后端全量检查均通过，见文末收尾核查。冻结 EXE 和真实生产设备仍未验证。首次本机一个 Git 忽略的旧 2.9 迁移用例未纳入 Qt 页面回归。 |
 
 完成判定需要覆盖表中的 15 个对象在两端均有有效结果，明确的特殊渲染路径和深入场景已核对，且失败／受阻项如实记录并解决；不能只凭设计图、代码字段存在或代表性的三个控件通过就结束。
 
-## 基线核对与协议验证
+## 首次基线核对与协议验证
 
 `6cbff0dcbea671663cf9ab773c6ce5c81690da35` 与实际 HEAD 之间的差异涉及相机适配及历史记录，
 页面产品源码一致。远端 `main` 核对到 `9fc675031a0ca7be03b4fb2ea90b9e93a4a8f423`，
@@ -128,7 +134,7 @@ Qt 与 Web 示例各自使用支持的语法。例如 Qt 的 `QHeaderView::secti
 生成脚本更新了工程展示及发布 Schema、生成 TypeScript、SDK wheel 与摘要。验证包保留现有
 契约示例和静态夹具的字节内容。OpenSpec CLI 2.0.0 strict 通过。
 
-## 实装截图
+## 首次实装截图
 
 | 场景 | 证据 |
 | --- | --- |
@@ -139,10 +145,11 @@ Qt 与 Web 示例各自使用支持的语法。例如 Qt 的 `QHeaderView::secti
 
 Designer 使用受控显示快照回放样例值与实际图像。Web 画布与局部预览使用既有示例数据模式。
 真实 Qt 与 Web Runtime 各在临时副本中以连续采样运行，确认选中数据、界面状态和实际停止。
-示例交付库保持空白。最终工程 SHA-256 为 `3edd4d36bbf0e27919e42bfab52b68a3de055a488f2eb8f9b105da83011635eb`，
+示例交付库保持空白。首次 Windows 验收工程采用 CRLF 换行，SHA-256 为 `3edd4d36bbf0e27919e42bfab52b68a3de055a488f2eb8f9b105da83011635eb`，
 Web 包为 `6025544b12f7643c573a3a7da3c379f61a5f280ed32b11820a051ffca8fc5c8b`。
+2026-11-23 核对仓库中的同一工程采用 LF 换行，SHA-256 为 `931eb009590315cd01c8f0fa08f33d12870fa813e6a813a7bef305603e2492a7`；仅将 LF 转为 CRLF 后即与首次工程摘要一致。Web 包摘要仍一致，不改写原始验收 JSON 中记录的摘要。
 
-## 运行命令与范围
+## 首次运行命令与范围
 
 - Qt 页面回归 222 项、Operator UI 103 项通过。页面回归排除 Git 忽略的本机旧迁移用例
   `tests/ui/presentation/test_migration_operator_pages.py`。该文件中的旧 2.9 夹具被当前严格模型拒绝。
@@ -153,7 +160,8 @@ Web 包为 `6025544b12f7643c573a3a7da3c379f61a5f280ed32b11820a051ffca8fc5c8b`。
 - 使用交付的 SDK wheel 与仓库声明的 `httpx2` 运行 Web 后端全量 `unittest discover`，共 231 项、7 项跳过、1 项错误。
   `test_ipv6_and_default_port_authorities` 在 Starlette 1.6.0 TestClient 解析 `[::1]:8780` 时抛出 `ValueError`。
   使用空 Starlette 应用单独复现了同一错误。外观草稿、正式发布及生成契约的 33 项定向检查通过。
-- 项目生成与 Web 端到端回放脚本位于 [示例目录](../../../examples/advanced_appearance/README.md)。
+  此处是首次环境下的失败记录；当前后端全量 CI 已通过，见后续收尾核查，不将该历史错误继续登记为待修复项。
+- 项目生成与 Web 端到端回放脚本位于 [示例目录](../../../../examples/advanced_appearance/README.md)。
 
 ## 推送前合并回归
 
@@ -164,28 +172,87 @@ wheel 使用 SDK 1.10.0。上方记录和截图保留首次功能验收时的源
 - 共享页面协议、Qt 高级外观、Designer 启动模式和软件 Runtime 连续运行定向回归 351 项通过。
 - Web 后端使用安装后的 SDK 1.10.0 验证契约、草稿、发布、Runtime RPC 和启动采集，48 项通过，1 项可选集成测试跳过。
 - 前端逻辑回归 205 项通过，TypeScript／Vite 构建和 OpenSpec strict 通过。
-- 真实 Edge 使用同一示例重新完成草稿编辑、保存重开、发布、连续采样和停止，停止后任务为 `ABORTED`。[合并后回放](../../../docs/testing/2026-11-20-advanced-appearance/web-merge-verification.json)
+- 真实 Edge 使用同一示例重新完成草稿编辑、保存重开、发布、连续采样和停止，停止后任务为 `ABORTED`。[合并后回放](../../../../docs/testing/2026-11-20-advanced-appearance/web-merge-verification.json)
 
-[Designer 记录]: ../../../docs/testing/2026-11-20-advanced-appearance/designer-native.txt
-[Designer 原生测试]: ../../../tests/ui/page_designer/test_usable_properties.py
-[原生 Qt 测试]: ../../../tests/ui/presentation/test_advanced_appearance.py
-[Qt 记录]: ../../../docs/testing/2026-11-20-advanced-appearance/qt-runtime-evidence.json
-[Web 记录]: ../../../docs/testing/2026-11-20-advanced-appearance/web-verification.json
-[Edge 回归]: ../../../web_panel/frontend/tests/advanced_appearance_browser.py
-[外观入口]: ../../../docs/testing/2026-11-20-advanced-appearance/designer-appearance-entry.png
-[方向 QSS]: ../../../docs/testing/2026-11-20-advanced-appearance/designer-direction-qss.png
-[关闭 QSS]: ../../../docs/testing/2026-11-20-advanced-appearance/designer-direction-common.png
-[数值卡]: ../../../docs/testing/2026-11-20-advanced-appearance/designer-number-qss.png
-[开始按钮]: ../../../docs/testing/2026-11-20-advanced-appearance/designer-start-qss.png
-[停止按钮]: ../../../docs/testing/2026-11-20-advanced-appearance/designer-stop-qss.png
-[画布重开]: ../../../docs/testing/2026-11-20-advanced-appearance/designer-canvas-reopened.png
-[Qt 就绪]: ../../../docs/testing/2026-11-20-advanced-appearance/qt-runtime-ready.png
-[Qt 生产]: ../../../docs/testing/2026-11-20-advanced-appearance/qt-runtime-production.png
-[Qt 历史]: ../../../docs/testing/2026-11-20-advanced-appearance/qt-runtime-history.png
-[Qt 对照]: ../../../docs/testing/2026-11-20-advanced-appearance/qt-runtime-coverage.png
-[CSS 局部预览]: ../../../docs/testing/2026-11-20-advanced-appearance/web-editor-appearance.png
-[编辑画布]: ../../../docs/testing/2026-11-20-advanced-appearance/web-editor-canvas.png
-[Web 就绪]: ../../../docs/testing/2026-11-20-advanced-appearance/web-runtime-ready.png
-[Web 生产]: ../../../docs/testing/2026-11-20-advanced-appearance/web-runtime-production.png
-[Web 历史]: ../../../docs/testing/2026-11-20-advanced-appearance/web-runtime-history.png
-[Web 对照]: ../../../docs/testing/2026-11-20-advanced-appearance/web-runtime-coverage.png
+## 6. 2026-11-23 收尾核查
+
+本次由 ChatGPT Web 对固定 `main` 提交 `4f3ea2da9ddb2157d85cff195e7fb0b2f5fa3bb6` 的源码、计划、既有运行证据和远端 CI 进行收尾核查。开始收尾时审查工作区干净；本次整理的是文档和规格归档，不将既有截图或软件 Runtime 回放改记为本轮重新执行。
+
+### 两轮 CI 修复已关闭
+
+| 提交 | 实际改动 | 后续结果 |
+| --- | --- | --- |
+| [`48d4008b`](https://github.com/jsdfhasuh/emo_master/commit/48d4008b07ced37859bdd9fb6294cd7258dc86bf) | 修正外观配置函数的 Ruff E731、启动模式读取的类型声明；Web 编辑器保留 renderer 传入的类名，并移除覆盖 spacer 正常高度的样式。 | [Web CI](https://github.com/jsdfhasuh/emo_master/actions/runs/44744581204) 通过，两个平台编辑器网格与 spacer 浏览器检查成功；当时 Source CI 仍有后述 11 个失败，未将该轮记作全部通过。 |
+| [`9d59fd16`](https://github.com/jsdfhasuh/emo_master/commit/9d59fd16a1d0d3ec0c60725c839ff38183d6916b) | 响应式拖放预览的临时容器及标题／折叠按钮接入同一 NativeAppearance；保留原几何比较并补一个自定义 QSS 场景；PLC 错误输入测试适配当前数值列表控件，保留错误草稿和不触达设备的断言。 | [Source CI](https://github.com/jsdfhasuh/emo_master/actions/runs/44759100925) 与 [Web CI](https://github.com/jsdfhasuh/emo_master/actions/runs/44759100928) 均成功。原先 8 个拖放预览及 3 个 PLC 输入失败，在 Windows／Linux 均通过。 |
+
+### 当前完整 Source CI
+
+[`4f3ea2da` 的 Source CI](https://github.com/jsdfhasuh/emo_master/actions/runs/45017102613) 实际执行 Windows／Linux 的 runtime、other 四个分片，以及两个完整覆盖汇总门禁，全部成功。该次不是仅检查文档或跳过源码分片的成功状态。
+
+| 平台 | runtime 分片 | other 分片 | 平台合计 |
+| --- | --- | --- | --- |
+| Linux | 3399 通过，10 跳过 | 6283 通过，30 跳过 | **9682 通过，40 原有跳过，0 失败** |
+| Windows | 3407 通过，2 跳过 | 6309 通过，4 跳过 | **9716 通过，6 原有跳过，0 失败** |
+
+两平台汇总均确认 9722 个收集用例由两个分片完整覆盖；跳过仍按跳过记录。other 分片另有 66 个 subtests 通过，未重复加入上表用例数。Ruff 通过，mypy 检查的 648 个源码文件通过。
+
+日志明确包含高级外观草稿／撤销、原生部位归属、判定刷新、宿主按钮状态、页面导航选中态，以及默认／自定义 QSS 的拖放几何检查；这些测试在不同分片中的执行结果均已核对。
+
+### 当前适用的 Web CI
+
+[`9a9cc511` 的 Web CI](https://github.com/jsdfhasuh/emo_master/actions/runs/44990324003) 的 Linux、Windows 和 Windows Owning Runtime 集成三个 job 均成功。
+
+- Linux 前端逻辑 205 项通过；Windows 前端平台回归 36 项通过，均无失败或跳过。
+- Windows／Linux 后端各运行 233 项：225 项通过、8 项原有 opt-in 跳过。QSS／CSS 草稿与发布往返用例明确通过；首次 IPv6 TestClient 失败不再是当前未关闭的 CI 问题。
+- 按工作流平台分工要求执行的编辑器网格、spacer、完整 Web 应用、官方预览 CLI、独立分发构建和安装检查成功；Windows Owning Runtime 的软件集成及双 Job 图像／自动重启浏览器验收成功。
+- Windows 按既定平台分工不重复 Linux 的部分浏览器与前端逻辑检查；这些条件跳过不记作已执行。
+
+已核对 [产品提交 `9a9cc511` 到当前 `4f3ea2da` 的差异](https://github.com/jsdfhasuh/emo_master/compare/9a9cc511d2c2eec588b5602405cd364e40ae313a...4f3ea2da9ddb2157d85cff195e7fb0b2f5fa3bb6)：后续仅为日志工作台 OpenSpec 交付记录、规范和归档，没有产品、测试、依赖或 CI 工作流变更。Web 工作流的路径条件不包含这些 OpenSpec 文档，因此沿用该产品版本已通过的 Web CI，不重复触发相同检查。
+
+### 完成范围与证据边界
+
+第 2–4 节的 13＋2 覆盖、既有原生 Qt／Edge 作者端记录、保存发布往返、软件 Runtime 启停证据，与当前源码和 CI 核查相符，功能及必要验证完成。本 change 已按下节记录归档。
+
+2026-11-23 核查未重新运行独立的高级外观浏览器脚本、Windows 人工界面走查或软件 Runtime 全流程；最新通用浏览器 CI 也不替代该独立脚本的首次执行记录。冻结 EXE、真实相机／PLC／机器人和生产工程仍未验证，按原定范围保留边界，不追加为本次外观收尾门槛。历史原始日志、截图及验收 JSON 保留，不将它们改写成当前 HEAD 的新运行证据。
+
+## 7. 2026-11-23 规格归档与引用检查
+
+使用 OpenSpec CLI 2.0.0 正常执行归档，未跳过规格同步或校验。正式规格为 [page-advanced-appearance](../../../specs/page-advanced-appearance/spec.md)，本目录为 `openspec/changes/archive/2026-11-23-add-generic-control-advanced-appearance/`。
+
+| 本轮实际执行 | 结果 |
+| --- | --- |
+| `openspec validate add-generic-control-advanced-appearance --strict` | 归档前校验通过。 |
+| `openspec archive add-generic-control-advanced-appearance --yes` | 正常归档成功，新增正式规格的 15 条需求。超过 10 条 delta 的拆分建议为非阻断提示，本次保留已完成的单项功能范围。 |
+| `openspec validate page-advanced-appearance --type spec --strict` | 正式规格校验通过。 |
+| `openspec validate --archived --strict --no-interactive` | 本归档校验通过，36 项实施任务均已完成。 |
+| 正式规格与原 delta 逐字比较 | 15 条需求、28 个场景正文完整一致。 |
+| 归档文档与受影响外部文档的相对链接检查 | 139 处通过，无断链；修复归档增加的一层目录深度及外部入口。 |
+| 示例生成器样式路径检查 | 隔离调用实际 `STYLES`、`native`、`fileStyle` 定义，5 组 QSS／CSS 文件均可读取；未运行完整工程生成或重新生成交付样例。 |
+| 示例与证据保留 | `.emoproj`、`.emoweb` 与收尾基线字节一致；原始截图、运行日志与验收 JSON 未改写。 |
+| `git diff --check` | 通过。 |
+
+本次仅整理验收与交接、同步正式规格、归档资料及修复随归档变化的引用。产品渲染和交互逻辑、测试断言、CI 工作流保持收尾基线内容；不新增测试矩阵。归档提交的远端执行结果及独立 ChatGPT Web 评论以对应提交页面的实际回执为准，不与上述已通过的产品基线 CI 混用。
+
+[Designer 记录]: ../../../../docs/testing/2026-11-20-advanced-appearance/designer-native.txt
+[Designer 原生测试]: ../../../../tests/ui/page_designer/test_usable_properties.py
+[原生 Qt 测试]: ../../../../tests/ui/presentation/test_advanced_appearance.py
+[Qt 记录]: ../../../../docs/testing/2026-11-20-advanced-appearance/qt-runtime-evidence.json
+[Web 记录]: ../../../../docs/testing/2026-11-20-advanced-appearance/web-verification.json
+[Edge 回归]: ../../../../web_panel/frontend/tests/advanced_appearance_browser.py
+[外观入口]: ../../../../docs/testing/2026-11-20-advanced-appearance/designer-appearance-entry.png
+[方向 QSS]: ../../../../docs/testing/2026-11-20-advanced-appearance/designer-direction-qss.png
+[关闭 QSS]: ../../../../docs/testing/2026-11-20-advanced-appearance/designer-direction-common.png
+[数值卡]: ../../../../docs/testing/2026-11-20-advanced-appearance/designer-number-qss.png
+[开始按钮]: ../../../../docs/testing/2026-11-20-advanced-appearance/designer-start-qss.png
+[停止按钮]: ../../../../docs/testing/2026-11-20-advanced-appearance/designer-stop-qss.png
+[画布重开]: ../../../../docs/testing/2026-11-20-advanced-appearance/designer-canvas-reopened.png
+[Qt 就绪]: ../../../../docs/testing/2026-11-20-advanced-appearance/qt-runtime-ready.png
+[Qt 生产]: ../../../../docs/testing/2026-11-20-advanced-appearance/qt-runtime-production.png
+[Qt 历史]: ../../../../docs/testing/2026-11-20-advanced-appearance/qt-runtime-history.png
+[Qt 对照]: ../../../../docs/testing/2026-11-20-advanced-appearance/qt-runtime-coverage.png
+[CSS 局部预览]: ../../../../docs/testing/2026-11-20-advanced-appearance/web-editor-appearance.png
+[编辑画布]: ../../../../docs/testing/2026-11-20-advanced-appearance/web-editor-canvas.png
+[Web 就绪]: ../../../../docs/testing/2026-11-20-advanced-appearance/web-runtime-ready.png
+[Web 生产]: ../../../../docs/testing/2026-11-20-advanced-appearance/web-runtime-production.png
+[Web 历史]: ../../../../docs/testing/2026-11-20-advanced-appearance/web-runtime-history.png
+[Web 对照]: ../../../../docs/testing/2026-11-20-advanced-appearance/web-runtime-coverage.png

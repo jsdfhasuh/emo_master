@@ -77,3 +77,9 @@
 - **D3–D5/D7–D9 影子运行**：[Display 及五项 Windows 诊断](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45204631640)，公共工作流 `6efe88f`，产品 `cc68df5`。D6 credit 的旧架构分支条件不能借用新分支冒充，尚未执行。
 - **D10/D11 及 D12 构建部分**：[Designer / Runtime build-only](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45204870674)，公共工作流 `17d8e7b`，产品 `cc68df5`、打包器 `91766f6`。未执行正式标签发布、签名、Release 写入或私有资产回读。
 - 以上影子运行使用已公开产品提交，不注入 PAT、不公开上传原始产物、不替代旧门禁。启动和本地模拟均不算已迁移通过；队列内和未独立核验的条目保持未完成。合并最终 PR、正式发布、转 Private 仍需用户明确确认。
+
+### 影子运行增量
+
+- [Web 首轮](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45204466083) Linux Web 通过，Windows 三路在 recipe 步骤失败；失败未被忽略。产品 `f370753` 明确 Git Bash/PowerShell 启动并新增可公开的固定失败类别，5 个定向用例通过。[公共复跑](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45205566980) 固定工作流 `17f364a`，真实 Windows 修复结论待验证。
+- 同一产品提交增加 dispatcher 请求来源身份验证（4 项定向用例通过）；尚未接到生产 dispatcher 或状态回写。
+- [诊断影子运行](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45204631640) 的 Display Session 与 SQLite append Windows 作业已通过。分别保留其显示契约／诊断含义，其他作业结果未核对前保持待验证。

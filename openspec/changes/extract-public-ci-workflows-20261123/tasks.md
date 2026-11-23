@@ -97,3 +97,10 @@
 
 - 产品草稿 #22 的 `d0b2ba5` 修复设备包资源助手兼容问题，按节点路径契约更新了测试数据且未降低断言；Linux Python 3.10 的 39 项定向测试、9 项 TCP 模块测试、Ruff、mypy 通过。独立的 Windows 双图导出超时未修。[产品四分片复跑](https://github.com/jsdfhasuh/emo_master/actions/runs/45286899752) · [公共四分片复跑](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45286937868)（工作流 `9f0bf64`）。
 - 产品草稿 `9edd522` 修复 SQLite 诊断模块导入、补足冻结包标识并引入固定失败阶段。4 项定向诊断单测通过。[诊断复跑](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45286827329)（工作流 `2f677a6`） · [不发布的打包复跑](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45286826636)（工作流 `ce03137`）。以上新运行仍待验收，未变更旧门禁。
+
+### age 证据与统一候选
+
+- `3cfb1fe` 修复 Runtime 自测图片路径（改前 127 通过、1 失败、6 跳过；改后完整 Linux Runtime 源码回归 128 通过、6 跳过）；`e78d146` 修复导致两平台 other 分片阻塞的测试替身默认参数，保留提交断言，并新增异常弹窗检测。定向 Linux Qt 92 项通过，Windows 双图导出超时仍未认定修复。
+- B3/C4 **部分通过**。公共源／诊断／打包影子工作流已暂存限量日志、JUnit／报告、阶段文件并经 age 加密；失败仍运行封装，上传路径固定单个密文。已取回 [GitHub Windows SQLite append 密文](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45291043429/artifacts/14874960196)（产品 `3cfb1fe`、公共 `670493c`），核实外层摘要、run/attempt/repo/产品/工作流/任务和内层 4 个文件摘要；本地拒绝错密钥、错 run、改动 ZIP。Linux、失败运行、原始集合汇总、生产受保护解密钥与离线备份尚需单独验证，不能把一次成功视为整项通过。
+- 统一候选产品 `e78d14692dd4558c7391e05f6b6e7eee523c4f22`：[源码](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45291515095) 工作流 `4ee07dd968b326f2fa30970930e4ea5c3493491d)；[Web](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45291511587) 工作流 `f3a054d9a994b90a07a3fdd5e5c2ec7ca71d8942)；[诊断](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45291518025) 工作流 `6868b61930deeb613c4cb93d3f3dee09b075ef05)；[打包](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45291529991) 工作流 `e84470994f3fb85b0221a8a5d8ff650ea9770f17`、打包器 `91766f6d18ca9a333f64cf1c6030202457ec4a8a`。所有新结果仍待同版本复核；不借用旧 SHA 的通过结果。
+- 状态写回控制器已用模拟 API 验证初版（尚未远端启用）；credit 缺真实旧分支触发，仍未验证。旧门禁未移除，未合并、发布或切 Private。

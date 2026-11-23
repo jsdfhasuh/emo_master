@@ -4,9 +4,10 @@ from types import SimpleNamespace
 import pytest
 
 from PySide2.QtCore import Qt
+from PySide2.QtTest import QTest
 
 from emo_master.apps.designer.page_designer.runtime_logs import eventPayload
-from emo_master.apps.designer.state.job_log import ExecutionTree, JobEventWindow, jobExecutionTime
+from emo_master.apps.designer.state.job_log import ExecutionTree, JobEventWindow, JobIterationPage, jobExecutionTime
 from emo_master.apps.designer.ui.log_dialog import StructuredLogEntry
 from emo_master.apps.designer.ui.runtime_job_logs import RuntimeJobLogs
 from emo_master.apps.runtime.grpc_server.generated.runtime_pb2 import JobEvent, JobHistorySummary, RunState
@@ -26,6 +27,32 @@ def _walk(branches):
     for branch in branches:
         yield branch
         yield from _walk(branch.children)
+
+
+def testRoundPageKeepsFiftyCompletedOuterRoundsThroughTheOldestStart():
+    page = JobIterationPage()
+
+    def event(kind, index, **fields):
+        return dict({"eventType": "loop.iteration." + kind, "workflowRunId": "main",
+                     "nodeId": "loop", "iterationPath": [index], "payload": {}}, **fields)
+
+    assert not page.observe({"eventType": "node.started", "iterationPath": []})
+    assert not page.hasLoopEvidence
+    assert not page.observe({"eventType": "node.log", "iterationPath": [174]})
+    assert page.hasLoopEvidence
+    assert not page.observe(event("started", 174))  # cancelled mid-round
+    assert not page.observe(event("completed", 173, payload={"bodyExecuted": False}))
+    assert not page.observe(event("started", 173))  # While exit check
+    for index in range(172, 123, -1):
+        assert not page.observe(event("completed", index, payload={"bodyExecuted": True}))
+        assert not page.observe(event("completed", index, iterationPath=[index, 0]))
+        assert not page.observe(event("started", index, iterationPath=[index, 0]))
+        assert not page.observe(event("started", index))
+
+    assert not page.observe(event("completed", 123))  # Repeat and ForEach omit bodyExecuted
+    assert not page.observe(event("started", 123, workflowRunId="another-call"))
+    assert not page.observe(event("started", 123, nodeId="another-loop"))
+    assert page.observe(event("started", 123))
 
 
 def testTreeAssociatesChildCallsAndNestedLoopsBeforeProjectingWarnings():
@@ -63,6 +90,7 @@ def testTreeAssociatesChildCallsAndNestedLoopsBeforeProjectingWarnings():
     assert branches["workflow", "first"].title == branches["workflow", "second"].title == "main"
     loop = branches["node", "first", "outer"]
     assert loop.mode == "while" and loop.totalIterations is None and loop.completedIterations == 1
+    assert "已加载 1 轮完成 · 另有 1 次迭代结束记录（循环体执行情况未记录）" in loop.title
     assert branches["node", "body", "inner"].totalIterations == 1
     assert branches["node", "nested", "same"].executionTime().elapsedMs == 200
     assert tree.branchForEvent(10) is branches["node", "nested", "same"]
@@ -86,6 +114,76 @@ def testTreeAssociatesChildCallsAndNestedLoopsBeforeProjectingWarnings():
     assert context is not None
     assert [row.eventId for row in rows if context(row)] == [7, 8, 9, 10, 11, 12, 13]
     assert tree.branchForEvent(25) is branches["iteration", "first", "loop", 0]
+
+
+def testLoopPageReportsEndedIterationsWhenBodyExecutionIsUnknown():
+    rows = [_event(index + 1, "loop.iteration.completed", caller="loop", nodeRun="outer", path=(index,))
+            for index in range(50)]
+    rows.append(_event(51, "loop.iteration.started", caller="loop", nodeRun="outer", path=(50,)))
+    tree = ExecutionTree(rows)
+    loop = next(branch for branch in _walk(tree.roots) if branch.kind == "loop")
+    assert loop.completedIterations == 0
+    assert loop.title == "loop · 循环类型未记录 · 已加载 50 次迭代结束记录（循环体执行情况未记录） · 总数未记录"
+
+
+def testOnlyOuterRoundsAreNewestFirstWithinTheirOwningLoop():
+    def outer(key, kind, path=()):
+        return _event(key, kind, caller="loop", nodeRun="outer", path=path)
+
+    def inner(key, kind, path):
+        return _event(key, kind, "body", caller="nested", nodeRun="inner", parent="first", path=path)
+
+    tree = ExecutionTree([
+        outer(1, "loop.started"), outer(2, "loop.iteration.started", (0,)),
+        _event(3, "workflow.started", "body", caller="loop", parent="first", path=(0,)),
+        inner(4, "loop.started", (0,)), inner(5, "loop.iteration.started", (0, 0)),
+        inner(6, "loop.iteration.completed", (0, 0)), inner(7, "loop.iteration.started", (0, 1)),
+        inner(8, "loop.iteration.completed", (0, 1)), inner(9, "loop.completed", (0,)),
+        _event(10, "workflow.completed", "body", caller="loop", parent="first", path=(0,)),
+        outer(11, "loop.iteration.completed", (0,)), outer(12, "loop.iteration.started", (1,)),
+        outer(13, "loop.iteration.completed", (1,)), outer(14, "loop.iteration.started", (2,)),
+        outer(15, "loop.failed"),
+    ])
+    branches = {branch.key: branch for branch in _walk(tree.roots)}
+    assert tree.hasOuterIterations
+    assert tree.defaultExpandedKeys == {("workflow", "first"), ("node", "first", "outer")}
+    plain = ExecutionTree([_event(1, "workflow.started")])
+    assert not plain.hasOuterIterations and plain.defaultExpandedKeys == {("workflow", "first")}
+    assert [child.key for child in branches["node", "first", "outer"].children] == [
+        ("event", 1), ("iteration", "first", "loop", 2), ("iteration", "first", "loop", 1),
+        ("iteration", "first", "loop", 0), ("event", 15)]
+    assert [child.key for child in branches["iteration", "first", "loop", 0].children] == [
+        ("event", 2), ("workflow", "body"), ("event", 11)]
+    assert [child.key for child in branches["node", "body", "inner"].children] == [
+        ("event", 4), ("iteration", "body", "nested", 0, 0), ("iteration", "body", "nested", 0, 1), ("event", 9)]
+
+
+@pytest.mark.parametrize("separateCalls", (False, True), ids=("sibling-loops", "sibling-workflow-calls"))
+def testNewerRoundGroupsComeFirstWithoutMovingOtherSiblings(separateCalls):
+    old, new = ("old-call", "new-call") if separateCalls else ("first", "first")
+    rows = [
+        _event(1, "workflow.started"),
+        _event(3, "loop.iteration.started", old, caller="old", nodeRun="old", path=(99,)),
+        _event(4, "loop.iteration.completed", old, caller="old", nodeRun="old", path=(99,)),
+        _event(5, "node.log", caller="ordinary", nodeRun="ordinary"),
+        _event(7, "loop.iteration.started", new, caller="new", nodeRun="new", path=(0,)),
+        _event(8, "loop.iteration.completed", new, caller="new", nodeRun="new", path=(0,)),
+        _event(9, "loop.completed", old, caller="old", nodeRun="old"),
+        _event(10, "workflow.completed"),
+    ]
+    if separateCalls:
+        rows.extend([_event(2, "workflow.started", old, parent="first"),
+                     _event(6, "workflow.started", new, parent="first")])
+    tree = ExecutionTree(rows)
+    branches = {branch.key: branch for branch in _walk(tree.roots)}
+    olderGroup = ("workflow", old) if separateCalls else ("node", old, "old")
+    newerGroup = ("workflow", new) if separateCalls else ("node", new, "new")
+    assert [child.key for child in branches["workflow", "first"].children] == [
+        ("event", 1), newerGroup, ("node", "first", "ordinary"), olderGroup, ("event", 10)]
+    for run, node, index in ((old, "old", 99), (new, "new", 0)):
+        assert branches["iteration", run, node, index] in branches["node", run, node].children
+        if separateCalls:
+            assert branches["node", run, node] in branches["workflow", run].children
 
 
 def testHistoryWindowPreservesAnchorsAndCountsLiveWithoutHoldingPayloads():
@@ -195,7 +293,7 @@ def testWorkbenchClosesGapBeforeConfirmingContinuityAndReloadsLiveTrimmedRange(d
         view.openJob(SimpleNamespace(job_id="job", project_id="", workflow_id="main", status="RUNNING",
                                      accepted_at_ms=0, started_at_ms=0, ended_at_ms=0, error_code="", message=""))
         waitUntil(filling.is_set)
-        assert view._opening and not view._continuous and not view.earlier.isEnabled()
+        assert view._opening and not view._continuous and not view._canReadEarlier()
         view.appendEntry(_event(9, "node.log", caller="node", nodeRun="node"))
         view.appendEntry(_event(11, "node.log", caller="node", nodeRun="node"))
         release.set()
@@ -204,7 +302,11 @@ def testWorkbenchClosesGapBeforeConfirmingContinuityAndReloadsLiveTrimmedRange(d
         assert view._continuous
         view.appendEntry(_event(12, "node.log", caller="node", nodeRun="node"))
         assert [row.eventId for row in view.window.entries] == [8, 9, 11, 12]
-        view.earlier.click()
+        view.mode.setCurrentText("时间顺序")
+        waitUntil(lambda: view.events.topLevelItemCount() == 4)
+        assert [view.events.topLevelItem(i).data(0, Qt.UserRole)[1] for i in range(4)] == [8, 9, 11, 12]
+        view.events.scrollToTop()
+        QTest.keyClick(view.events, Qt.Key_PageUp)
         waitUntil(lambda: view.pending is None)
         assert requests[-1]["beforeEventId"] == 8 and requests[-1]["upperEventId"] == 12
         assert view.window.paused

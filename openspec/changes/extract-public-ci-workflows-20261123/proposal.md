@@ -9,9 +9,9 @@ GitHub 对公共仓库使用标准 GitHub-hosted Runner 的计算分钟不收费
 ## 目标
 
 - 将 emo_master 的产品源码仓库转为 Private。
-- 新建公开 CI 仓库 `jsdfhasuh/emo_master_ci`，实际承载 Linux/Windows 标准 Runner 上的产品测试、Web 测试、Runtime 诊断及可安全公开日志的验证任务。
-- 私有 emo_master 只保留轻量触发/回调工作流、必要的发布控制和私有凭据；主要计算负载迁移至公共 CI 仓库。
-- 公共 Runner 只在受信任的提交上读取私有源码；读取凭据不进入被测代码环境，且不出现在 dispatch payload、日志或产物中。
+- 新建公开 CI 仓库 `jsdfhasuh/emo_master_ci`，首阶段只承载独立合成项目的 Linux/Windows 基础设施自测；不得将私有产品源码、测试代码或诊断任务送入公共 Runner。
+- 评估在不暴露产品源码的前提下节省额度。公共仓库只运行合成项目；产品 CI 在确认安全可行前继续留在私有边界，同时评估私有仓库自托管临时 Runner（GitHub 计算分钟免费，但主机、维护和隔离成本由用户承担）。
+- 不得把“可信提交”“短期 Token”“撤销凭据”当作源码保密保证。公共标准 Runner 默认可访问公网；只有存在可验证、由 Runner 外部强制的默认拒绝网络出口和进程/文件隔离时，才可另行申请产品源码准入。
 - 通过 GitHub App 的最小权限和 Check Runs 回调，将公共执行结果准确关联到私有仓库的原始 commit / PR，保留 required-check 门禁。
 - 最大限度保留现有 Python 3.10、Linux/Windows、pytest 分片、Web、Display Session、Runtime 诊断和冻结包验证覆盖。
 - 公开 Runner 联调、私有替身权限与发布 dry-run、凭据及数据隔离均通过后先交验收报告，等待用户确认。正式仓库切换后另行复验；不得让切换前门槛依赖切换后的结果。
@@ -28,18 +28,18 @@ GitHub 对公共仓库使用标准 GitHub-hosted Runner 的计算分钟不收费
 
 ## 核心架构
 
-公共仓库首阶段只执行独立合成项目。真实产品联调必须先证明 Linux/Windows 测试进程不能通过公网、Runner 控制文件、公开日志或服务上传接口外传产品内容；未证明前保留原工作流。通过后，私有控制端以最小权限 GitHub App 调度，按固定工作流、run/attempt、提交及预期任务复验 GitHub API 的真实结果，由同一私有 Checks App 创建和更新门禁。
+公共仓库首阶段只运行独立合成项目，验证 Runner、工作流和测试结果处理，不接触 emo_master 源码或产品凭据。合成测试不能证明真实产品源码不会外传。
 
-产品 App 长期密钥只留在私有控制端，不写入公共仓库 Secrets。未来若通过保密准入，测试仍不得继承安装令牌或发布凭据；临时 Runner、重定向和脱敏只属于纵深措施。公有端只接收必要且已审查的元数据，默认首选不含源码标识的不可预测请求 ID。
+产品 CI 暂时保留在私有 emo_master。为节省额度，另行评估私有仓库专用临时自托管 Runner；GitHub 自托管 Runner 不消耗 Actions 计算分钟，但需要用户承担主机、虚拟化、网络隔离、维护和 Windows 桌面环境成本。公共 Runner 产品执行只有在独立证明 Runner 外部网络出口和进程/文件边界不可绕过，并经用户明确批准后才可试点。
 
 ## 完成标准
 
 - 公共 CI 仓库已创建并公开，默认分支受到保护，外部 fork PR 不会触发任何持有私有仓库凭据的工作流。
 - 私有 emo_master 可通过 GitHub App 安全触发公共 CI；dispatch 只传不含内部标识的请求 ID，不传 Token；产品 repo、完整 SHA、PR 和 Check Run ID 在私有侧绑定。
-- 公共 Runner 能读取指定私有 commit，读取凭据不进入测试进程，并在测试开始前撤销或销毁。
+- 公共合成 CI 通过不代表产品源码已安全迁移。未经独立隔离审查及用户批准，公共 Runner 不得读取产品源码。
 - 公共测试日志和产物不暴露私有源码、路径、工程数据、诊断原始记录、环境变量或凭据。
 - 记录每项验证的实际执行边界、未迁移原因和 runner minutes。若标准公共 Runner 无法同时满足保密和覆盖，不能按方案 A 宣布完成；保留原 CI，另行确认替代路线。
-- 私有仓库的 required check 能正确显示 queued / in_progress / success / failure / cancelled，并绑定准确 SHA。
+- 公共合成自测不创建产品 required check；现有私有 CI 门禁在本阶段保持不变。未来若批准产品调度，必须准确绑定 SHA 和真实 workflow/job 结果。
 - 现有测试覆盖、分片覆盖证明、Web/Runtime/Windows 验证和诊断语义保持；未运行的测试不能标记通过。
 - Release 发布凭据和私有发布资产仍留在私有边界，实际发布前验证来源和产物身份。
 - emo_master 转为 Private 后，重新验证 PR、push、手动触发、检查回调、Windows 构建/发布控制链路。

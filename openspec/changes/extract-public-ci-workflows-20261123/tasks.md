@@ -2,27 +2,27 @@
 
 ## A. 修订与基线
 
-- [ ] A1. 核对最新 main、PR #21、12 个活动工作流、4 个归档工作流、CI 脚本及 python_build_scripts；更新实际审查 SHA。
-- [ ] A2. 完成 OpenSpec strict validation；修正旧方案中“Reusable Workflow 即可免费”的错误架构。
+- [x] A1. 核对最新 main、PR #21、12 个活动工作流、4 个归档工作流、CI 脚本及 python_build_scripts；更新实际审查 SHA。
+- [x] A2. 修复 OpenSpec delta、Scenario 标题，跑严格校验；明确 reusable 计费仍归调用方。
 - [ ] A3. 记录迁移前 Actions usage、Runner OS/minutes、Artifact/Cache storage 基线；没有权限读取账单时标注需用户提供。
 - [ ] A4. 盘点公开 Fork/Clone/Release/Packages/Pages/Artifacts/外部镜像，记录 Private 切换不能撤回历史副本。
 
 ## B. 公共仓库与权限
 
 - [ ] B1. 创建 `jsdfhasuh/emo_master_ci`，配置 Public、明确许可证、默认分支保护和仅可信维护者写入。
-- [ ] B2. 建立 Dispatcher App：私有端私钥；仅授予触发公共 workflow 所需 Actions: write，以及必要的私有 Checks: write。
-- [ ] B3. 建立 Source Reader / Check Reporter App：公共端私钥；私有 emo_master 仅授予 Contents: read、Checks: write；不授予发布或写源码权限。
+- [ ] B2. 建立仅安装在公共 CI 仓库的 Dispatcher App（Actions: write）。私钥仅在私有可信端。
+- [ ] B3. Source Reader（Contents: read）与 Check Reporter（Checks: write）分开，仅安装到目标仓库，私钥不进入公共端。先使用私有替身验证。
 - [ ] B4. 核对 App 安装范围和 token permission override；若无法做到 job 级最小权限，拆成两个更窄 App，不扩大权限凑合。
 - [ ] B5. 公共仓库 self-test 不使用 Source Reader Secret；fork PR 的 self-test 与私有源码执行 workflow 完全隔离。
 
 ## C. 端到端调度与安全
 
-- [ ] C1. 私有 dispatcher 为原始 commit 创建 pending Check Run，并向公共仓库 workflow_dispatch 发送完整 SHA、PR 元数据和 check_run_id；不传 Token。
+- [ ] C1. 私有端为被测 SHA 创建 queued Check Run，按固定 workflow/ref 触发公共端，优先传随机请求 ID；SHA、PR 元数据和 Check Run ID 绑定保留在私有端，不传 Token。
 - [ ] C2. 公共 workflow 校验固定 source repo、完整 SHA、PR/ref/check_run_id/request_id，拒绝任意 URL、仓库或命令输入。
-- [ ] C3. 实现 Source Reader fetch action，在一个隔离步骤内获取短期 token、checkout 精确 commit、清除凭据；token 不进入 outputs/env/artifact/logs。
+- [ ] C3. 先用合成标记证明 Linux/Windows 上运行身份、凭据、网络、文件和公共输出隔离；未通过不接真实产品。通过后再实现短期、限仓库取源、SHA 校验和凭据销毁。
 - [ ] C4. 测试 job 不继承任何 App 私钥、私有仓库 token、Release token；验证测试进程环境与 Git 配置没有认证残留。
 - [ ] C5. 测试输出写入临时文件；只发布白名单摘要，不上传产品源码、原始日志、JUnit、诊断 JSON、截图或二进制包。
-- [ ] C6. 独立 callback job 在干净 Runner 上按 GitHub job result 更新私有 Check Run；校验 SHA、check_run_id、request_id、App 身份；失败/取消/超时/缺失回调不得绿灯。
+- [ ] C6. 独立 callback 通知私有端，私有端按 GitHub API 核验 workflow、run/attempt、必需 job 和目标 SHA，同一 App 更新；失败/取消/超时/缺失回调不得绿灯。
 - [ ] C7. 同仓库受信任 PR 可自动触发；fork PR 不自动 dispatch、不使用 pull_request_target；验证手动审批路径。
 
 ## D. 迁移全部活动验证工作流
@@ -41,7 +41,7 @@
 
 - [ ] E1. 在 emo_master 配置 required Check Run，指定 GitHub App 来源，验证 PR merge commit 与 head SHA 绑定。
 - [ ] E2. 验证 push、PR、手动触发、重复提交、取消、超时、失败和重试。
-- [ ] E3. 在 emo_master 转为 Private 前，完成所有公共 Runner 真实源码测试、日志安全审查和权限审查。
+- [ ] E3. 保密准入通过后才做所有适用的公共 Runner 产品测试；切换前盘点历史公开面、核验日志权限、在私有替身做必要权限和发布 dry-run，再提交报告等待确认。
 - [ ] E4. 经用户明确确认后，将 emo_master 切换为 Private；不删除或重写历史作为隐含动作。
 - [ ] E5. Private 状态下重新执行 PR、push、手动 CI、Windows 构建验证及 Release dry-run。
 - [ ] E6. 对比迁移前后 Billing / Actions usage，统计公共标准 Runner 实际分钟、私有 dispatcher 分钟、Artifact/Cache 存储和实际节省额。

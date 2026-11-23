@@ -14,7 +14,7 @@ GitHub 对公共仓库使用标准 GitHub-hosted Runner 的计算分钟不收费
 - 公共 Runner 只在受信任的提交上读取私有源码；读取凭据不进入被测代码环境，且不出现在 dispatch payload、日志或产物中。
 - 通过 GitHub App 的最小权限和 Check Runs 回调，将公共执行结果准确关联到私有仓库的原始 commit / PR，保留 required-check 门禁。
 - 最大限度保留现有 Python 3.10、Linux/Windows、pytest 分片、Web、Display Session、Runtime 诊断和冻结包验证覆盖。
-- 只有在公开 Runner 联调、私有回调、凭据隔离和闭源后复验通过后，才将 emo_master 切换为 Private。
+- 公开 Runner 联调、私有替身权限与发布 dry-run、凭据及数据隔离均通过后先交验收报告，等待用户确认。正式仓库切换后另行复验；不得让切换前门槛依赖切换后的结果。
 
 ## 非目标
 
@@ -28,17 +28,17 @@ GitHub 对公共仓库使用标准 GitHub-hosted Runner 的计算分钟不收费
 
 ## 核心架构
 
-私有 emo_master 监听 push / pull_request / workflow_dispatch，使用专用 GitHub App 对公共 CI 仓库发起 dispatch。公共 CI 仓库在受信任的默认分支工作流中，根据固定仓库白名单和 commit SHA 获取私有源码，在公共标准 Runner 执行验证。测试结束后由独立、干净的回调 job 使用最小权限 GitHub App 更新私有仓库 Check Run；私有 PR 的合并门禁依赖该 Check Run。
+公共仓库首阶段只执行独立合成项目。真实产品联调必须先证明 Linux/Windows 测试进程不能通过公网、Runner 控制文件、公开日志或服务上传接口外传产品内容；未证明前保留原工作流。通过后，私有控制端以最小权限 GitHub App 调度，按固定工作流、run/attempt、提交及预期任务复验 GitHub API 的真实结果，由同一私有 Checks App 创建和更新门禁。
 
-公共 Runner 的主要测试 job 不持有私有仓库 token、App 私钥、Release token 或其他凭据。私有源码仅存在于该次临时 Runner 工作目录中；不推送到公共 Git 仓库、不上传公共 Artifact，任务结束后由 GitHub 回收 Runner。日志与报告必须先做公开安全审查，只输出白名单摘要。
+产品 App 长期密钥只留在私有控制端，不写入公共仓库 Secrets。未来若通过保密准入，测试仍不得继承安装令牌或发布凭据；临时 Runner、重定向和脱敏只属于纵深措施。公有端只接收必要且已审查的元数据，默认首选不含源码标识的不可预测请求 ID。
 
 ## 完成标准
 
 - 公共 CI 仓库已创建并公开，默认分支受到保护，外部 fork PR 不会触发任何持有私有仓库凭据的工作流。
-- 私有 emo_master 可通过 GitHub App 安全触发公共 CI；dispatch 只传 repo 固定标识、commit SHA、PR 元数据和关联 Check Run ID，不传 Token。
+- 私有 emo_master 可通过 GitHub App 安全触发公共 CI；dispatch 只传不含内部标识的请求 ID，不传 Token；产品 repo、完整 SHA、PR 和 Check Run ID 在私有侧绑定。
 - 公共 Runner 能读取指定私有 commit，读取凭据不进入测试进程，并在测试开始前撤销或销毁。
 - 公共测试日志和产物不暴露私有源码、路径、工程数据、诊断原始记录、环境变量或凭据。
-- 所有验证任务在公共标准 Linux/Windows Runner 实际运行，公共 Runner 运行分钟不计入私有仓库额度；记录实际迁移的 runner minutes。
+- 记录每项验证的实际执行边界、未迁移原因和 runner minutes。若标准公共 Runner 无法同时满足保密和覆盖，不能按方案 A 宣布完成；保留原 CI，另行确认替代路线。
 - 私有仓库的 required check 能正确显示 queued / in_progress / success / failure / cancelled，并绑定准确 SHA。
 - 现有测试覆盖、分片覆盖证明、Web/Runtime/Windows 验证和诊断语义保持；未运行的测试不能标记通过。
 - Release 发布凭据和私有发布资产仍留在私有边界，实际发布前验证来源和产物身份。

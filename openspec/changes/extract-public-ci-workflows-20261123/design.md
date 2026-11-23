@@ -29,44 +29,31 @@ GitHub 官方计费说明：公共仓库使用标准 GitHub-hosted Runner 的计
 
 **公开 `emo_master_ci`**
 - 所有可公开执行的产品验证 workflow。
-- GitHub App 私有源码读取适配器（仅在 fetch 步骤使用）。
+- 只在保密准入后引入取源适配；不存储产品 App 私钥。
 - 测试输出脱敏、公开日志白名单、Check Run 回调适配器。
 - 合成项目自测与使用文档。
 - 不保存 emo_master 源码，不在 Git 历史中出现私有源码副本。
 
-### 3.2 触发与回调流程
+### 3.2 执行准入（当前不接产品源码和密钥）
 
-1. 私有 dispatcher 在受信任的 push / PR / 手动事件触发。
-2. 私有端使用专用 Dispatcher GitHub App，生成仅作用于 `emo_master_ci` 的安装令牌，权限仅需触发指定 workflow（Actions: write）；创建私有仓库上的 pending Check Run（Checks: write）。
-3. 私有端向公共仓库的固定默认分支触发 `workflow_dispatch`。Inputs 仅包含固定 source repo ID/name、source SHA、ref、event kind、PR number、check_run_id、request ID。严禁传递任何 token、密钥、工程数据或源码内容。
-4. 公共 workflow 校验 source repo 必须是 `jsdfhasuh/emo_master`，SHA 必须为完整 40 位十六进制，PR / ref / check_run_id 必须与请求一致；拒绝任意仓库名、任意 URL、任意 shell 参数。
-5. 公共 Runner 在安装依赖之前获取源码，使用独立 Source Reader GitHub App 的短期安装令牌读取指定私有 commit。优先采用一个封装的 fetch action，在同一进程内生成 JWT、获取 installation token、下载/checkout 源码、撤销 token；不将 token 写入 GITHUB_OUTPUT、GITHUB_ENV、磁盘配置、命令行参数或日志。
-6. 获取源码后确认 checkout commit SHA 完全匹配请求 SHA；清除 Git 凭据与临时认证材料，再安装项目依赖和执行测试。测试进程不得继承任何私有仓库 token、App 私钥或 Release 凭据。
-7. 测试命令 stdout/stderr 默认写入 Runner 本地临时日志，不直接输出到公开 Actions 日志。可信的公开汇总器只输出白名单状态、分片计数和不含内部数据的简短错误类别；不上传原始日志、JUnit、诊断 JSON、截图、工程文件、ZIP 或源码。
-8. 公共 workflow 的独立 callback job 在干净 Runner 上运行，不 checkout 产品源码；它使用 Source Reader App 的 Checks: write 权限，根据真实 job result 更新私有 Check Run。回调前核对 check_run_id 对应的 head_sha、name、external_id/request_id；不得信任测试 job 自行生成的 PASS 字段。
-9. 私有 PR 只将公共 Check Run 作为 required check；超时、未回调、SHA 不匹配、重复 request、workflow 被取消等均不能变成成功。支持重新触发并更新同一个逻辑检查或创建新的 attempt。
+公共标准 Runner 是临时 VM，不是私有源码与测试进程之间的保密边界。测试、npm 生命周期脚本、打包子进程一旦可读源码，单靠重定向 stdout、撤销 token、固定 Action SHA 或清理工作目录，不会限制网络、Runner 服务、GitHub 工作流命令文件与其他公开输出。公开 Artifact 也不能转运产品分片原始清单。按以下顺序推进：
+
+1. 公共端先运行独立合成项目，真实产品权限、源码、配置和凭据一律不接入。
+2. 后续产品资格试验只能以无敏感内容的私有替身和合成标记开展。Linux 和 Windows 都须独立验证隔离执行身份、文件与进程边界、可访问网络、Runner API/工作流命令文件及固定格式结果出口；不得在证据不足时用真实源码测试安全性。
+3. 若标准 Runner 无法保留原覆盖并证明上述边界，方案 A 的产品执行停止。可单独提请用户选用私有仓库专用隔离自托管 Runner（Runner 计算额度与主机成本分开核算），或保留私有托管执行并优化触发/缓存。不默认改变已授权架构。
+4. 公开工作流不得加入原始报告或产品资产上传步骤。若维持各平台两个独立分片 VM，完整节点 ID 清单的跨 job 证明必须留在私有边界；如改同机顺序运行，则先核对原独立桌面、稳定性与时间预算，且须在原断言不变的前提下实测。只比较计数不等价于集合覆盖。
+5. 私有端依据来源、当前提交和检查策略创建 queued Check Run。公共请求采用固定 workflow/ref 和不含敏感字段的请求标识；固定真实目标 SHA 和 PR head/base 与 run/attempt 的映射留在私有可信端。公共回调是完成通知而非可信的 PASS；私有端以 GitHub API 核实 run 对应仓库、固定 workflow、调度版本、attempt、各必需 job 和当前目标 SHA 后才能回填。取消回调未运行时由私有调度/对账处理；未回调、缺 job、失败、取消、超时和 SHA 不一致均不产生通过结论。
 
 ### 3.3 GitHub App 与权限隔离
 
-建议使用两个独立 GitHub Apps，避免一个公开仓库 secret 可同时触发工作流、读取私有代码和写发布资产：
-
-**Dispatcher App（私有 emo_master 持有私钥）**
-- 安装范围：`emo_master`、`emo_master_ci`。
-- `emo_master_ci`：Actions: write，仅用于触发固定 workflow。
-- `emo_master`：Checks: write，仅用于创建 pending Check Run（如需由私有端创建）。
-- 私钥只存放在私有仓库 Actions Secrets；绝不存入公共仓库。
-
-**Source Reader / Check Reporter App（公共 emo_master_ci 持有私钥）**
-- 安装范围：仅 `emo_master`。
-- 私有仓库权限：Contents: read、Checks: write。
-- 不授予 Contents: write、Actions: write、Pull requests: write、Releases/Packages 写权限。
-- 公共 workflow 的 source-fetch job 仅请求 Contents: read；独立 callback job 仅请求 Checks: write。
-- 私钥只通过 GitHub Actions Secret 注入到指定步骤；不能出现在 workflow_dispatch inputs、artifact、环境摘要或日志中。
-- 若 GitHub App 的安装令牌不能按 job 需要覆盖权限，则创建两个更窄的 App，或采用等效隔离；不得为了省事扩大权限。
-
-私有 fork PR 默认不具备 Secrets；不得使用 `pull_request_target` 去 checkout 并执行 fork 代码。公共 Runner 仅执行仓库所有者或明确列入 trusted policy 的提交。外部贡献者 PR 不自动 dispatch；需人工审查后由受信任分支/提交触发，或留在私有验证环境。
+- Dispatcher App 仅安装在公共 CI 仓库，Actions: write；私钥仅在私有可信端。该权限并不原生限制为单个 workflow，需由私有调用端固定 workflow/ref 且对账核实。
+- Source Reader App 仅安装在产品仓库，Contents: read；长期私钥仅在私有可信端。安装令牌限仓库和权限，不能原生限制到某个 SHA；固定 SHA 授权须由私有端实现。若缺乏有证据的私有取源及隔离路径，不下发任何真实读取凭据。
+- Check Reporter App 仅安装在产品仓库，Checks: write；长期私钥仅在私有可信端。以同一 App 创建、更新和归属 required check，不依赖跨 App 更新或公共端写私有关卡。用于回读公共运行状态的身份与 Checks 写入分离，优先使用公共只读 API。
+- fork PR 不自动运行真实产品测试；owner/可信同仓库分支也不能绕过执行准入。避免由 PR 可改写的代码接触私钥。公共默认分支在任何敏感集成前先保护；合成自测从不接触产品 Secrets。
 
 ## 4. 工作流逐项迁移策略
+
+下表为通过准入后的目标，不是已验收状态。当前 12 项均保留现有产品执行路径和原有断言。
 
 | 当前工作流 | 迁移后的执行位置 | 说明 |
 |---|---|---|
@@ -89,10 +76,10 @@ GitHub 官方计费说明：公共仓库使用标准 GitHub-hosted Runner 的计
 
 ## 5. 日志、Artifact 与数据保护
 
-- 公共 workflow run 的名称、分支、commit SHA、PR 编号和日志可被公众看到；把这些信息视为公开信息。
+- 公共 run 的名称、输入、日志和摘要视为可公开读取；默认不放产品分支、PR 号、SHA 或内部路径，只使用随机请求 ID 和合成数据。
 - 不允许在公共 runner 输出源代码片段、测试 fixture 内容、绝对路径、设备/工程配置、原始 JSON 诊断、线程 ID、数据库内容、截图、JUnit、core dump 或完整异常上下文。
 - 测试步骤 stdout/stderr 重定向到临时文件；不能把失败日志作为公共 artifact 上传。
-- 公共日志使用白名单输出：工作流阶段、平台、分片、测试总数/通过数/失败数、错误类别、源码 SHA、最终结论。具体错误可在私有端使用 Check Run annotations 或其他私有渠道提供；若无安全传输方式，只输出通用失败提示。
+- 公共日志使用白名单输出：工作流阶段、平台、分片、测试总数/通过数/失败数、错误类别、请求 ID、最终结论。具体错误可在私有端使用 Check Run annotations 或其他私有渠道提供；若无安全传输方式，只输出通用失败提示。
 - 不在公共仓库缓存产品源码、虚拟环境中包含的私有文件、工程样例或构建产物；依赖缓存仅允许公开依赖包，且缓存 key 不含源码内容。
 - Public repo Artifact/缓存的实际可见性、保留期限和计费需实测；默认不上传任何产品 artifact，尽可能关闭缓存或仅缓存依赖下载。
 - 所有测试使用既有合成数据；真实相机/PLC/现场工程不接入公共 Runner。
@@ -115,16 +102,16 @@ GitHub 官方计费说明：公共仓库使用标准 GitHub-hosted Runner 的计
 - 公共 Runtime/Designer 构建若只用于验证，产物留在 Runner 本地，验证后清理。
 - 正式 Release、私有二进制资产、签名和发布说明仍由私有 emo_master / python_build_scripts 链路完成。
 - 审查并修正现有 `secrets: inherit`：改为显式最小 Secrets 映射；Source Reader 只读 token 与 Release 写 token 严格分离。
-- `python_build_scripts` 对私有 emo_master 的源码读取权限、独立手动触发、artifact 往返必须在 Private 状态下验证。
+- 切换前在已有隔离私有替身中验证 `python_build_scripts` 的私有取源、手动触发、私有 Artifact 往返及不发布 dry-run；切换获批后再在正式仓库复验。现有固定版本的通用构建工作流会上传包和日志，不能原样从公共仓库调用。
 - 不因迁移而公开产品安装包、Runtime ZIP、内部诊断附件或构建日志。
 
 ## 8. required checks 与结果关联
 
-- 私有 dispatcher 在 dispatch 前为原始 commit SHA 创建 pending Check Run，名称固定（例如 `Public CI / source-validation`），external_id 记录 request ID。
+- 私有控制端在 dispatch 前用专用 Check Reporter App 为准确的被测 commit SHA 创建 queued Check Run，名称固定，external_id 记录 request ID。原 CI 在 PR 上评估合并候选 SHA；不得仅测试 head 再把结果冒挂到合并候选。
 - 公共 CI callback job 使用 Checks: write 更新同一个 check run；必须校验 source SHA、check_run_id、external_id/request_id、预期 App 身份和 workflow run 对应关系。
 - callback job 只依赖 GitHub job result，不信任测试脚本写入的 PASS 文件或 artifact。
-- 公共 workflow 失败、取消、超时、未回调、重复请求或 SHA 不一致时，私有 check 不能显示 success。
-- 分支保护规则要求此 Check Run 来自指定 GitHub App；确认 PR merge commit 与 head SHA 选择规则，避免结果挂到错误提交。
+- 公共 workflow 失败、取消、超时、未回调、重复请求或 SHA 不一致时，私有 check 不得标记 success、neutral 或 skipped。
+- 分支保护规则要求此 Check Run 来自指定 GitHub App；正式仓库闭源前须核实 GitHub 套餐在 Private 上仍支持该门禁，配置并实测拒绝错误 SHA、错误 App 和未通过结果。
 - 同一 PR 的新提交要创建新 check run；旧 SHA 的成功结果不能覆盖新 SHA。
 
 ## 9. 安全验证与失败处理
@@ -141,11 +128,11 @@ GitHub 官方计费说明：公共仓库使用标准 GitHub-hosted Runner 的计
 
 安全检查不应变成无穷故障矩阵；覆盖上述直接信任边界与实际触发路径即可。
 
-## 10. 今天的实施顺序
+## 10. 实施顺序
 
 1. 核对最新 main、PR #21 和工作流；修订本 OpenSpec 并严格校验。
-2. 创建公共 `emo_master_ci` 仓库、许可证、保护规则和两个 GitHub App 的最小权限设计。
-3. 先实现 Source Reader、dispatcher 和 Check Run callback 的端到端合成项目；验证无真实源码、无凭据泄漏。
+2. 创建公共 `emo_master_ci` 仓库、许可证、保护规则和分权 GitHub App 的设计；真实密钥不上公共端。
+3. 先用合成项目实际验证标准 Runner，再使用私有替身验证调度和检查；真实产品执行须先通过保密准入。
 4. 将主 CI 迁移至公共 Runner，先跑 Linux/Windows 四分片并确认检查绑定正确 SHA。
 5. 迁移 Web、Display Session、Runtime 诊断和 Windows 包验证；逐项审查日志和 artifact。
 6. 拆分 Release：公共端做验证，私有端持有发布权限和正式资产。
@@ -154,7 +141,19 @@ GitHub 官方计费说明：公共仓库使用标准 GitHub-hosted Runner 的计
 9. 所有关键链路通过后，经用户明确确认切换 emo_master 为 Private。
 10. 在 Private 状态复验 PR、push、手动触发、回调、Windows 构建和 Release 控制；读取 Billing usage 比较迁移前后实际消耗。
 
-## 11. 尚未核实
+## 11. 本轮静态复核
+
+| 基线 | 复核结论 |
+|---|---|
+| PR #21 原始 head `19af981f1a142715b544ba06412daee7add5bd5d` | 原 OpenSpec 使用本地化标题，未被识别为 delta；以规范标题修复，不标记产品实施完成 |
+| main `b75df0adb7a90a4e0b540ff1c8c09e9339cfcdbd` | 12 个活动 YAML、4 个归档 YAML；原四分片先分散生成 JUnit、诊断及节点 ID 清单，再在每个平台检查采集相等、选集互斥、选集并集完整和每个选中项均开始运行。pytest 跳过不是通过 |
+| Web / Display / 诊断 | 现有工作流有原始 Artifact 与诊断输出路径；不得直接复制到公共端。六项诊断仍以诊断自身条件判断，不冒称人工验收 |
+| 外部构建 | 产品固定 `91766f6d18ca9a333f64cf1c6030202457ec4a8a`；外部 master 观察值 `702fca523be0aae306763cde6f19742a96c4a0cb`。固定版本支持 `SOURCE_REPO_TOKEN` / `RELEASE_REPO_TOKEN`，存在 `secrets: inherit`、原始报告/正式包上传及 Release 路径；静态读取不等于私有 dry-run |
+| 历史公开面 | GitHub 仓库接口当时报告 0 forks；不能证明没有 clone、脱离 fork、外部镜像或已下载产物。Private 不撤回历史副本 |
+
+来源：[计费](https://docs.github.com/en/actions/concepts/billing-and-usage)、[Runner 安全](https://docs.github.com/en/actions/concepts/security/compromised-runners)、[受保护分支](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)、[App 安装令牌](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-an-installation-access-token-for-a-github-app)、[可见性变更](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/managing-repository-settings/setting-repository-visibility)。
+
+## 12. 尚未核实
 
 - `emo_master_ci` 仓库是否创建及其名称可用性。
 - GitHub App 创建权限、安装范围、可授予权限和账户策略。

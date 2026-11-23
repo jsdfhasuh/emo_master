@@ -88,9 +88,10 @@ emo_master_ci/
 emo_master 的发布工作流已经调用公开仓库 `jsdfhasuh/python_build_scripts`，并固定打包器提交 `91766f6d18ca9a333f64cf1c6030202457ec4a8a`。
 
 审查发现其 `release-emo-master.yml` / `release-windows.yml` 会再次 checkout `jsdfhasuh/emo_master`，并使用 `SOURCE_REPO_TOKEN || github.token`；发布还使用 `RELEASE_REPO_TOKEN || github.token`。切换 Private 后：
-- 从 emo_master 自身触发的 reusable workflow，必须验证调用方 token 对同一私有仓库的读取能力及继承权限。
-- 从 python_build_scripts 独立手动触发的流程，默认 `github.token` 不应假设有权读取私有 emo_master；应配置最小权限、仅针对 emo_master 的只读 `SOURCE_REPO_TOKEN`。
-- 向 emo_master 发布 Release 需要相应写权限的 `RELEASE_REPO_TOKEN`；不得把该 token 传给公共 CI 仓库或无关 job。
+- 当前 emo_master 的 `release-windows.yml` 和 `runtime-windows.yml` 对外部 `python_build_scripts` reusable workflow 使用了 `secrets: inherit`。这会把调用方可继承的 Secrets 集合交给外部工作流，权限范围过宽；迁移时应改为显式映射所需的 `SOURCE_REPO_TOKEN`、`RELEASE_REPO_TOKEN`，不再整体继承。
+- 从 emo_master 自身触发的 reusable workflow，必须验证调用方 token 对同一私有仓库的读取能力；对外部打包器 checkout 私有源码时，优先使用最小权限只读 `SOURCE_REPO_TOKEN`。
+- 从 python_build_scripts 独立手动触发的流程，默认 `github.token` 不应假设有权读取私有 emo_master；应配置仅针对 emo_master 的只读 `SOURCE_REPO_TOKEN`。
+- 向 emo_master 发布 Release 需要单独的写权限 `RELEASE_REPO_TOKEN`；只传给实际创建 Release 的 job，不得传给公共 CI 仓库或无关 job。
 - 验证 Release、Runtime package、冻结包 PR 验证和 artifact 下载链路；没有验证通过前不切 Private。
 
 ## 7. 重要风险与控制

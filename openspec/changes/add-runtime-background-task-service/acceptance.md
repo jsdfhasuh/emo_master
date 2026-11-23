@@ -2,49 +2,58 @@
 
 本文件定义本次能力验收范围，不代表任何源码实现或测试已经完成。
 
-## A. 后台任务基本行为
+## A. 注册能力声明
 
 | 验收项 | 预期行为 | 验证方法 |
 |---|---|---|
-| A1 多算子共享 | 同一 Job 内不同算子提交的任务进入同一 FIFO 服务 | 使用两个测试算子记录任务提交和执行顺序 |
-| A2 Job 隔离 | 两个并发 Job 不共享任务对象、队列或线程 | 两个 spawn worker 使用不同任务 ID / 线程身份验证 |
-| A3 非阻塞提交 | 队列有空位时 submit 返回任务 ID，不等待任务函数结束 | 用 Event 阻塞后台函数，确认 executeNode 可先返回 |
-| A4 显式等待 | wait(taskId) 等待目标任务并返回其结果 | 先提交后由后续算子等待，验证结果和时序 |
-| A5 失败可见 | 后台异常有 task.failed 事件；wait 能抛出原始错误 | 使用确定性失败函数，不用磁盘故障注入 |
-| A6 背压 | 队列满时提交方等待；释放一个队列位置后继续，取消时可退出 | 用 Event 控制单线程和有限队列容量 |
-| A7 身份关联 | 完成/失败事件保留提交时 nodeId、nodeRunId 和 workflowRunId | 在算子返回后再释放后台任务，检查事件字段 |
+| A1 旧 manifest | 缺少 runtimeCapabilities 时正常注册，能力为空 | 复用现有 manifest 注册用例 |
+| A2 声明能力 | ImageSaver 的 manifest 声明 backgroundTasks，PluginManifest 保留该值 | Registry scan 后检查 descriptor.manifest |
+| A3 未知能力 | 未支持值、重复值、非字符串值导致对应算子被拒绝并给出明确 issue | 参数化校验测试 |
+| A4 注入隔离 | 声明算子收到 backgroundTasks；未声明算子没有该键 | 两个最小测试算子在 executeNode 中检查 context |
 
-## B. 生命周期
+## B. 后台任务基本行为
 
 | 验收项 | 预期行为 | 验证方法 |
 |---|---|---|
-| B1 正常结束 | Job terminal event 晚于所有已接收任务完成 | 记录 task.completed 与 job.completed 顺序 |
-| B2 未观察失败 | 未 wait 的任务失败不能被当作 Job 成功 | 后台任务抛错，验证 Job 以 E_BACKGROUND_TASK_FAILED 结束 |
-| B3 取消 | 排队未启动任务取消，正在执行任务结束后 worker 才释放 workspace | 用可控 Event 模拟一个活动任务和一个排队任务 |
-| B4 原错误优先 | 工作流已有错误时，后台收尾错误不覆盖主错误 | 同时制造确定性节点错误和后台错误，检查主错误及附加诊断 |
-| B5 连续运行 | 多个 cycle 共用同一个 Job 服务，Job 停止时统一收尾 | 两个 cycle 提交任务，验证线程身份相同及终态顺序 |
+| B1 多算子共享 | 同一 Job 内不同已声明算子提交的任务进入同一 FIFO 服务 | 使用两个测试算子记录任务提交和执行顺序 |
+| B2 Job 隔离 | 两个并发 Job 不共享任务对象、队列或线程 | 两个 spawn worker 使用不同任务 ID / 线程身份验证 |
+| B3 非阻塞提交 | 队列有空位时 submit 返回任务 ID，不等待任务函数结束 | 用 Event 阻塞后台函数，确认 executeNode 可先返回 |
+| B4 显式等待 | wait(taskId) 等待目标任务并返回其结果 | 先提交后由后续算子等待，验证结果和时序 |
+| B5 失败可见 | 后台异常有 task.failed 事件；wait 能抛出原始错误 | 使用确定性失败函数 |
+| B6 背压 | 队列满时提交方等待；释放一个队列位置后继续，取消时可退出 | 用 Event 控制单线程和有限队列容量 |
+| B7 身份关联 | 完成/失败事件保留提交时 nodeId、nodeRunId 和 workflowRunId | 在算子返回后再释放后台任务，检查事件字段 |
 
-## C. ImageSaver 与文件产物
+## C. 生命周期
 
 | 验收项 | 预期行为 | 验证方法 |
 |---|---|---|
-| C1 同步兼容 | 默认 saveMode=sync，既有 saved/path 结果与覆盖规则不变 | 复用 ImageSaver 现有测试和原路径断言 |
-| C2 后台提交 | saveMode=background 立即返回 accepted、SUBMITTED、taskId，不能返回 saved=true | 阻塞写入函数后检查算子返回 |
-| C3 数据快照 | 上游在提交后修改原 ndarray，不影响落盘内容 | 提交后修改源数组，对比文件解码结果 |
-| C4 最终保存 | 任务完成后文件内容可正常解码，wait 返回成功结果 | 临时目录写入 PNG/JPEG 并重新读取 |
-| C5 产物延迟登记 | 文件写入成功前不发布 artifact.created；成功后沿用原 ArtifactStore/预览链路 | 观察任务事件和 artifact.created 的先后关系 |
-| C6 失败不造假 | 写入失败不发布 artifact.created；未观察失败使 Job 失败 | 以可控写入函数抛出 OSError 验证 |
-| C7 文件依赖 | 下游立即读取未完成文件会失败或必须先 wait；wait 后可正常读取 | 一个消费者分别执行不等待与显式等待路径 |
+| C1 正常结束 | Job terminal event 晚于所有已接收任务完成 | 记录 task.completed 与 job.completed 顺序 |
+| C2 未观察失败 | 未 wait 的任务失败不能被当作 Job 成功 | 后台任务抛错，验证 Job 以 E_BACKGROUND_TASK_FAILED 结束 |
+| C3 取消 | 排队未启动任务取消，正在执行任务结束后 worker 才释放 workspace | 用可控 Event 模拟一个活动任务和一个排队任务 |
+| C4 原错误优先 | 工作流已有错误时，后台收尾错误不覆盖主错误 | 同时制造确定性节点错误和后台错误，检查主错误及附加诊断 |
+| C5 连续运行 | 多个 cycle 共用同一个 Job 服务，Job 停止时统一收尾 | 两个 cycle 提交任务，验证线程身份相同及终态顺序 |
 
-## D. 执行模式边界
+## D. ImageSaver 与文件产物
 
-- 正式 Job 能提交后台任务。
-- 单算子调试和工作流调试在结果冻结/会话关闭前完成已提交任务。
+| 验收项 | 预期行为 | 验证方法 |
+|---|---|---|
+| D1 同步兼容 | 默认 saveMode=sync，既有 saved/path 结果与覆盖规则不变 | 复用 ImageSaver 现有测试和原路径断言 |
+| D2 后台提交 | saveMode=background 立即返回 accepted、SUBMITTED、taskId，不能返回 saved=true | 阻塞写入函数后检查算子返回 |
+| D3 数据快照 | 上游在提交后修改原 ndarray，不影响落盘内容 | 提交后修改源数组，对比文件解码结果 |
+| D4 最终保存 | 任务完成后文件内容可正常解码，wait 返回成功结果 | 临时目录写入 PNG/JPEG 并重新读取 |
+| D5 产物延迟登记 | 文件写入成功前不发布 artifact.created；成功后沿用原 ArtifactStore/预览链路 | 观察任务事件和 artifact.created 的先后关系 |
+| D6 失败不造假 | 写入失败不发布 artifact.created；未观察失败使 Job 失败 | 以可控写入函数抛出 OSError 验证 |
+| D7 文件依赖 | 下游立即读取未完成文件会失败或必须先 wait；wait 后可正常读取 | 一个消费者分别执行不等待与显式等待路径 |
+
+## E. 执行模式边界
+
+- 正式 Job 只向已声明 backgroundTasks 的算子注入客户端。
+- 单算子调试和工作流调试只接受从已校验 manifest 传入的能力声明，并在结果冻结/会话关闭前完成已提交任务。
 - PurePreviewExecutor 不注入可提交的服务；previewMode=pure 不允许延迟文件副作用。
 - clone-safe trial 不继承正式工作流服务。
-- 未注入服务的直接 OperatorExecutor 调用不影响现有同步算子。
+- 未声明能力的直接 OperatorExecutor 调用不影响现有同步算子。
 
-## E. 范围与证据边界
+## F. 范围与证据边界
 
 本次不要求真实相机/PLC、现场节拍、磁盘极限吞吐或全平台性能专项。可以记录一组本机同步/后台保存耗时作为参考，但不能把单机微基准当成生产性能保证。
 

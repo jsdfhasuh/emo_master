@@ -2,14 +2,24 @@
 
 ## 1. 核心决定
 
-增加的是 Runtime 执行能力，不是插件注册能力。
+增加的是 Runtime 执行能力，并对插件注册描述做一项最小扩展，用来声明算子是否可以使用这项能力。
 
-- PluginRegistry 继续只扫描 manifest、导入算子类并校验 manifest/meta。
-- 算子仍通过 validateParams() 和 executeNode(inputs, params, runtimeContext) 执行。
-- Runtime 在每次 executeNode() 调用的字典型 runtimeContext 中注入 backgroundTasks 客户端。
-- 客户端绑定本次节点运行身份；底层服务由 Job worker 持有，多个算子共享同一个服务。
+- manifest 增加可选字段 runtimeCapabilities，首版唯一支持值为 backgroundTasks。
+- 缺少该字段的旧 manifest 等同于空列表；重复值、非字符串值和未知能力值在注册校验阶段拒绝。
+- PluginManifest 保存解析后的 tuple[str, ...]；PluginDescriptor 通过 manifest 暴露声明。
+- OperatorMeta 不增加 runtimeCapabilities，避免把运行时权限与端口、参数等算子元数据重复维护。
+- PluginRegistry.scanRoots() 的扫描和注册流程不变，只扩展 manifest 校验和解析结果。
+- 算子仍通过 validateParams() 和 executeNode(inputs, params, runtimeContext) 执行，不新增基类或必需方法。
+- OperatorExecutor 读取当前算子的 manifest 声明：只有声明 backgroundTasks 时才向 runtimeContext 注入客户端；未声明的算子拿不到该入口。
 
-RunContext 是 Runtime 内部的运行身份对象；本次不把线程、队列或任务状态塞进 RunContext，也不把它改造成插件 API。
+示例 manifest：
+
+    {
+      "operatorId": "vision.io.image_saver",
+      "runtimeCapabilities": ["backgroundTasks"]
+    }
+
+该声明只表示算子有资格提交后台任务，不代表整个 executeNode() 会被 Runtime 自动放到后台线程。算子具体何时提交、是否等待，仍由算子自身逻辑和参数决定。
 
 ## 2. 所有权与进程边界
 
@@ -25,16 +35,32 @@ Runtime 的 Job 由 JobSupervisor 使用 multiprocessing spawn 启动独立进�
       └─ JobSupervisor
            ├─ Job A worker process
            │    ├─ WorkflowRunner / OperatorExecutor
-           │    ├─ RuntimeContext.backgroundTasks
+           │    ├─ 已声明能力的 runtimeContext.backgroundTasks
            │    └─ BackgroundTaskService → FIFO queue → worker thread
            └─ Job B worker process
                 └─ 独立 BackgroundTaskService / worker thread
 
-## 3. 算子接口
+## 3. 注册声明与运行时注入
+
+manifest 是能力声明的唯一来源。runtimeCapabilities 为可选字符串数组，首版支持值：
+
+- backgroundTasks：允许算子从 RuntimeContext 提交后台任务。
+
+注册处理：
+
+1. validateManifestFields() 解析 runtimeCapabilities。
+2. 只接受已知能力、字符串元素和无重复列表；错误沿用 manifest validation issue 流程，算子进入 rejectedOperators。
+3. PluginManifest.runtimeCapabilities 保存规范化元组。
+4. PluginRegistry 仍生成原有 PluginDescriptor，不新增第二套注册表。
+5. OperatorExecutor 根据当前 operatorId 对应的 PluginDescriptor.manifest.runtimeCapabilities 决定是否注入 backgroundTasks。
+
+调试入口目前可能以 class 而非 PluginDescriptor 构造临时 registry；调试请求必须从已校验的插件描述传递能力声明，不允许仅凭算子自己声称具备能力。纯预览和 clone-safe trial 不注入服务，即使 manifest 声明了 backgroundTasks 也不能绕过预览隔离。
+
+## 4. 算子接口
 
 建议模块名：apps/runtime/background_tasks/；具体文件拆分由实施时沿用现有目录习惯，不新增注册层。
 
-算子使用方式：
+已声明能力的算子使用：
 
     background = runtimeContext["backgroundTasks"]
 
@@ -72,7 +98,7 @@ Runtime 的 Job 由 JobSupervisor 使用 multiprocessing spawn 启动独立进�
 
 后台任务不复用 executeNode() 返回后即关闭的 OperatorLogger。任务开始、完成和失败由服务使用捕获的运行身份通过 Runtime eventPublisher 发布。
 
-## 4. 队列与执行规则
+## 5. 队列与执行规则
 
 - 首版一条工作线程，FIFO 顺序执行；先服务文件编码、文件写入等 I/O 工作。
 - 队列有界，不允许无限堆积，也不允许静默丢弃已接收的业务任务。
@@ -81,7 +107,7 @@ Runtime 的 Job 由 JobSupervisor 使用 multiprocessing spawn 启动独立进�
 - 任务函数不能依赖已关闭的算子 logger，也不应在后台线程中访问设备 proxy、修改工作流变量或操作 Qt UI。
 - 不提供通用 CPU 线程池；CPU 密集型推理和图像计算继续使用现有执行机制。
 
-## 5. 任务结果与 Job 终态
+## 6. 任务结果与 Job 终态
 
 任务是 Job 的一部分，不能在 Job 已结束后继续偷偷写文件。
 
@@ -99,10 +125,11 @@ wait(taskId) 成功等待到任务结果；若任务失败，异常被调用方�
 
 运行中的文件写入不强行中断；这避免线程仍持有文件句柄时 Job workspace 已被清理。Job 取消的终态仍按现有取消契约表达。
 
-## 6. 算子接入范围
+## 7. 算子接入范围
 
 ### ImageSaver（首个接入者）
 
+- 在 manifest.runtimeCapabilities 中声明 backgroundTasks。
 - 在现有参数中增加 saveMode：sync / background，默认 sync。
 - 同步模式保持现有返回结构、覆盖规则、唯一命名和异常语义。
 - 后台模式先确定目标路径和命名，再复制图像并提交编码/写入任务；返回 accepted=true、saved=false、state=SUBMITTED、path 和 taskId。
@@ -122,25 +149,19 @@ Runner 应识别带 taskId 的待完成文件输出，将现有 artifact 登记�
 - SQLiteWriter 保持事务提交和 receipt 同步语义。
 - 文件读取和目录扫描仍同步执行；后台能力不是把所有文件 API 自动搬走。
 
-## 7. 不同执行模式
+## 8. 不同执行模式
 
 | 执行模式 | 是否开放后台提交 | 处理方式 |
 |---|---|---|
-| 正式 Job | 是 | Job worker 创建并注入服务 |
-| 单算子调试 | 是 | 调试 worker 持有自己的服务；在冻结调试输出前完成本次已提交任务 |
-| 工作流调试 | 是 | 调试会话持有服务；结束/取消时按相同规则收尾 |
-| 纯算子预览（previewMode=pure） | 否 | 继续保持无副作用；不注入可提交任务的服务，后台模式请求明确返回不可用 |
-| 工作流调试中的 clone-safe trial | 否 | 试运行保持纯计算语义，不继承正式会话的后台任务能力 |
-| 直接构造 OperatorExecutor 的测试/工具 | 可选 | 通过显式注入服务启用；未注入时原有同步算子继续运行 |
+| 正式 Job | 仅 manifest 声明后开放 | Job worker 创建服务，OperatorExecutor 按声明注入 |
+| 单算子调试 | 仅已校验声明后开放 | 调试请求携带注册能力声明；调试 worker 持有服务，在冻结输出前完成已提交任务 |
+| 工作流调试 | 仅已校验声明后开放 | 调试会话持有服务；结束/取消时按相同规则收尾 |
+| 纯算子预览（previewMode=pure） | 否 | 继续保持无副作用；不注入可提交任务的服务 |
+| 工作流调试中的 clone-safe trial | 否 | 试运行保持纯计算语义，不继承正式会话的后台任务服务 |
+| 直接构造 OperatorExecutor 的测试/工具 | 默认否 | 只有显式注入已授权服务与能力声明时才开放 |
 
-## 8. 注册机制与兼容边界
+## 9. 兼容边界与明确排除
 
-不改 PluginRegistry.scanRoots()、loadOperatorClass()、validateConsistency()，不新增必需方法、不要求继承基类、不新增 manifest 能力声明。
-
-ImageSaver 的 saveMode 是普通算子参数，因此只需同步更新该算子的 manifest 与 OperatorMeta.paramSchema。现有注册校验继续按原规则比较声明和实现；这不是注册机制变更。
-
-现有算子不读取 backgroundTasks，行为不变。新增异步行为默认关闭，旧工程无需迁移。
-
-## 9. 明确排除
+旧 manifest 缺少 runtimeCapabilities 时默认为空列表，现有算子不受影响。PluginRegistry 仍是唯一注册入口，不新增第二套注册表；OperatorMeta 不新增字段；不新增算子基类或必需方法。
 
 不做跨 Job 全局线程池、多个 worker 的通用线程池、优先级调度、自动重试、任务持久化、断电恢复、后台设备调用、任意对象深拷贝框架、通用资源事务或新 RPC。若未来实际场景证明单线程成为瓶颈，再单独评估并发度，不在首版预设。

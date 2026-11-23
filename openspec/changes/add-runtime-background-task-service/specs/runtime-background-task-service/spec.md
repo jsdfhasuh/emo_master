@@ -2,13 +2,40 @@
 
 ## ADDED Requirements
 
-### Requirement: Runtime exposes a Job-scoped background task capability to operators
+### Requirement: Plugins explicitly declare permission to submit background tasks
+
+A plugin manifest MAY declare runtimeCapabilities. The first supported capability MUST be backgroundTasks. A manifest without the field MUST be treated as declaring no Runtime background capabilities. Runtime MUST expose the background task client only to an operator whose validated PluginManifest declares backgroundTasks.
+
+#### Scenario: A plugin declares backgroundTasks
+
+- **WHEN** a manifest contains runtimeCapabilities with backgroundTasks
+- **THEN** registration MUST preserve the declaration in PluginManifest
+- **AND** the operator execution context MUST expose the background task client in supported execution modes
+
+#### Scenario: A legacy manifest omits runtimeCapabilities
+
+- **WHEN** a manifest has no runtimeCapabilities field
+- **THEN** it MUST remain valid and behave as an empty capability list
+- **AND** its operator MUST NOT receive the background task client
+
+#### Scenario: A manifest declares an unsupported capability
+
+- **WHEN** runtimeCapabilities contains an unknown value, a duplicate, or a non-string item
+- **THEN** manifest validation MUST reject that operator with a specific validation issue
+
+#### Scenario: Capability is not declared
+
+- **WHEN** an operator attempts to access backgroundTasks without declaring the capability
+- **THEN** the runtime context MUST NOT provide the client
+- **AND** the operator MUST continue to work normally if it uses only its existing synchronous behavior
+
+### Requirement: Runtime exposes a Job-scoped background task capability to declared operators
 
 Runtime MUST provide a background task client through the per-invocation operator runtime context during supported Job execution. The client MUST submit work to a service owned by the current Job worker process. Operators MUST NOT create or manage the service thread themselves.
 
 #### Scenario: Multiple operators submit work within one Job
 
-- **WHEN** two or more operators in the same Job submit background tasks
+- **WHEN** two or more declared operators in the same Job submit background tasks
 - **THEN** their tasks MUST use the same Job-scoped service and FIFO worker
 - **AND** task ownership MUST remain within that Job process
 
@@ -85,7 +112,7 @@ The service MUST capture the submitting invocation identity at submission time. 
 
 ### Requirement: ImageSaver supports opt-in background writing without changing its default behavior
 
-ImageSaver MUST retain synchronous saving as its default. Its opt-in background mode MUST return an accepted task ID and pending state, and MUST only report saved success after the write task succeeds.
+ImageSaver MUST declare backgroundTasks in its manifest and retain synchronous saving as its default. Its opt-in background mode MUST return an accepted task ID and pending state, and MUST only report saved success after the write task succeeds.
 
 #### Scenario: Existing project uses default ImageSaver settings
 
@@ -111,12 +138,12 @@ ImageSaver MUST retain synchronous saving as its default. Its opt-in background 
 
 ### Requirement: Pure preview remains free of background side effects
 
-Pure operator preview and clone-safe workflow trial MUST NOT receive a usable background submission capability.
+Pure operator preview and clone-safe workflow trial MUST NOT receive a usable background submission capability, even when the plugin manifest declares backgroundTasks.
 
 #### Scenario: Pure preview requests background execution
 
 - **WHEN** an operator is executed through previewMode=pure and requests a background task
-- **THEN** the operation MUST be rejected as unavailable for pure preview
+- **THEN** the operation MUST be unavailable for pure preview
 - **AND** no file-writing task may outlive the preview request
 
 #### Scenario: Workflow debug trial executes a clone-safe operator

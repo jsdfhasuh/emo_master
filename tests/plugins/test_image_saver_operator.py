@@ -266,9 +266,10 @@ def testBackgroundSaveRequiresUniqueNameAndClient(tmp_path, params, code):
     assert list(tmp_path.iterdir()) == []
 
 
-@pytest.mark.parametrize("cancel", [False, True])
-def testBackgroundSaveOwnsPixelsAndOnlyPublishesClosedCompleteFile(tmp_path, monkeypatch, cancel):
+@pytest.mark.parametrize("outcome", ["published", "cancelled", "collision"])
+def testBackgroundSaveOwnsPixelsAndOnlyPublishesClosedCompleteFile(tmp_path, monkeypatch, outcome):
     from emo_master.apps.runtime.execution.background_tasks import BackgroundTaskService, TaskControl
+    from emo_master.apps.runtime.execution.errors import WorkflowExecutionError
     from emo_master.apps.runtime.workflow.context import RunContext
 
     encoding, allowEncode, publishing, allowPublish = (Event() for _ in range(4))
@@ -302,14 +303,24 @@ def testBackgroundSaveOwnsPixelsAndOnlyPublishesClosedCompleteFile(tmp_path, mon
         assert publishing.wait(5) and not path.exists()
         temp, = tmp_path.glob("*.tmp")
         np.testing.assert_array_equal(cv2.imdecode(np.fromfile(temp, np.uint8), -1), expected)
-        if cancel:
+        if outcome == "cancelled":
             service.close(drain=False)
+        elif outcome == "collision":
+            with path.open("xb") as competingFile:
+                competingFile.write(b"another writer")
         allowPublish.set()
-        if cancel:
+        if outcome == "cancelled":
             # The daemon may still be unwinding its finally block after abandonment.
             from tests.runtime.production_fixture import waitFor
             waitFor(lambda: not temp.exists())
             assert not path.exists()
+        elif outcome == "collision":
+            with pytest.raises(WorkflowExecutionError) as failed:
+                client.wait(receipt["taskId"])
+            assert failed.value.code == "E_OUTPUT_EXISTS" and failed.value.nodeId == "save"
+            assert str(path) in str(failed.value)
+            assert path.read_bytes() == b"another writer"
+            assert list(tmp_path.iterdir()) == [path]
         else:
             assert client.wait(receipt["taskId"]) == {"saved": True, "path": str(path)}
             assert not temp.exists()
@@ -318,3 +329,25 @@ def testBackgroundSaveOwnsPixelsAndOnlyPublishesClosedCompleteFile(tmp_path, mon
         allowEncode.set()
         allowPublish.set()
         service.close(drain=False)
+
+
+def testOversizedBackgroundImageIsRejectedBeforeCopy(tmp_path):
+    from emo_master.apps.runtime.execution.background_tasks import BackgroundTaskService
+    from emo_master.apps.runtime.execution.errors import WorkflowExecutionError
+    from emo_master.apps.runtime.workflow.context import RunContext
+
+    class Image(np.ndarray):
+        def copy(self):
+            pytest.fail("oversized image must be rejected before allocating its copy")
+
+    service = BackgroundTaskService(maxBytes=32)
+    client = service.client(RunContext.root("image", "main").forNode("save"), "save")
+    try:
+        with pytest.raises(WorkflowExecutionError) as oversized:
+            ImageSaverOperator().executeNode({"image": np.zeros((8, 8), np.uint8).view(Image)},
+                {"outputPath": str(tmp_path / "result.png"), "saveMode": "background", "namingMode": "unique"},
+                {"backgroundTasks": client})
+        assert oversized.value.code == "E_BACKGROUND_TASK_TOO_LARGE"
+        assert not list(tmp_path.iterdir())
+    finally:
+        service.close()

@@ -13,8 +13,11 @@
 - RuntimeContext 仅向已声明能力的算子注入后台任务客户端。
 - 提供提交、等待、查询状态、失败报告和 Job 收尾。
 - ImageSaver 声明该能力并增加可选后台模式，默认仍同步；后台模式必须使用唯一命名。
-- 图片先写任务专属临时文件，完整后原子发布；Runner 在成功后登记 artifact。
+- 图片先写任务专属临时文件，完整后原子创建最终文件。若提交回执中的路径已被其他写方占用，任务报错并保留对方文件。Runner 在成功后登记 artifact。
+- 正式 Job 或调试子进程退出后，Runtime 回收该进程遗留的受管临时图片。若 Runtime 也已退出，下次在同一数据目录启动时，按持久登记的私有暂存目录自动清理。
 - Runner 延迟处理 SQLite `FILE_REFERENCE` 绑定，确保文件真正保存后才交给 SQLiteWriter。
+- 配置排空等待已接收的后台写入及其产物登记。Dispatch 在跨 Job 传递文件结果前确认写入，并在每次投递结束时处理该次任务的失败。
+- While 在迭代间隔检查后台失败。Designer 将迟到的产物关联到对应的节点执行。普通 Job 失败时给活动任务有限时间清理临时文件。
 
 ## 不做什么
 
@@ -29,4 +32,4 @@
 
 改动涉及 PluginManifest/manifest validator、Job worker、WorkflowRunner、OperatorExecutor、后台任务服务、ImageSaver，以及 artifact 和 SQLite 文件引用的衔接。
 
-源码基准：`main @ b75df0adb7a90a4e0b540ff1c8c09e9339cfcdbd`。本计划只描述设计，不代表功能已经实现。
+最初的源码基准为 `b75df0adb7a90a4e0b540ff1c8c09e9339cfcdbd`。独立审查基于 `50f240f9d47fcfa280ba1520153c8ecf46f55976`。后续修正列在实施任务第 6 至 9 节。[实施任务](tasks.md) · [交付记录](delivery.md)

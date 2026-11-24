@@ -1,10 +1,13 @@
 import json
+from functools import partial
+import multiprocessing
 import os
 from pathlib import Path
 import re
 import subprocess
 import sys
 import time
+from unittest.mock import patch
 
 import grpc
 import pytest
@@ -141,13 +144,13 @@ def testStandaloneImportsExcludeDesignerAndRuntimeHasNoQt(tmp_path):
         assert result.returncode == 0, result.stderr
 
 
-def testReleaseOutputSiteUsesOwnedChineseDirectory(tmp_path):
+def _installReleaseWithSaver(tmp_path, *, captureImage=True, **saveParams):
     from emo_master.core.project.models import ProjectDocument
     draft = tmp_path/'draft'
     draft.mkdir()
-    raw = sampleProject(draft).model_dump()
+    raw = sampleProject(draft, image=captureImage).model_dump()
     raw['workflows']['main']['nodes'].insert(-1, {'nodeId': 'save', 'operatorId': 'vision.io.image_saver',
-        'params': {'outputPath': 'D:/never-use-developer-output.png'}})
+        'params': {'outputPath': 'D:/never-use-developer-output.png', **saveParams}})
     raw['workflows']['main']['edges'].append({'fromNode': 'blob', 'fromPort': 'overlay', 'toNode': 'save', 'toPort': 'image'})
     raw['resources']['siteBindings'] = [{'target': {'workflowId': 'main', 'nodeId': 'save',
         'parameterPath': ['outputPath']}, 'field': 'result', 'purpose': 'output_file'}]
@@ -155,6 +158,11 @@ def testReleaseOutputSiteUsesOwnedChineseDirectory(tmp_path):
     package = buildPageTestPackage(doc, draft, tmp_path/'out')
     store = DeliveryStore(tmp_path/'store')
     store.activate(store.importPackage(package))
+    return store
+
+
+def testReleaseOutputSiteUsesOwnedChineseDirectory(tmp_path):
+    store = _installReleaseWithSaver(tmp_path)
     data = tmp_path/'中文 输出数据'
     with pytest.raises(ValueError, match='required site'):
         ReleaseHost(store.root, data)
@@ -169,6 +177,75 @@ def testReleaseOutputSiteUsesOwnedChineseDirectory(tmp_path):
         assert output.read_bytes().startswith(b'\x89PNG')
         assert output.resolve().is_relative_to(data.resolve())
         assert not list(store.root.rglob('result.png'))
+    finally:
+        host.close()
+
+
+def _pausePreparedImagePublication(ready, *workerArgs):
+    from emo_master.apps.runtime.jobs.worker_main import runJobProcess
+    from emo_master.plugins.builtins.image_saver import operator
+
+    def hold(staged, target):
+        ready.set()  # ImageSaver has finished writing and closed the temporary file.
+        time.sleep(60)
+        raise AssertionError("release worker was not killed")
+
+    with patch.object(operator, '_publishUniqueImage', hold):
+        runJobProcess(*workerArgs)
+
+
+def _crashReleaseDuringSave(store, data):
+    from emo_master.apps.runtime.jobs import supervisor
+
+    host = ReleaseHost(store, data, siteValues={'result': '图像/result.png'})
+    try:
+        ready = multiprocessing.get_context('spawn').Event()
+        with patch.object(supervisor, 'runJobProcess', partial(_pausePreparedImagePublication, ready)):
+            with grpc.insecure_channel(host.address) as channel:
+                job = rpc.DisplayServiceStub(channel).Start(pb.DisplayStartRequest(
+                    prepared_id=host.prepared.snapshot.snapshotId), timeout=20).job_id
+        assert ready.wait(25), "release Job did not reach image publication"
+        # Prevent live-parent retirement from reclaiming the file before restart.
+        with host.runtime.jobSupervisor._lock:
+            worker = host.runtime.jobSupervisor.getProcess(job)
+            worker.kill()
+            worker.join(5)
+            assert worker.exitcode is not None
+            os._exit(42)
+    finally:
+        host.close()
+
+
+def testReleaseRestartReclaimsUnpublishedBackgroundImage(tmp_path):
+    from emo_master.apps.runtime.preview.store import _ioPath
+
+    store = _installReleaseWithSaver(tmp_path, captureImage=False, saveMode='background', namingMode='unique')
+    data = tmp_path/'中文 输出数据'
+    previous = multiprocessing.get_context('spawn').Process(target=_crashReleaseDuringSave, args=(store.root, data))
+    previous.start()
+    try:
+        previous.join(40)
+        assert previous.exitcode == 42, "previous release host did not reach its simulated crash"
+    finally:
+        if previous.is_alive():
+            previous.kill()
+            previous.join(5)
+        previous.close()
+
+    output, = data.glob('display/*/release/outputs/图像')
+    staged, = _ioPath(output).rglob('.emo-image-*.tmp')
+    assert staged.read_bytes().startswith(b'\x89PNG')
+    published = (tmp_path/'draft'/'input.png').read_bytes()
+    confirmed = output/'previous.png'
+    confirmed.write_bytes(published)
+    other = output/('.emo-image-' + 'f' * 32 + '.tmp')
+    other.write_bytes(b'other writer')
+    host = ReleaseHost(store.root, data, siteValues={'result': '图像/result.png'})
+    try:
+        assert not staged.exists()
+        assert list(output.glob('*.png')) == [confirmed]
+        assert confirmed.read_bytes() == published
+        assert other.read_bytes() == b'other writer'
     finally:
         host.close()
 

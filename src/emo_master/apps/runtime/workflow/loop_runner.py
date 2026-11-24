@@ -286,8 +286,13 @@ class LoopRunner:
             if nextStart is not None:
                 deadline = min(nextStart, startedAt + timeoutMs / 1000.0) if timeoutMs else nextStart
                 remaining = deadline - self._clock()
-                if remaining > 0:
-                    cancellation.wait(remaining)
+                while remaining > 0:
+                    if self.workflowRunner.operatorExecutor.backgroundTasks is None:
+                        cancellation.wait(remaining)
+                        break
+                    cancellation.wait(min(remaining, .05))
+                    self.workflowRunner.pollBackgroundTasks()
+                    remaining = deadline - self._clock()
                 self._check(cancellation, timeoutMs, startedAt)
             scope = nullcontext(context)
             if node.loop.get("cycleBoundary") == "iteration":

@@ -16,9 +16,13 @@ class CyclePlanSession:
 
     @contextmanager
     def scope(self, context, *, parentCycleId=None):
-        if self.cancelled():
-            raise CancellationRequested("execution cancelled")
-        cycle = self.devices.framework("beginCycle", knownRevision=self.revision, parentCycleId=parentCycleId)
+        while True:
+            if self.cancelled():
+                raise CancellationRequested("execution cancelled")
+            cycle = self.devices.framework("beginCycle", knownRevision=self.revision, parentCycleId=parentCycleId)
+            if not cycle.get("parked"):
+                break
+            self.runner.pollBackgroundTasks()
         executor = self.runner.operatorExecutor
         previous = (self.document, self.runner.compiledProject, self.revision,
                     getattr(executor, 'deviceScope', {}), getattr(executor, 'deviceIdentities', {}))

@@ -4,6 +4,7 @@ from collections import OrderedDict, deque
 import base64
 from copy import deepcopy
 from dataclasses import dataclass, field
+from pathlib import Path
 import queue
 import threading
 import time
@@ -57,7 +58,7 @@ class OperatorDebugManager:
     def __init__(self, runtimeInstanceId, admitted, *, resourceBusy=lambda: False,
                  leaseSeconds=60.0, graceSeconds=3.0, workerFactory=DebugWorker,
                  maxRequests=4096, maxResults=32, maxOpens=128, sourceProvider=None, variableProvider=None,
-                 loadedDocumentProvider=lambda: None):
+                 loadedDocumentProvider=lambda: None, stagingRecoveryRoot=None):
         self.runtimeInstanceId = runtimeInstanceId
         self.admitted = admitted
         self.resourceBusy = resourceBusy
@@ -67,6 +68,7 @@ class OperatorDebugManager:
         self.graceSeconds = graceSeconds
         self.workerFactory = workerFactory
         self.resourceLeasePath = None
+        self.stagingRecoveryRoot = str(Path(stagingRecoveryRoot).absolute()) if stagingRecoveryRoot is not None else None
         self.maxRequests, self.maxResults, self.maxOpens = maxRequests, maxResults, maxOpens
         self.lock = threading.RLock()
         self.sessions: dict[str, Session] = {}
@@ -77,7 +79,12 @@ class OperatorDebugManager:
         self.monitor.start()
 
     def _leasedSpec(self, spec):
-        return dict(spec, _resourceLeasePath=self.resourceLeasePath) if self.resourceLeasePath else spec
+        workerSpec = dict(spec)
+        if self.resourceLeasePath:
+            workerSpec["_resourceLeasePath"] = self.resourceLeasePath
+        if self.stagingRecoveryRoot is not None:
+            workerSpec["_stagingRecoveryRoot"] = self.stagingRecoveryRoot
+        return workerSpec
 
     def ownsResources(self):
         with self.lock:

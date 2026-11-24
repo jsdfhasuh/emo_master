@@ -5,6 +5,8 @@ from threading import Event
 import pytest
 
 from emo_master.apps.designer.state.workflow_store import WorkflowStore
+from emo_master.apps.runtime.execution.background_tasks import BackgroundTaskService
+from emo_master.apps.runtime.execution.errors import WorkflowExecutionError
 from emo_master.apps.runtime.workflow.context import RunContext
 from emo_master.apps.runtime.workflow.cancellation import CancellationToken, CancellationRequested
 from emo_master.apps.runtime.workflow.loop_runner import LoopExecutionError
@@ -49,7 +51,7 @@ def testUnlimitedLoopHonorsCancellationAndTimeout(monkeypatch):
             dict(count=0, hasNext=True), RunContext.root('timeout', 'main'), CancellationToken())
 
 
-def _pollingRunner(onRead, **settings):
+def _pollingRunner(onRead, *, backgroundTasks=None, **settings):
     class Poll:
         def executeNode(self, inputs, params, runtimeContext):
             onRead()
@@ -69,7 +71,8 @@ def _pollingRunner(onRead, **settings):
         dict(nodeId="output", kind="workflow_output")], edges=[
         dict(fromNode="read", fromPort="request", toNode="output", toPort="request")])
     registry = {"test.poll": Poll}
-    return WorkflowRunner(WorkflowCompiler(registry).compile(ProjectDocument.model_validate(payload)), registry)
+    return WorkflowRunner(WorkflowCompiler(registry).compile(ProjectDocument.model_validate(payload)), registry,
+                          backgroundTasks=backgroundTasks)
 
 
 def testStatelessPollingPacesFromPriorStartAndWaitsOutsideTheCycle(monkeypatch):
@@ -147,3 +150,38 @@ def testPollingTimeoutExpiresDuringIntervalBeforeNextRead(monkeypatch):
     assert raised.value.code == "E_LOOP_TIMEOUT"
     assert calls == [1]
     assert waits == pytest.approx([0.1])
+
+
+def testBackgroundFailureDuringWhileIntervalPrecedesTimeout(monkeypatch):
+    token = CancellationToken()
+    service = BackgroundTaskService(token)
+    context = RunContext.root("job", "main")
+    client = service.client(context.forNode("save"), "save")
+    release = Event()
+    now = 0.0
+
+    def failWrite(control):
+        assert release.wait(3)
+        raise OSError("image write failed")
+
+    def wait(seconds):
+        nonlocal now
+        now += seconds
+        release.set()
+        # The FIFO barrier lets the write finish without consuming its failure.
+        barrier = client.submit(lambda control: None, taskName="barrier", estimatedBytes=0)
+        client.wait(barrier.id)
+
+    runner = _pollingRunner(lambda: client.submit(failWrite, taskName="image.save", estimatedBytes=1),
+                            backgroundTasks=service, minIntervalMs=10000, timeoutMs=450)
+    monkeypatch.setattr(runner.loopRunner, "_clock", lambda: now)
+    monkeypatch.setattr(token, "wait", wait)
+    try:
+        with pytest.raises(WorkflowExecutionError, match="image write failed") as raised:
+            runner.run("main", {}, context, token)
+        assert raised.value.code == "E_BACKGROUND_TASK_FAILED"
+        assert raised.value.diagnostics["backgroundTask"]["nodeId"] == "save"
+        assert 0 < now < .45
+    finally:
+        release.set()
+        service.close()

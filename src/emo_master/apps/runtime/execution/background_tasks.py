@@ -3,12 +3,15 @@ from __future__ import annotations
 
 from collections import OrderedDict, deque
 from dataclasses import dataclass
+from pathlib import Path
 import threading
 import time
-from typing import TYPE_CHECKING, Callable, Collection
+from typing import TYPE_CHECKING, BinaryIO, Callable, Collection, ContextManager
 from uuid import uuid4
 
 from emo_master.apps.runtime.execution.errors import WorkflowExecutionError
+from emo_master.apps.runtime.execution.staging_registry import ImageStagingRegistry
+from emo_master.apps.runtime.execution.temporary_files import temporaryFile
 
 if TYPE_CHECKING:
     from emo_master.apps.runtime.workflow.cancellation import CancellationToken
@@ -16,6 +19,7 @@ if TYPE_CHECKING:
 
 
 _DRAIN_TIMEOUT_SECONDS = 30.0
+_FAILURE_CLEANUP_SECONDS = 2.0
 _CANCEL_POLL_SECONDS = 0.05
 
 
@@ -53,6 +57,9 @@ class TaskControl:
         with self._service._condition:
             self._service._checkPublication()
 
+    def temporaryFile(self, directory: str | Path) -> ContextManager[BinaryIO]:
+        return temporaryFile(directory, self._service._stagingWorkspace, self._service._stagingRegistry)
+
     def publish(self, finalize: Callable[[], object]) -> object:
         # Only the short final commit runs under the close/publication gate.
         with self._service._condition:
@@ -67,7 +74,16 @@ class BackgroundTaskClient:
                             workflowRunId=context.workflowRunId, nodeId=nodeId, nodeRunId=context.nodeRunId)
 
     def submit(self, fn: Callable, *args, taskName: str, estimatedBytes: int) -> TaskReference:
+        self.checkSize(taskName, estimatedBytes)
         return self._service._submit(self._source, fn, args, taskName, estimatedBytes)
+
+    def checkSize(self, taskName: str, estimatedBytes: int) -> None:
+        """Allow producers to reject an oversized input before making their owned copy."""
+        if not isinstance(estimatedBytes, int) or estimatedBytes < 0:
+            raise ValueError("estimatedBytes must be a non-negative integer")
+        if estimatedBytes > self._service._maxBytes:
+            raise WorkflowExecutionError("E_BACKGROUND_TASK_TOO_LARGE",
+                f"{taskName}: {estimatedBytes} bytes exceeds {self._service._maxBytes}", self._source["nodeId"])
 
     def wait(self, taskId: str) -> object:
         return self._service.wait(taskId)
@@ -78,7 +94,9 @@ class BackgroundTaskClient:
 
 class BackgroundTaskService:
     def __init__(self, cancellation: CancellationToken | None = None, *, maxPending: int = 32,
-                 maxBytes: int = 128 * 1024 * 1024, maxRecords: int = 128) -> None:
+                 maxBytes: int = 128 * 1024 * 1024, maxRecords: int = 128,
+                 onPendingChanged: Callable[[bool], None] | None = None,
+                 stagingWorkspace: str | None = None, stagingRecoveryRoot: str | Path | None = None) -> None:
         from emo_master.apps.runtime.workflow.cancellation import CancellationToken
 
         if min(maxPending, maxBytes, maxRecords) < 1:
@@ -92,6 +110,9 @@ class BackgroundTaskService:
         self._expiredFailure: _Record | None = None
         self._hasUnobserved = False
         self._outstanding = self._bytes = 0  # Includes the active task.
+        self._onPendingChanged = onPendingChanged
+        self._stagingWorkspace = stagingWorkspace
+        self._stagingRegistry = ImageStagingRegistry(stagingRecoveryRoot) if stagingRecoveryRoot else None
         self._closing = self._publicationClosed = False
         self._thread = threading.Thread(target=self._run, name="runtime-background-io", daemon=True)
         self._thread.start()
@@ -100,11 +121,6 @@ class BackgroundTaskService:
         return BackgroundTaskClient(self, context, nodeId)
 
     def _submit(self, source: dict[str, str], fn: Callable, args: tuple, name: str, size: int) -> TaskReference:
-        if not isinstance(size, int) or size < 0:
-            raise ValueError("estimatedBytes must be a non-negative integer")
-        if size > self._maxBytes:
-            raise WorkflowExecutionError("E_BACKGROUND_TASK_TOO_LARGE",
-                                         f"{name}: {size} bytes exceeds {self._maxBytes}", source["nodeId"])
         with self._condition:
             while True:
                 self._token.raise_if_cancelled()
@@ -118,6 +134,8 @@ class BackgroundTaskService:
             record = _Record(taskId, dict(source, taskId=taskId, taskName=name), size)
             self._records[taskId] = record
             self._outstanding += 1
+            if self._outstanding == 1 and self._onPendingChanged is not None:
+                self._onPendingChanged(True)
             self._bytes += size
             self._queue.append((record, fn, args))
             self._condition.notify_all()
@@ -203,6 +221,8 @@ class BackgroundTaskService:
     def _finish(self, record: _Record, state: str) -> None:
         record.state = state
         self._outstanding -= 1
+        if self._outstanding == 0 and self._onPendingChanged is not None:
+            self._onPendingChanged(False)
         self._bytes -= record.size
         self._recent[record.id] = None
         if len(self._recent) > self._maxRecords:
@@ -249,30 +269,42 @@ class BackgroundTaskService:
                 self._finish(record, state)
             del record
 
+    def waitForIdle(self) -> None:
+        """Wait at an execution boundary without closing admission or observing task failures."""
+        with self._condition:
+            self._waitForIdle(deadline=None)
+
+    def _waitForIdle(self, deadline: float | None) -> None:
+        while self._outstanding:
+            self._checkPublication()
+            waitSeconds = _CANCEL_POLL_SECONDS
+            if deadline is not None:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise WorkflowExecutionError("E_BACKGROUND_TASK_DRAIN_TIMEOUT",
+                                                 "background tasks exceeded the normal drain deadline")
+                waitSeconds = min(remaining, waitSeconds)
+            self._condition.wait(waitSeconds)
+        self._token.raise_if_cancelled()
+
     def close(self, *, drain: bool = True, waitForActive: bool = False) -> None:
         if not drain:
             with self._condition:
                 self._abandon()
             if waitForActive:
-                # The Job Supervisor enforces the existing user-stop deadline.
-                self._thread.join()
+                # User Stop has its own Supervisor deadline. On ordinary failure,
+                # give active I/O a bounded opportunity to remove its temporary file.
+                self._thread.join(None if self._token.is_cancelled() else _FAILURE_CLEANUP_SECONDS)
+                if self._thread.is_alive():
+                    raise WorkflowExecutionError("E_BACKGROUND_TASK_CLEANUP_TIMEOUT",
+                                                 "active background task did not finish cleanup in time")
             return
-        deadline = time.monotonic() + _DRAIN_TIMEOUT_SECONDS
         with self._condition:
             self._closing = True
             self._condition.notify_all()
-            while self._outstanding and not self._publicationClosed:
-                if self._token.is_cancelled():
-                    self._abandon()
-                    self._token.raise_if_cancelled()
-                remaining = deadline - time.monotonic()
-                if remaining <= 0:
-                    self._abandon()
-                    raise WorkflowExecutionError("E_BACKGROUND_TASK_DRAIN_TIMEOUT",
-                                                 "background tasks exceeded the normal drain deadline")
-                self._condition.wait(min(remaining, _CANCEL_POLL_SECONDS))
-            if self._outstanding:  # Another caller abandoned the active operation.
-                self._checkPublication()
-            self._publicationClosed = True
+            try:
+                self._waitForIdle(time.monotonic() + _DRAIN_TIMEOUT_SECONDS)
+            finally:
+                self._abandon()
         self._thread.join()
         self._token.raise_if_cancelled()

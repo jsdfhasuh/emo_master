@@ -51,10 +51,9 @@ def runWorkflowDebug(specJson, commands, events, cancellation, stop, heartbeat, 
                 inline, assets = freezeOutputs(data.pop(field, {}), snapshots, provenance)
                 data[field], data[field + "Assets"] = inline, assets
             data.update(snapshotId=snapshotId, kind="flow_snapshot", snapshotKind=kind)
-            snapshotAck.clear()
             send(data)
             # Parent owns eviction; don't delete files before it adopts the snapshot.
-            while not snapshotAck.wait(.05):
+            while not snapshotAck.acquire(timeout=.05):
                 token.raise_if_cancelled()
         else:
             send(dict(kind="flow_" + kind, **value))
@@ -151,7 +150,8 @@ def runWorkflowDebug(specJson, commands, events, cancellation, stop, heartbeat, 
             module, name = entry["entry"].split(":")
             registry[key] = getattr(importlib.import_module(module), name)
         compiled = WorkflowCompiler(registry).compile(spec["project"])
-        backgroundTasks = BackgroundTaskService(token)
+        backgroundTasks = BackgroundTaskService(token, stagingWorkspace=spec["workspacePath"],
+                                               stagingRecoveryRoot=spec.get("_stagingRecoveryRoot"))
         capabilities = {key: entry.get("runtimeCapabilities", ()) for key, entry in spec["entries"].items()}
         runner = WorkflowRunner(compiled, registry, eventPublisher=logs, globalVariables=variables,
                                 globalCounters=DebugCounters(variables), debugController=controller, retainOperators=True,

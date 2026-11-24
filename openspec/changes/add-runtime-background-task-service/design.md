@@ -32,7 +32,9 @@ manifest 是能力声明的唯一来源，首版新增可选字段：
 
 已声明能力的算子使用：
 
-    task = runtimeContext["backgroundTasks"].submit(
+    client = runtimeContext["backgroundTasks"]
+    client.checkSize("image.save", image.nbytes)
+    task = client.submit(
         save_image,
         image.copy(),
         output_path,
@@ -58,6 +60,7 @@ manifest 是能力声明的唯一来源，首版新增可选字段：
 
 接口约定：
 
+- `checkSize(taskName, estimatedBytes)` 在调用方创建大对象副本前检查单任务大小。实际接收任务及队列容量控制仍由 `submit` 负责。
 - `submit(callable, *args, taskName, estimatedBytes)`：提交成功返回任务引用；服务执行时向任务函数注入首个参数 `TaskControl`，即 `callable(taskControl, *args)`。
 - `wait(taskId)`：等待任务完成；成功返回小型结果，失败抛出保留原始原因的任务异常。异常交给调用方后视为已观察，算子可以捕获处理，也可以继续向上抛出。
 - `status(taskId)`：返回 `QUEUED / RUNNING / SUCCEEDED / FAILED / CANCELLED`。
@@ -68,12 +71,13 @@ manifest 是能力声明的唯一来源，首版新增可选字段：
 
 ### TaskControl
 
-Runtime 为每个任务注入 `TaskControl`，只提供两个必要操作：
+Runtime 为每个任务注入 `TaskControl`。
 
 - `raiseIfCancelled()`：任务开始和最终发布前检查 Job 是否已取消/服务是否已放弃。
 - `publish(finalize)`：在服务生命周期门禁内执行短小的最终发布动作。服务 close 与 publish 使用同一把锁；服务进入 abandoned 后，迟到的 publish 必须拒绝。
+- `temporaryFile(directory)` 在目标目录独占创建可写的暂存文件，并负责退出上下文时清理。在受管子进程中，Runtime 还会记录其归属，供进程退出后回收。
 
-ImageSaver 任务先写入临时文件并关闭，再调用 `taskControl.publish(lambda: os.replace(tempPath, finalPath))`。不要在 publish 回调中执行编码或普通文件写入。
+ImageSaver 在暂存文件中写完并关闭后，才进入 `publish` 原子创建最终文件。Windows 使用同一文件系统上拒绝覆盖的重命名，Linux 优先使用 `renameat2(RENAME_NOREPLACE)`。不支持该操作时，可用硬链接原子创建最终目录项。若文件系统无法执行这两种操作，任务返回写入错误。编码和写入均在发布门禁外完成。[Python 3.10 的重命名行为](https://docs.python.org/3.10/library/os.html#os.rename) · [Linux renameat2](https://man7.org/linux/man-pages/man2/rename.2.html)
 
 ## 4. 队列与生命周期
 
@@ -94,8 +98,21 @@ ImageSaver 任务先写入临时文件并关闭，再调用 `taskControl.publish
 - 同步模式完全保持现有 fixed/unique 命名、覆盖规则、返回结构和错误语义。
 - **后台模式首版只允许 `namingMode=unique`；选择 fixed 时返回明确参数错误。** 不自动把 fixed 改成 unique。
 - 后台模式先确定唯一最终路径，复制图像后提交任务；立即返回 `accepted=true`、`saved=false`、`state=SUBMITTED`、`path` 和 `taskId`。
-- 后台任务写入同目录任务专属临时文件，完整关闭后通过 TaskControl 原子发布最终文件。失败、取消或服务放弃时尽力清理临时文件；正式最终路径不能暴露半张图片。
+- 受管后台任务在目标目录的私有子目录中写入独立临时文件，完整关闭后通过 TaskControl 发布到回执指定的路径。若该路径在提交后被占用，保存节点报 `E_OUTPUT_EXISTS`，原文件内容保留，不登记成功产物。
+- 一个 Job 或调试进程可以在不同的输出目录写图。每个在写的临时文件有独立的归属记录。进程强制停止或清理超时退出后，父进程根据所属记录逐一删除遗留暂存文件；同目录其他文件和已经发布的图片不在回收范围内。
 - 任务完成结果包含最终路径和必要的小型元数据，不返回图像数组。
+
+### 重启后清理暂存图片
+
+Runtime 为每个用过的输出目录分配一个随机命名的 `.emo-image-stage-<标识>` 私有子目录。第一次使用前，SQLite 必须先提交输出目录和标识，提交成功才允许创建暂存图片。登记随同一个 Runtime 数据目录跨进程和重启保留。即使断电后只剩下暂存文件、单张图片的工作区登记已经丢失，下次仍有定位依据。目录登记使用 `PRAGMA synchronous=EXTRA`。[SQLite 对持久提交的定义](https://sqlite.org/pragma.html#pragma_synchronous)
+
+写入进程从创建暂存文件起到完成发布和清理为止持有共享锁。启动时，取得数据目录主锁的 Runtime 只在已登记的私有子目录内尝试取得独占锁并清理受管暂存文件。仍有写入进程时整目录跳过。已发布图片、输出根下的其他文件及未登记位置不参与扫描。登记和锁文件保留供下次复用，删除受阻时记录诊断并保留下次启动重试的依据。
+
+上一版正式 Job 的工作区可能保留按文件登记的路径。只有在能够确认原进程退出、输出目录可访问时，才按旧登记回收。没有可靠归属的旧文件保留。
+
+2.2 本地页面测试发布通过展示服务启动 Job，使用展示服务自己的工作区。这个入口和常规 StartJob 都将所属 Runtime 的暂存登记库交给写入进程，重启时由同一处启动清理逻辑回收。
+
+在 Windows 上，业务输出路径可用时，Runtime 追加的私有目录和文件名仍可能超过传统路径长度限制。创建和回收这些受管文件时使用扩展路径，返回给工作流的文件路径和写入登记库的位置沿用常规表示。
 
 ### Artifact 与预览
 
@@ -117,6 +134,18 @@ DetectionArchive、ResultWriter、SQLiteWriter 的执行和事务语义保持不
 
 ## 6. 执行模式
 
+### 配置切换、分发和节点结果
+
+- 在线配置选择 `drainAffected` 时，受影响 Job 的活动周期、已投递的消费任务和已受理图片的产物登记均纳入原有 30 秒配置预算。旧 Job 在成功图片完成登记并发出 `artifact.created` 后进入停止流程。普通连续周期仍可与前一轮的后台编码重叠。
+- 后台任务编号归创建它的 Job 所有。在 Dispatch 输入和消费者输出跨进程前，发送方解析其中的待保存文件，等待写入并处理产物，将已保存文件的回执交给另一方。普通 JSON、标量和图像沿用现有编码链路。
+- ForEach 汇集多个文件后再分发时，仍在工作流内流转的回执随值保留已登记文件的证明。这样即使最早的任务已从有限记录中淘汰，仍可交付曾经确认的文件；单独查询过期编号继续返回 `E_BACKGROUND_TASK_EXPIRED`。
+- 每个 Dispatch 消费者串行处理投递。当前投递启动的任务及产物处理完成后才确认该次投递；后台失败使用当前投递身份，并保留提交节点的诊断。活跃投递的等待可被 Stop 中断，Join 沿用配置的等待时间。30 秒正常收尾上限只用于 Job 或调试执行关闭服务。
+- While 的迭代间隔同时检查取消和后台失败。Designer 将迟到的产物按 Job、工作流执行和节点执行身份写入仍保留的历史记录，按原有规则限制记录数量和大小。
+- 普通 Job 失败时先关闭最终文件发布入口，取消排队任务，给活动任务有限时间清理临时文件，并保留原始业务错误。用户主动 Stop 继续使用 Supervisor 的现有宽限时间。
+- ImageSaver 在复制图像前检查单任务字节上限。后台文件按 UTC 时间和 UUID 命名，最终发布操作负责在并发写入时兑现“唯一命名不覆盖”的约定。
+
+### 能力准入
+
 | 模式 | 能力 |
 |---|---|
 | 正式 Job | 已声明的算子可使用服务 |
@@ -127,4 +156,4 @@ DetectionArchive、ResultWriter、SQLiteWriter 的执行和事务语义保持不
 
 ## 7. 明确不做
 
-不做跨 Job 全局线程池、多 worker 并发、任务持久化、断电恢复、自动重试、优先级调度、通用资源事务、后台设备调用或新 RPC。若实际使用证明一条线程成为瓶颈，再单独评估并发度。
+本计划的重启恢复仅清理受管暂存图片。未完成的保存不会重放。跨 Job 全局线程池、多 worker 并发、任务持久化、优先级调度、通用资源事务、后台设备调用和新 RPC 不在本次范围内。

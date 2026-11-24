@@ -12,6 +12,7 @@ import threading
 import time
 
 from emo_master.apps.runtime.jobs.heartbeat import HeartbeatCell, monotonicMs
+from emo_master.apps.runtime.execution.temporary_files import retireTemporaryFiles
 from emo_master.apps.runtime.operator_debug.contracts import encode, parse, MAX_INLINE_BYTES, MAX_REQUEST_BYTES
 
 
@@ -138,7 +139,8 @@ def runOperatorDebug(specJson, commands, events, cancellation, stop, heartbeat):
                     executionContext = replace(context, workspacePath=str(Path(spec["workspacePath"]) / "file-output"))
                     notes["debugWorkspace"] = executionContext.workspacePath
                 if "backgroundTasks" in capabilities[spec["operatorId"]]:
-                    backgroundTasks = BackgroundTaskService(token)
+                    backgroundTasks = BackgroundTaskService(token, stagingWorkspace=spec["workspacePath"],
+                                                           stagingRecoveryRoot=spec.get("_stagingRecoveryRoot"))
                     executor.backgroundTasks = backgroundTasks
                 outputs, metrics, diagnostics = executor.execute(node, values, executionContext, token, mapped)
                 if backgroundTasks is not None:
@@ -217,7 +219,9 @@ class DebugWorker:
         self.started = monotonicMs()
         self.workspace = tempfile.TemporaryDirectory(prefix="emo-operator-debug-")
         target, extra = runOperatorDebug, ()
-        self.snapshotAck = context.Event()
+        # Acknowledge each adopted snapshot without waiting for a possibly
+        # terminated worker to wake, as multiprocessing.Event.set() does.
+        self.snapshotAck = context.Semaphore(0)
         if spec.get("kind") == "workflow":
             from emo_master.apps.runtime.workflow_debug.worker import runWorkflowDebug
             target, extra = runWorkflowDebug, (self.snapshotAck,)
@@ -301,6 +305,7 @@ class DebugWorker:
         if self.retired:
             return True
         if self.processClosed:
+            retireTemporaryFiles(self.workspace.name)
             self.workspace.cleanup()
             self.retired = True
             return True
@@ -327,6 +332,7 @@ class DebugWorker:
         self.processClosed = True
         self.commandPipe.close()
         self.eventPipe.close()
+        retireTemporaryFiles(self.workspace.name)
         self.workspace.cleanup()
         self.retired = True
         return True

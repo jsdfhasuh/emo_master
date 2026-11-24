@@ -51,6 +51,7 @@ class WorkflowRunner:
         cycleScope: Any = None,
         backgroundTasks=None,
         runtimeCapabilities=None,
+        onPendingArtifactsChanged: Callable[[bool], None] | None = None,
     ) -> None:
         self.compiledProject = compiledProject
         self.cycleScope = cycleScope
@@ -58,7 +59,7 @@ class WorkflowRunner:
         self.eventPublisher = eventPublisher
         self.maxCallDepth = maxCallDepth
         self.artifactStore = artifactStore
-        self._backgroundOutputs = BackgroundOutputs(backgroundTasks, self._publishArtifact)
+        self._backgroundOutputs = BackgroundOutputs(backgroundTasks, self._publishArtifact, onPendingArtifactsChanged)
         self.previewSnapshotStore = previewSnapshotStore
         self.globalCounters = globalCounters
         from emo_master.apps.runtime.context.global_variables import ReadOnlyVariables
@@ -362,6 +363,12 @@ class WorkflowRunner:
     def pollBackgroundTasks(self):
         self._backgroundOutputs.poll()
 
+    def waitForBackgroundTasks(self):
+        self._backgroundOutputs.waitForIdle()
+
+    def prepareDispatchValue(self, value):
+        return self._backgroundOutputs.forTransfer(value)
+
     def _runNode(self, node, nodeInput, supplied, context, cancellation, boundValues=None):
         if node.kind == "workflow_input":
             return {
@@ -378,6 +385,8 @@ class WorkflowRunner:
             result = self.loopRunner.run(node, nodeInput, context, cancellation)
             return result.outputs, result.metrics, result.diagnostics
         if node.kind in {"dispatch", "join"}:
+            if node.kind == "dispatch":
+                nodeInput = self.prepareDispatchValue(nodeInput)
             return self.dispatchRunner.run(node, nodeInput, context, cancellation)
         return self.operatorExecutor.invoke(node, nodeInput, context, cancellation, boundValues)
 
@@ -400,9 +409,9 @@ class WorkflowRunner:
     def _publishArtifacts(self, node, outputs, context) -> None:
         if node.kind != "operator":
             return
-        for value in outputs.values():
+        for port, value in outputs.items():
             if isinstance(value, dict) and isinstance(value.get("path"), str):
-                self._backgroundOutputs.artifact(node, value, context)
+                outputs[port] = self._backgroundOutputs.artifact(node, value, context)
 
     def _publishArtifact(self, node, value, context):
         artifact = value

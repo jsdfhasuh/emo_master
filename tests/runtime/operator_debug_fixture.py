@@ -51,6 +51,20 @@ class BackgroundProbe(NumberValueOperator):
         return {"status": "ok", "outputs": {"value": int(client is not None)}}
 
 
+class HeldFileProbe(NumberValueOperator):
+    def executeNode(self, inputs, params, runtime):
+        workspace = Path(runtime["workspacePath"])
+        def holdTemporary(control):
+            directory = Path((workspace / "test-output-directory").read_text(encoding="utf-8"))
+            with control.temporaryFile(directory) as stream:
+                stream.write(b"partial")
+                stream.flush()
+                (workspace / "test-write-started").touch()
+                time.sleep(30)
+        runtime["backgroundTasks"].submit(holdTemporary, taskName="held debug image", estimatedBytes=7)
+        return {"status": "ok", "outputs": {"value": 1}}
+
+
 def _publishMarker(control, workspace, value):
     if value < 0:
         raise OSError("debug marker failed")

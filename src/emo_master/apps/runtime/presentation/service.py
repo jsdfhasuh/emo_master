@@ -152,6 +152,7 @@ class PresentationService:
                 self.runtime.jobManager.start(job, JobProcessSpec(
                     job.jobId, str(prepared.projectPath), document.entryWorkflowId,
                     pluginRootPaths=tuple(self.runtime.pluginRootPaths), jobWorkspacePath=str(workspace),
+                    stagingRecoveryRoot=str(self.runtime.stagingRecoveryRoot),
                     projectId=snapshot.projectId, runtimeDbPath=snapshot.runtimeDbPath, presentation=config,
                     modelSources=jobModelSources(document, json.loads(snapshot.projectJson),
                                                  verifiedFiles=dict(prepared.files))))

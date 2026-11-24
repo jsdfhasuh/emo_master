@@ -84,6 +84,21 @@ def testSkippedNodeDoesNotDisplaceActualInvocationsAndCancelClosesActiveRecord()
     assert history.view('main', 'node')['record']['nodeRunId'] == 'first'
 
 
+def testLateSavedImageIsAttachedToItsOwnRetainedInvocation():
+    history = RunResultHistory()
+    history.accept('job', definitions())
+    for number, execution in enumerate(('first', 'second')):
+        history.applyEvent(event('node.started', 2 * number + 1, node='node', execution=execution))
+        history.applyEvent(event('node.completed', 2 * number + 2, node='node', execution=execution))
+    artifact = event('artifact.created', 5, node='node', execution='first')
+    artifact['payload'] = {'artifact': {'artifactId': 'saved-first', 'mimeType': 'image/png'}}
+    history.applyEvent(artifact)
+    assert not history.view('main', 'node')['artifact']
+    history.selectPrevious(True)
+    assert history.view('main', 'node')['artifact']['artifactId'] == 'saved-first'
+    assert history.retainedBytes == _uncachedBytes(history)
+
+
 def testRuntimeAndInspectionContextChangesReleaseHistoryButSameContextDoesNot():
     history = RunResultHistory()
     history.bindContext(('runtime-a', 'session-a'))

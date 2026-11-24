@@ -17,7 +17,89 @@ def _client(service, node="save", job="job"):
     return service.client(context, node), context
 
 
-def test_shared_fifo_submit_wait_and_job_isolation():
+def testConcurrentStagingRegistrationsAndExclusiveCreation(tmp_path, monkeypatch):
+    from pathlib import Path
+    from uuid import UUID
+    from emo_master.apps.runtime.execution import temporary_files
+
+    workspace = str(tmp_path / "worker")
+    records = Path(workspace) / ".background-image-files"
+    first = temporary_files.temporaryFile(tmp_path, workspace)
+    with first as oldWriter:
+        oldPath = Path(oldWriter.name)
+        with temporary_files.temporaryFile(tmp_path, workspace) as currentWriter:
+            assert Path(currentWriter.name) != oldPath
+            assert len(list(records.iterdir())) == 2
+        assert oldPath.exists() and len(list(records.iterdir())) == 1
+    key = UUID(int=5)
+    monkeypatch.setattr(temporary_files, "uuid4", lambda: key)
+    collision = tmp_path / f".emo-image-{key.hex}.tmp"
+    collision.write_bytes(b"external")
+    with pytest.raises(FileExistsError), temporary_files.temporaryFile(tmp_path, workspace):
+        pytest.fail("an existing file cannot be acquired")
+    temporary_files.retireTemporaryFiles(workspace)
+    assert not oldPath.exists() and not records.exists()
+    assert collision.read_bytes() == b"external"
+
+
+def testRestartRecoversReappearingTempWithoutWorkspaceRecord(tmp_path, monkeypatch):
+    from pathlib import Path
+    from emo_master.apps.runtime.execution import staging_registry, temporary_files
+
+    output = tmp_path / "photos"
+    output.mkdir()
+    workspace = str(tmp_path / "worker")
+    database = tmp_path / "locations.sqlite3"
+    registry = staging_registry.ImageStagingRegistry(database)
+    with temporary_files.temporaryFile(output, workspace, registry) as stream:
+        staged = Path(stream.name)
+        stream.write(b"first image")
+    assert not staged.exists()
+    assert not list((Path(workspace) / ".background-image-files").iterdir())
+    # Repeated frames in the same directory reuse the committed registration.
+    with monkeypatch.context() as patch:
+        patch.setattr(staging_registry, "_database", lambda *_: pytest.fail("reopened registry for same directory"))
+        with temporary_files.temporaryFile(output, workspace, registry) as stream:
+            assert Path(stream.name).parent == staged.parent
+
+    # Model recovery of output-volume metadata from before the unlink/rename,
+    # after the worker's record of this individual file has already disappeared.
+    staged.write_bytes(b"rolled back directory entry")
+    outside = output / staged.name
+    unknown = staged.parent / "external.tmp"
+    published = output / "result.png"
+    for file in (outside, unknown, published):
+        file.write_bytes(b"keep")
+    assert temporary_files.recoverTemporaryFiles(database) == []
+    assert not staged.exists()
+    assert all(file.read_bytes() == b"keep" for file in (outside, unknown, published))
+
+
+def testRecoveryRespectsDifferentRuntimeAndCopiedRegistry(tmp_path):
+    import shutil
+    from pathlib import Path
+    from emo_master.apps.runtime.execution import temporary_files
+
+    first = tmp_path / "first.sqlite3"
+    second = tmp_path / "second.sqlite3"
+    with temporary_files.temporaryFile(tmp_path, None, first) as stream:
+        firstTemp = Path(stream.name)
+    with temporary_files.temporaryFile(tmp_path, None, second) as stream:
+        secondTemp = Path(stream.name)
+    assert firstTemp.parent != secondTemp.parent
+    firstTemp.touch()
+    secondTemp.touch()
+    copied = tmp_path / "copied.sqlite3"
+    shutil.copyfile(first, copied)
+    assert temporary_files.recoverTemporaryFiles(copied) == []
+    assert firstTemp.exists()
+    assert temporary_files.recoverTemporaryFiles(first) == []
+    assert not firstTemp.exists() and secondTemp.exists()
+    assert temporary_files.recoverTemporaryFiles(second) == []
+    assert not secondTemp.exists()
+
+
+def test_shared_fifo_submit_wait_and_job_isolation(monkeypatch):
     firstJob, secondJob = BackgroundTaskService(), BackgroundTaskService()
     producer, _ = _client(firstJob)
     consumer, _ = _client(firstJob, "consumer")
@@ -44,12 +126,25 @@ def test_shared_fifo_submit_wait_and_job_isolation():
         with pytest.raises(WorkflowExecutionError) as unknown:
             independent.wait(first.id)
         assert unknown.value.code == "E_BACKGROUND_TASK_EXPIRED"
-        release.set()
+        # A live Dispatch invocation can outlast the final Job drain budget.
+        # Release the worker only after the execution thread actually waits.
+        originalWait = firstJob._condition.wait
+
+        def resumeWorker(timeout):
+            release.set()
+            return originalWait(timeout)
+
+        with monkeypatch.context() as patch:
+            patch.setattr(background_tasks, "_DRAIN_TIMEOUT_SECONDS", 0)
+            patch.setattr(firstJob._condition, "wait", resumeWorker)
+            firstJob.waitForIdle()
         worker = consumer.wait(first.id)
         assert producer.wait(second.id) is worker
         assert worker is not otherThread and worker is not threading.current_thread()
         assert producer.status(second.id) == "SUCCEEDED"
         assert order == [3, 1, 2]
+        following = consumer.submit(record, 4, taskName="following", estimatedBytes=0)
+        assert producer.wait(following.id) is worker
     finally:
         release.set()
         firstJob.close()
@@ -134,6 +229,8 @@ def test_queue_backpressure_accounts_for_running_and_queued_tasks(maxPending, ma
             assert not thirdResult.done()
             if cancel:
                 token.cancel()
+                with pytest.raises(CancellationRequested):
+                    service.waitForIdle()
                 with pytest.raises(CancellationRequested):
                     thirdResult.result(2)
                 closed = callers.submit(service.close, drain=False, waitForActive=True)

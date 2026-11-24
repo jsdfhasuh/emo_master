@@ -45,12 +45,13 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue, communicationPi
         completed = event["eventType"] == "job.completed"
         if backgroundTasks is not None:
             try:
-                if event["eventType"] == "job.aborted" and token.is_cancelled():
-                    # Gate late publication, then let cooperative I/O clean up.
-                    # The Supervisor owns the existing graceful-stop deadline.
-                    backgroundTasks.close(drain=False, waitForActive=True)
+                if completed:
+                    backgroundTasks.close()
                 else:
-                    backgroundTasks.close(drain=completed)
+                    # Seal publication first. A drain timeout already used its
+                    # entire deadline, other errors allow cooperative cleanup.
+                    backgroundTasks.close(drain=False,
+                        waitForActive=event.get("code") != "E_BACKGROUND_TASK_DRAIN_TIMEOUT")
                 if runner is not None:
                     runner.pollBackgroundTasks()
             except Exception as error:
@@ -133,7 +134,9 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue, communicationPi
                 inlineInspection=False,
                 errorPublisher=publisher, cancellation=token,
                 minIntervalMs=50 if spec.continuous or spec.targetSlotId else 0)
-        backgroundTasks = BackgroundTaskService(token)
+        backgroundTasks = BackgroundTaskService(token,
+            onPendingChanged=getattr(cancelEvent, "setBackgroundPending", None),
+            stagingWorkspace=spec.jobWorkspacePath, stagingRecoveryRoot=spec.stagingRecoveryRoot)
         runner = WorkflowRunner(
             compiledProject=compiled,
             operatorRegistry=registry,
@@ -147,6 +150,7 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue, communicationPi
             communication=communication,
             devices=devices,
             backgroundTasks=backgroundTasks,
+            onPendingArtifactsChanged=getattr(cancelEvent, "setArtifactsPending", None),
         )
         runner.prepareResources(spec.workflowId,
             RunContext.root(spec.jobId, spec.workflowId, spec.jobWorkspacePath, projectId=spec.projectId), token)
@@ -280,7 +284,10 @@ def _runConsumer(runner, spec, devices, cyclePlans, token, cancelEvent, publish)
             try:
                 values = {key: devices.decode(value) for key, value in invocation["inputs"].items()}
                 result = runner.run(spec.workflowId, values, context, token)
-                outputs = devices.encode(result.outputs, context)
+                # This persistent worker owns one delivery at a time. Its background
+                # writes and artifacts must settle under that delivery's identity.
+                runner.waitForBackgroundTasks()
+                outputs = devices.encode(runner.prepareDispatchValue(result.outputs), context)
             except Exception as error:
                 if cancelEvent.is_set():
                     raise

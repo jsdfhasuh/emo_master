@@ -1,14 +1,30 @@
+import ctypes
 from dataclasses import dataclass
 from datetime import datetime, timezone
+import errno
 import os
 from pathlib import Path
-from tempfile import NamedTemporaryFile
+import sys
 from time import perf_counter
 from typing import Any
 from uuid import uuid4
 
 import cv2
 import numpy as np
+
+
+_AT_FDCWD = -100
+_RENAME_NOREPLACE = 1
+_renameat2 = None
+if sys.platform == "linux":
+    _renameat2 = getattr(ctypes.CDLL(None, use_errno=True), "renameat2", None)
+    if _renameat2 is not None:
+        _renameat2.argtypes = [ctypes.c_int, ctypes.c_char_p, ctypes.c_int, ctypes.c_char_p, ctypes.c_uint]
+        _renameat2.restype = ctypes.c_int
+
+
+class _OutputExistsError(FileExistsError):
+    code = "E_OUTPUT_EXISTS"
 
 
 @dataclass(frozen=True)
@@ -139,9 +155,13 @@ class ImageSaverOperator:
         if callable(checkCancellation):
             checkCancellation()
         if params.get("saveMode") == "background":
-            submit = getattr(runtimeContext.get("backgroundTasks"), "submit", None)
+            tasks = runtimeContext.get("backgroundTasks")
+            submit = getattr(tasks, "submit", None)
             if not callable(submit):
                 return _error("E_BACKGROUND_TASK_UNAVAILABLE", "background saving requires a Runtime task client")
+            checkSize = getattr(tasks, "checkSize", None)
+            if callable(checkSize):
+                checkSize("image.save", image.nbytes)
             task = submit(_saveInBackground, image.copy(), outputFile,
                           taskName="image.save", estimatedBytes=image.nbytes)
             return {
@@ -183,16 +203,32 @@ def _saveInBackground(control, image: np.ndarray, outputFile: Path) -> dict[str,
         raise OSError(f"failed to encode image: {outputFile}")
     control.raiseIfCancelled()
     outputFile.parent.mkdir(parents=True, exist_ok=True)
-    tempPath = None
-    try:
-        with NamedTemporaryFile(dir=outputFile.parent, suffix=".tmp", delete=False) as stream:
-            tempPath = stream.name
-            stream.write(encoded.data)
-        control.publish(lambda: os.replace(tempPath, outputFile))
-    finally:
-        if tempPath is not None:
-            Path(tempPath).unlink(missing_ok=True)
+    with control.temporaryFile(outputFile.parent) as stream:
+        stream.write(encoded.data)
+        stream.close()
+        control.publish(lambda: _publishUniqueImage(stream.name, outputFile))
     return {"saved": True, "path": str(outputFile)}
+
+
+def _publishUniqueImage(tempPath, outputFile: Path) -> None:
+    try:
+        if os.name == "nt":
+            os.rename(tempPath, outputFile)  # Windows rename fails when the target exists.
+            return
+        if _renameat2 is not None:
+            target = os.fsencode(outputFile)
+            if b"\0" in target:
+                raise ValueError("embedded null byte in image output path")
+            if _renameat2(_AT_FDCWD, os.fsencode(tempPath), _AT_FDCWD, target, _RENAME_NOREPLACE) == 0:
+                return
+            error = ctypes.get_errno()
+            if error not in (errno.ENOSYS, errno.EINVAL, errno.EOPNOTSUPP):
+                raise OSError(error, os.strerror(error), outputFile)
+        # POSIX fallback: create the final name atomically from the completed file.
+        # The caller unlinks the temporary name after publication.
+        os.link(tempPath, outputFile)
+    except FileExistsError as error:
+        raise _OutputExistsError(f"output file exists: {outputFile}") from error
 
 
 def _error(code: str, message: str) -> dict[str, Any]:

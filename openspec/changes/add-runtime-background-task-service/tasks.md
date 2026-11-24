@@ -1,45 +1,41 @@
 # 实施任务
 
-## 1. 注册能力声明
+## 1. 注册与注入
 
-- [ ] 1.1 在 PluginManifest 增加可选 runtimeCapabilities；缺省为空，首版识别 backgroundTasks。
-- [ ] 1.2 在 validateManifestFields() 校验能力列表类型、唯一性和已支持值；未知值或格式错误按 manifest 校验失败处理。
-- [ ] 1.3 通过现有 PluginDescriptor.manifest 保留声明；不增加 OperatorMeta 字段、不增加算子基类或必需方法。
-- [ ] 1.4 ImageSaver manifest 声明 backgroundTasks；需要 wait 的下游算子也声明该能力，其他现有算子保持不声明。
+- [ ] 1.1 在 PluginManifest 增加末尾可选字段 runtimeCapabilities，默认空 tuple；validator 校验 backgroundTasks 声明。
+- [ ] 1.2 通过现有 PluginDescriptor.manifest 保留声明；旧 manifest 兼容；不改 OperatorMeta、算子基类和 executeNode 签名。
+- [ ] 1.3 ImageSaver manifest 声明 backgroundTasks；OperatorExecutor 只向已声明算子注入客户端。
+- [ ] 1.4 调试能力由 Runtime trustedEntries() 传递；PurePreview 和 clone-safe trial 不开放。
 
 ## 2. 后台任务服务
 
-- [ ] 2.1 新增 Job-scoped BackgroundTaskService、节点级 BackgroundTaskClient 和任务引用；首版一条 FIFO 工作线程、有界队列。
-- [ ] 2.2 实现 submit、wait、status、任务结果、完成/失败记录和提交时运行身份冻结；不复用已关闭的 OperatorLogger。
-- [ ] 2.3 队列按任务数量和估算字节数双重限额；队列满时实施可取消背压，超大单任务明确报错；终态记录有界保留，淘汰后 wait 返回 E_BACKGROUND_TASK_EXPIRED，pending artifact/binding 依赖未释放前固定保留任务记录；保留独立的未观察失败摘要。
-- [ ] 2.4 实现 TaskControl 注入、取消检查和原子发布门禁；实现正常 drain、取消待执行任务、限时等待和幂等 close；Runner 在节点边界、workflow run 开始和 workflow 完成前检查未观察失败；原始工作流错误优先；任务函数禁止递归 submit/wait。
-- [ ] 2.5 在 JobProcessSpec 增加内部后台 drain 超时（默认 30000ms）；正常完成 drain 超时返回 E_BACKGROUND_TASK_DRAIN_TIMEOUT，不发布 job.completed；取消沿用现有 5000ms Supervisor 终止策略。
+- [ ] 2.1 新增 Job-scoped BackgroundTaskService、节点级客户端和任务引用；一条 FIFO worker。
+- [ ] 2.2 实现 submit、wait、status、任务状态/结果、来源身份和任务完成/失败记录。
+- [ ] 2.3 实现任务数量/字节双重限额、队列背压、单任务超限错误及有限任务记录保留；pending artifact/binding 依赖期间固定保留记录。
+- [ ] 2.4 实现 TaskControl 取消检查和最终发布门禁；实现 drain、取消排队任务、内部 30 秒 drain 上限及幂等 close。
 
-## 3. Runtime 与 Runner 接入
+## 3. Runtime / Runner 接入
 
-- [ ] 3.1 在 Job worker 创建服务，并沿 WorkflowRunner → OperatorExecutor → 每次 executeNode runtimeContext 注入；OperatorExecutor 仅对声明 backgroundTasks 的算子注入。
-- [ ] 3.2 让 BackgroundTaskService 提供完成记录队列；WorkflowRunner 在节点边界、workflow run 开始、workflow 完成前和 Job 收尾阶段于 Runtime 执行线程处理任务事件及延迟产物，不从后台线程直接操作 ArtifactStore、ResultCollector 或预览对象。
-- [ ] 3.2a 连续 Job 的 cycle 间隔等待和 Dispatch consumer 的 IDLE 轮询定期调用 Runner poll，未观察失败不能因主工作流暂时空闲而滞留。
-- [ ] 3.3 确认并覆盖正式 Job、单算子调试、工作流调试；调试能力必须来自 trustedEntries() 的已校验 manifest，不能信任客户端自报。
-- [ ] 3.4 单算子调试在输出冻结前 drain 并解析最终任务状态；工作流调试在最终快照/会话关闭前 drain，暂停期间允许后台任务继续运行。
-- [ ] 3.5 保持 PurePreviewExecutor 和工作流 clone-safe trial 无后台提交能力，验证纯预览不能产生延迟副作用。
-- [ ] 3.6 调整 Job terminal 顺序：后台服务先 drain/cancel，Runner 处理剩余完成记录和产物，再关闭 AsyncPreviewSnapshotWriter，最后发布 terminal event；保留现有 5000ms graceful stop 超时语义。
+- [ ] 3.1 Job worker 创建服务并沿 WorkflowRunner → OperatorExecutor → runtimeContext 注入；同一 Job 的循环/子流程/连续周期共用。
+- [ ] 3.2 Runner 在节点边界、workflow run 开始/完成前处理任务完成记录、失败和 pending artifact；ArtifactStore、ResultCollector、预览对象只由 Runtime 执行线程调用。
+- [ ] 3.3 连续运行间隔和 Dispatch consumer IDLE 等待定期调用 Runner poll。
+- [ ] 3.4 单算子调试、工作流调试传递已验证能力声明并在输出冻结/最终快照前 drain；保持 PurePreview 和 clone-safe trial 隔离。
+- [ ] 3.5 Job terminal 前先关闭提交入口并 drain、处理剩余产物，再关闭 AsyncPreviewSnapshotWriter，最后发布 terminal event；保留现有 5000ms Stop 规则。
 
-## 4. ImageSaver 与下游依赖
+## 4. ImageSaver 与现有文件链路
 
-- [ ] 4.1 为 ImageSaver 增加 saveMode=sync/background，默认 sync；同步模式行为和原有覆盖/唯一命名语义不变；首版后台模式要求 namingMode=unique，固定命名明确拒绝。
-- [ ] 4.2 将后台模式的图像快照、编码、写入放到工作线程；按任务字节权重申请队列额度；先写任务专属临时文件，完成后原子发布唯一最终路径；返回 SUBMITTED 和 taskId，不返回 saved=true。
-- [ ] 4.3 让普通下游算子可按 taskId 显式 wait；更新算子开发指南，说明 manifest 能力声明、异步文件依赖和图像所有权。
-- [ ] 4.4 让 Runner 识别 pending artifact，任务成功后才 registerPath、计算校验值、发布 artifact.created 和预览；失败不发布成功产物。
-- [ ] 4.5 为 SQLite FILE_REFERENCE 增加延迟绑定：生产节点先保存 pending binding，在 SQLiteWriter 执行前 wait，成功后再调用现有 captureBoundValue/toStorage；失败生成 BoundValue 错误，不改变 SQLiteWriter 事务逻辑。
-- [ ] 4.6 保持 DetectionArchive、ResultWriter、SQLiteWriter 的同步执行语义及所有文件读取操作不变。
+- [ ] 4.1 增加 saveMode=sync/background，默认 sync；后台模式仅允许 namingMode=unique，fixed 明确报错；同步模式不变。
+- [ ] 4.2 后台模式复制图像、提交带 estimatedBytes 的任务，写入任务专属临时文件并通过 TaskControl 原子发布最终文件；返回 SUBMITTED/taskId，不返回 saved=true。
+- [ ] 4.3 Runner 延迟登记 pending artifact；成功后 registerPath、SHA-256、artifact.created 和预览捕获，失败不登记。
+- [ ] 4.4 Runner 延迟 SQLite FILE_REFERENCE 绑定：SQLiteWriter 执行前 wait，成功后完成 artifact 处理并调用现有 captureBoundValue/toStorage；失败交给现有 failurePolicy。
+- [ ] 4.5 更新算子开发指南，说明 manifest 能力声明、提交/等待、任务函数边界和图像数据所有权。
 
 ## 5. 验证与交付
 
-- [ ] 5.1 覆盖 manifest 缺省、声明、重复值、未知值、非字符串值和 descriptor 能力保留；未声明算子不得获得客户端。
-- [ ] 5.2 覆盖任务提交/返回、FIFO、等待结果、异常传播、任务数量/字节双重背压、超大任务拒绝、记录淘汰与依赖固定、取消、正常 drain、Job 隔离和任务事件身份。
-- [ ] 5.3 覆盖 Runner 完成记录 drain、ArtifactStore 延迟登记、预览 writer 关闭顺序、Job terminal 顺序、连续间隔/Dispatch IDLE 失败轮询、后台 drain 超时终态和 graceful stop 超时边界。
-- [ ] 5.4 覆盖 ImageSaver 同步回归、后台 unique 命名约束、源图快照、临时文件原子发布、失败/取消不暴露半成品、artifact 延迟登记，以及 SQLite FILE_REFERENCE 的成功等待和失败路径。
-- [ ] 5.5 覆盖正式 Job、单算子调试、工作流调试、纯预览和 clone-safe trial 的能力边界。
-- [ ] 5.6 运行受影响的现有测试和 OpenSpec strict validation；记录固定源码 SHA、实际测试结果、未执行项。不得把静态审查或单测通过表述为真实设备验收。
-- [ ] 5.7 更新算子开发指南和 Runtime 架构说明；提交/推送时按实际执行角色附对应 ChatGPT Web / Codex / dot 评论。
+- [ ] 5.1 运行 manifest 注册与注入测试：旧 manifest、有效声明、非法声明、未声明算子不可访问。
+- [ ] 5.2 运行后台服务测试：非阻塞提交/FIFO/wait/失败/背压/取消/任务记录保留/来源身份；使用 Event 控制时序，不新增长时间 sleep 或压力测试。
+- [ ] 5.3 运行 Job 集成测试：多算子共享、不同 Job 隔离、连续/Dispatch 空闲期间失败发现、Job drain 与 terminal 顺序。
+- [ ] 5.4 运行 ImageSaver 和 Runner 集成测试：同步回归、后台 unique 命名、源图快照、临时文件原子发布、artifact 延迟登记、SQLite FILE_REFERENCE 成功/失败。
+- [ ] 5.5 覆盖调试模式能力传递和 PurePreview/clone-safe trial 隔离。
+- [ ] 5.6 运行受影响的现有回归及 OpenSpec strict validation；记录固定源码 SHA、实际结果和未执行项。不新增全算子遍历、现场设备或极限性能测试。
+- [ ] 5.7 更新计划状态和交付记录；推送时附实际执行角色的 ChatGPT Web / Codex / dot 评论。

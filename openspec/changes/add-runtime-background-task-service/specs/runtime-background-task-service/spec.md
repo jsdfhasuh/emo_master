@@ -2,254 +2,80 @@
 
 ## ADDED Requirements
 
-### Requirement: Plugins explicitly declare permission to use background tasks
+### Requirement: Plugins declare background task capability
 
-A plugin manifest MAY declare runtimeCapabilities. The first supported capability MUST be backgroundTasks. This capability MUST permit submitting, waiting for, and querying Runtime-managed tasks. A manifest without the field MUST be treated as declaring no Runtime background capabilities. Runtime MUST expose the background task client only to an operator whose validated PluginManifest declares backgroundTasks.
+A plugin manifest MAY declare `runtimeCapabilities`; the first supported value is `backgroundTasks`. Missing field means no capability. Runtime MUST expose the client only to operators whose validated PluginManifest declares it.
 
-#### Scenario: A plugin declares backgroundTasks
+#### Scenario: Legacy and declared manifests
 
-- **WHEN** a manifest contains runtimeCapabilities with backgroundTasks
-- **THEN** registration MUST preserve the declaration in PluginManifest
-- **AND** the operator execution context MUST expose the background task client in supported execution modes
+- **WHEN** a legacy manifest omits runtimeCapabilities or ImageSaver declares backgroundTasks
+- **THEN** the legacy plugin remains valid without the client, and ImageSaver receives the client in supported execution modes
 
-#### Scenario: A legacy manifest omits runtimeCapabilities
+#### Scenario: Invalid capability declaration
 
-- **WHEN** a manifest has no runtimeCapabilities field
-- **THEN** it MUST remain valid and behave as an empty capability list
-- **AND** its operator MUST NOT receive the background task client
+- **WHEN** the declaration contains an unknown value, duplicate, or non-string item
+- **THEN** the operator is rejected with a manifest validation issue
 
-#### Scenario: A manifest declares an unsupported capability
+### Requirement: A Job owns one shared background worker
 
-- **WHEN** runtimeCapabilities contains an unknown value, a duplicate, or a non-string item
-- **THEN** manifest validation MUST reject that operator with a specific validation issue
+Each Job worker process MUST own one FIFO background worker and bounded queue. Operators in the same Job share it; different Job processes MUST NOT share task objects or threads. Operators MUST NOT create or manage worker threads themselves.
 
-#### Scenario: Capability is not declared
+#### Scenario: Same Job and separate Jobs
 
-- **WHEN** an operator attempts to access backgroundTasks without declaring the capability
-- **THEN** the runtime context MUST NOT provide the client
-- **AND** the operator MUST continue to work normally if it uses only its existing synchronous behavior
+- **WHEN** two operators in one Job submit tasks, or two independent Jobs submit tasks
+- **THEN** the first pair uses the same worker, while each independent Job uses its own worker
 
-### Requirement: Runtime exposes a Job-scoped background task capability to declared operators
+### Requirement: Submission is distinct from task completion
 
-Runtime MUST provide a background task client through the per-invocation operator runtime context during supported Job execution. The client MUST submit work to a service owned by the current Job worker process. Operators MUST NOT create or manage the service thread themselves.
+The client MUST provide submit, wait, and status. A successful submit only means the task was accepted. Task failures MUST remain observable through wait and Runner polling. Queue capacity MUST be bounded by task count and estimated payload bytes.
 
-#### Scenario: Multiple operators submit work within one Job
+#### Scenario: Non-blocking submit and explicit wait
 
-- **WHEN** two or more declared operators in the same Job submit background tasks
-- **THEN** their tasks MUST use the same Job-scoped service and FIFO worker
-- **AND** task ownership MUST remain within that Job process
+- **WHEN** an operator submits a task while capacity is available
+- **THEN** it receives a task ID without waiting for the task function to finish; a later wait returns its result or raises its error
 
-#### Scenario: Different Jobs run concurrently
+#### Scenario: Queue capacity is reached
 
-- **WHEN** two Jobs execute in separate worker processes
-- **THEN** each Job MUST own an independent background task service
-- **AND** no task or Python object MUST be transferred between Job processes by this service
+- **WHEN** the queue is full or payload budget is exhausted
+- **THEN** submit waits for capacity or cancellation; an individually oversized task fails explicitly
 
-### Requirement: Submission and completion are distinct states
+### Requirement: Runtime controls task lifetime and final publication
 
-The service MUST return a task identifier when a task is accepted. Acceptance MUST NOT be represented as successful task completion. The operator client MUST support waiting for a task result by identifier and querying its current state.
+Runtime MUST inject TaskControl into accepted task functions. TaskControl MUST support cancellation checks and a short guarded final-publication operation. Service close and final publication MUST be serialized so an abandoned task cannot publish after close.
 
-#### Scenario: Operator submits a task without waiting
+#### Scenario: Task finalizes a file
 
-- **WHEN** an operator submits a task and returns to the workflow
-- **THEN** the returned task identifier MUST identify an accepted task
-- **AND** the workflow MAY continue without waiting for the task to finish
+- **WHEN** a task has completed writing its temporary file
+- **THEN** it publishes the final path through TaskControl while the service remains active
 
-#### Scenario: A later operator requires the task result
+#### Scenario: Service drain times out
 
-- **WHEN** an operator waits for a previously submitted task identifier
-- **THEN** the call MUST wait for that task to reach a terminal state
-- **AND** it MUST return the task result on success or raise a task error on failure
-- **AND** the wait MUST respond to the current Job cancellation
+- **WHEN** the internal normal-drain deadline expires
+- **THEN** the service becomes abandoned, late final publication is rejected, and normal Job completion fails rather than reporting success
 
-#### Scenario: A task record has expired
+### Requirement: Runtime registers asynchronous artifacts after completion
 
-- **WHEN** a caller queries or waits for a task whose terminal record has been evicted by the bounded retention policy
-- **THEN** Runtime MUST return E_BACKGROUND_TASK_EXPIRED
-- **AND** it MUST NOT infer success from the missing record
+Runner MUST process task completion on the Runtime execution thread. It MUST register the artifact and publish artifact.created only after the file exists and the task succeeds. Job terminal publication MUST occur after pending tasks and artifacts are drained.
 
-### Requirement: Background task execution is bounded and does not silently discard accepted work
+#### Scenario: Artifact success and failure
 
-The first implementation MUST use one FIFO worker thread per Job and a bounded pending queue constrained by both task count and estimated pending payload bytes. A full queue MUST apply backpressure to the submitting operator, with cancellation support. A single task exceeding the configured byte limit MUST fail explicitly. Accepted tasks MUST NOT be silently dropped or automatically retried. Terminal task records MUST also have bounded retention; running tasks and records pinned by pending artifact/binding dependencies MUST NOT be evicted.
+- **WHEN** an ImageSaver task succeeds or fails
+- **THEN** success is registered and previewed after the write; failure produces no successful artifact
 
-#### Scenario: Queue reaches capacity
+### Requirement: SQLite file references wait for pending image writes
 
-- **WHEN** a producer submits while the pending queue is full
-- **THEN** submission MUST wait for capacity or cancellation
-- **AND** it MUST NOT report the task as accepted before it is enqueued
+Runner MUST defer captureBoundValue for pending ImageSaver outputs mapped to SQLite FILE_REFERENCE. It MUST wait before SQLiteWriter executes, process the completed artifact, then capture the existing saved file reference. Failure MUST flow through the existing SQLite failure policy without inserting a missing file.
 
-#### Scenario: Task raises an exception
+#### Scenario: SQLite consumes pending image
 
-- **WHEN** a background task raises an exception
-- **THEN** the task MUST enter FAILED state and publish a Runtime failure event with its task ID and captured source identity
-- **AND** waiting for the task MUST raise a task error that preserves the original cause
+- **WHEN** a pending image output is mapped to FILE_REFERENCE
+- **THEN** SQLiteWriter starts only after the file task succeeds and the normal BoundValue is created
 
-#### Scenario: A task exceeds the byte budget
+### Requirement: Debug and preview execution respect capability boundaries
 
-- **WHEN** one submitted task's estimated payload exceeds the configured per-task limit
-- **THEN** submission MUST fail with E_BACKGROUND_TASK_TOO_LARGE
-- **AND** it MUST NOT wait forever or exceed the service memory budget
+Single-operator and workflow debug MUST receive capability declarations only from Runtime-validated manifests. PurePreview and clone-safe trial MUST NOT receive a usable background submission client.
 
-#### Scenario: A task function recursively waits on the same service
+#### Scenario: Debug and pure preview
 
-- **WHEN** a running background task attempts to submit or wait for another task on the same single-worker service
-- **THEN** Runtime MUST reject the recursive operation rather than deadlock the worker
-
-### Requirement: Background task final publication is guarded by Runtime lifecycle
-
-Runtime MUST inject a service-owned TaskControl into each accepted background task callable. TaskControl MUST provide cancellation checks and a guarded final-publication operation. Once service close has abandoned the service, a task MUST NOT publish a new externally visible final result or file. The guarded publication callback MUST be short and limited to the atomic finalization step.
-
-#### Scenario: A task publishes a completed file
-
-- **WHEN** a task has fully written and closed its temporary file
-- **THEN** it MUST perform the final atomic publication through TaskControl.publish
-- **AND** the publication MUST be serialized against service close
-
-#### Scenario: Service close abandons an active task
-
-- **WHEN** service close reaches its drain deadline while a task is still active
-- **THEN** Runtime MUST mark the task abandoned and reject any later TaskControl.publish finalization
-- **AND** a normal Job MUST fail with E_BACKGROUND_TASK_DRAIN_TIMEOUT rather than publish job.completed
-
-### Requirement: Job lifecycle owns all accepted background tasks
-
-The Job worker MUST close the service before publishing its terminal Job event. Normal completion MUST drain accepted tasks and process all resulting task events and deferred artifacts before the terminal event. JobProcessSpec MUST carry an internal backgroundTaskDrainTimeoutMs with a 30000ms default; a normal drain timeout MUST produce E_BACKGROUND_TASK_DRAIN_TIMEOUT, never job.completed. Cancellation or an existing execution failure MUST stop admission, cancel tasks that have not started, and allow the active task to finish within the existing Job graceful-stop policy.
-
-#### Scenario: Job completes normally with pending tasks
-
-- **WHEN** the workflow graph finishes while accepted background tasks remain queued or running
-- **THEN** the Job MUST wait for those tasks to finish before publishing job.completed
-- **AND** Runner MUST process all task completion records and deferred artifacts before job.completed
-- **AND** any unobserved task failure MUST cause a FAILED Job terminal with E_BACKGROUND_TASK_FAILED
-
-#### Scenario: Job is cancelled while tasks are queued
-
-- **WHEN** Job cancellation is requested
-- **THEN** the service MUST reject new submissions and cancel tasks that have not started
-- **AND** an already-running task MUST be allowed to finish within the existing graceful-stop timeout
-- **AND** if the existing Supervisor force-terminates the worker after that timeout, Runtime MUST NOT publish the task or file as successfully completed
-
-#### Scenario: Job already has a primary workflow failure
-
-- **WHEN** background cleanup also reports a failure
-- **THEN** the original workflow failure MUST remain the primary error
-- **AND** background cleanup details MUST be attached without replacing it
-
-### Requirement: Task events preserve the originating operator identity
-
-The service MUST capture the submitting invocation identity at submission time. Completion and failure events MUST use that captured identity rather than a logger or mutable context that may already have been closed. WorkflowRunner MUST process task completion records on its Runtime execution thread rather than invoking Runner, ResultCollector, ArtifactStore, or preview objects directly from the background worker thread.
-
-#### Scenario: Task finishes after executeNode returns
-
-- **WHEN** a task completes after the submitting operator has returned
-- **THEN** the completion event MUST retain the original Job, workflow, node and node-run identity
-- **AND** it MUST NOT depend on the submitting OperatorLogger remaining open
-
-#### Scenario: Task completes while another node is running
-
-- **WHEN** a background task completes while the main workflow thread is executing another node
-- **THEN** its completion record MAY be processed at the next node boundary
-- **AND** all completion records MUST be processed before the Job terminal event
-
-#### Scenario: An unobserved task fails in a continuous Job
-
-- **WHEN** a background task fails and no operator has waited for/handled that failure
-- **THEN** Runner MUST detect it at the next node boundary, next workflow-run start, or before workflow completion
-- **AND** the active execution MUST fail with E_BACKGROUND_TASK_FAILED without waiting for the continuous Job to be manually stopped
-
-#### Scenario: A task fails while the Job is between workflow cycles or waiting for a Dispatch invocation
-
-- **WHEN** an unobserved task fails while the worker is in a cycle delay or Dispatch IDLE wait
-- **THEN** the worker MUST poll the task service during that idle period
-- **AND** the Job MUST fail without waiting indefinitely for another cycle or external dispatch
-
-### Requirement: ImageSaver supports opt-in background writing without changing its default behavior
-
-ImageSaver MUST declare backgroundTasks in its manifest and retain synchronous saving as its default. Its opt-in background mode MUST use unique naming, write to a task-specific temporary file, atomically publish the final file only after a complete write, return an accepted task ID and pending state, and MUST only report saved success after the write task succeeds.
-
-#### Scenario: Existing project uses default ImageSaver settings
-
-- **WHEN** an existing project runs ImageSaver without selecting background mode
-- **THEN** it MUST retain the existing synchronous write and result behavior
-
-#### Scenario: ImageSaver uses background mode
-
-- **WHEN** ImageSaver submits a copied image for background encoding and writing
-- **THEN** it MUST return accepted=true, saved=false, state=SUBMITTED, the target path and task ID
-- **AND** it MUST NOT claim the file already exists or has been saved
-
-#### Scenario: Background image write completes
-
-- **WHEN** the ImageSaver task succeeds
-- **THEN** Runtime MUST publish the corresponding task completion
-- **AND** the existing artifact registration and preview path MUST run only after the file is ready
-
-#### Scenario: Background image write fails
-
-- **WHEN** the ImageSaver task fails
-- **THEN** Runtime MUST publish the task failure and MUST NOT publish artifact.created for that path
-
-#### Scenario: Background ImageSaver is configured with fixed naming
-
-- **WHEN** saveMode is background and namingMode is fixed
-- **THEN** ImageSaver MUST return a clear parameter error
-- **AND** synchronous fixed naming MUST remain supported
-
-#### Scenario: Background image write is interrupted before publication
-
-- **WHEN** a background image write fails or is terminated before its temporary file is complete
-- **THEN** the final output path MUST NOT expose a partial image
-- **AND** Runtime MUST NOT publish saved success or artifact.created
-
-#### Scenario: Close timeout occurs while image encoding is active
-
-- **WHEN** service close abandons an ImageSaver task before final publication
-- **THEN** its TaskControl.publish operation MUST be rejected
-- **AND** the task MUST NOT create the final path after the Job has entered terminal cleanup
-
-### Requirement: Deferred file artifacts are registered only after their task succeeds
-
-WorkflowRunner MUST recognize the explicit pending-artifact output contract and defer ArtifactStore registration, checksum calculation, artifact.created publication, and artifact preview capture until the corresponding task succeeds. Completion handling MUST run on the Runtime execution thread.
-
-#### Scenario: Pending artifact task succeeds
-
-- **WHEN** a pending ImageSaver artifact task succeeds
-- **THEN** Runner MUST register the real file through the existing ArtifactStore
-- **AND** Runner MUST publish artifact.created and capture the artifact only after registration
-
-#### Scenario: Pending artifact task fails or is cancelled
-
-- **WHEN** a pending artifact task fails or is cancelled before producing a completed file
-- **THEN** Runner MUST NOT publish artifact.created for that pending path
-
-### Requirement: SQLite FILE_REFERENCE bindings wait for pending image files before capture
-
-WorkflowRunner MUST defer captureBoundValue for a pending ImageSaver output used by a SQLite FILE_REFERENCE mapping. It MUST wait for the task before the target SQLiteWriter node executes, then pass the completed saved path through the existing captureBoundValue/toStorage contract.
-
-#### Scenario: SQLite consumes a pending image reference
-
-- **WHEN** a pending ImageSaver output is mapped to a SQLite FILE_REFERENCE field
-- **THEN** Runner MUST retain the task ID and binding identity instead of immediately calling captureBoundValue
-- **AND** Runner MUST wait for the task before the SQLiteWriter node starts
-- **AND** after success it MUST capture a normal saved file reference and preserve the existing SQLiteWriter transaction behavior
-
-#### Scenario: Pending image save fails before SQLite consumes it
-
-- **WHEN** the image save task fails
-- **THEN** Runner MUST provide an error BoundValue to the SQLiteWriter mapping
-- **AND** SQLiteWriter MUST NOT insert a nonexistent file reference
-
-### Requirement: Pure preview remains free of background side effects
-
-Pure operator preview and clone-safe workflow trial MUST NOT receive a usable background submission capability, even when the plugin manifest declares backgroundTasks.
-
-#### Scenario: Pure preview requests background execution
-
-- **WHEN** an operator is executed through previewMode=pure and requests a background task
-- **THEN** the operation MUST be unavailable for pure preview
-- **AND** no file-writing task may outlive the preview request
-
-#### Scenario: Workflow debug trial executes a clone-safe operator
-
-- **WHEN** a clone-safe trial runs an operator
-- **THEN** it MUST NOT inherit the parent workflow's background task service
+- **WHEN** a declared operator runs in supported debug mode or in PurePreview/clone-safe trial
+- **THEN** supported debug receives the client, while pure modes remain unable to submit side effects

@@ -1,45 +1,51 @@
 # 计划复核记录
 
-复核基准：OpenSpec 提交 4cd21655a413c370af8d9f3379a5d24fe49d1f6c；源码基准 main b75df0adb7a90a4e0b540ff1c8c09e9339cfcdbd。
+源码基准：`main @ b75df0adb7a90a4e0b540ff1c8c09e9339cfcdbd`。本文件记录静态源码审查，不代表源码实现或测试已经完成。
 
-## 复核结论
+## 已确认的必要设计
 
-原计划的主方向正确：manifest 声明能力、PluginManifest 保存声明、OperatorExecutor 按声明注入 Job-scoped 后台任务客户端，不改算子基类或 executeNode 签名。
+1. manifest 声明能力，PluginManifest 保存，OperatorExecutor 按声明注入；不改 OperatorMeta、基类或 executeNode 签名。
+2. 每个 Job 进程拥有一条后台 worker；不同 Job 不跨进程共享线程。
+3. submit 与真正保存成功分开；ImageSaver 默认同步，后台模式返回 taskId 和 SUBMITTED。
+4. ImageSaver 后台模式使用 unique 命名、任务专属临时文件和原子发布，防止同名覆盖与半成品文件。
+5. Runner 必须在文件成功后登记 artifact；SQLite FILE_REFERENCE 必须延迟到 SQLiteWriter 执行前等待并采集。
+6. 后台完成记录由 Runtime 执行线程处理；Job terminal 前先收尾后台任务和产物，再关闭预览 writer。
+7. 连续运行和 Dispatch IDLE 期间也要轮询未观察失败，避免后台失败长期无人发现。
 
-但原计划还有两处关键链路没有闭合，已在本次修订中补充：
+## 过度设计审查
 
-1. **SQLite FILE_REFERENCE 提前校验。** Runner 在生产节点之后立即调用 captureBoundValue；该函数马上调用 SQLite toStorage，要求引用已经 saved=true 且文件存在。因此只在 SQLiteWriter 算子内部 wait 不可能生效。修订为 Runner 暂存 pending binding，在 SQLiteWriter 节点执行前 wait，成功后再调用原 captureBoundValue；失败生成 BoundValue 错误，不执行无效引用写入。
-2. **ArtifactStore 和预览 writer 的线程/关闭顺序。** 原 Runner 会立即 registerPath、复制并计算 SHA-256；worker_main 的 terminal helper 当前先关闭 AsyncPreviewSnapshotWriter。修订为服务只产出完成记录，Runner 在自身执行线程 drain 并登记 artifact；Job terminal 顺序先关闭/排空后台服务、处理完成记录和产物，再关闭预览 writer，最后发布 terminal。
+| 原计划内容 | 审查结论 | 调整 |
+|---|---|---|
+| 每 Job 一条 FIFO worker | 必要 | 保留 |
+| manifest 能力声明 | 必要 | 保留 |
+| 任务数量 + 字节双重限额 | 图片任务需要 | 保留，但只做内部固定上限，不增加用户配置 |
+| 任务终态记录上限 | 长时间连续 Job 需要 | 保留最近有限记录；pending 依赖固定保留 |
+| TaskControl 最终发布门禁 | 解决 close 超时后的迟到文件发布 | 保留最小 API，只提供取消检查和短小原子发布 |
+| 独立 30 秒正常 drain 上限 | 需要防止正常收尾永久卡住 | 保留为服务内部常量，不增加 JobProcessSpec 或工程配置 |
+| 复杂失败历史/计数系统 | 不需要 | 简化为首个未观察失败；Runner 及时 poll 并终止当前执行 |
+| 任务递归 submit/wait 的运行时防御 | 不值得增加单独框架 | 仅作为任务函数开发约束，不增加递归检测机制或专项测试 |
+| 单独覆盖每一种取消时序的测试 | 重复价值低 | 合并为服务生命周期测试 |
+| 逐项测试每个 manifest 非法组合 | 重复价值低 | 用参数化测试一次覆盖 |
+| 独立性能基准、压力/soak、全算子遍历 | 超出首版目标 | 删除，不作为验收门槛 |
 
-另补充了连续 Job 的任务状态记录上限、调试 class-only registry 的能力传递，以及现有 5000ms graceful-stop 强制终止边界，避免把线程收尾描述成无限等待。
+## 重要修正
+
+- 后台保存首版必须使用 `namingMode=unique`；用户已确认接受。同步模式继续支持 fixed/unique。
+- TaskControl 的接口定义只保留一处：任务函数签名为 `callable(taskControl, *args)`；`publish(finalize)` 只包住临时文件到最终路径的原子提交，不能执行耗时 I/O。
+- 30 秒 drain 超时是服务内部常量，不新增 JobProcessSpec 字段；用户 Stop 继续沿用现有 5000ms Supervisor 规则。
+- 不建立独立的失败历史/计数服务；首个未观察失败被 Runner 发现后立即终止当前 Job。
+- 任务记录只在仍被 Runner pending artifact/SQLite binding 引用时固定保留，依赖释放后进入普通有限保留。
+- Runner 对 SQLite pending binding 的处理顺序为：wait → 处理任务完成记录/登记 artifact → captureBoundValue → SQLiteWriter。
+
+## 精简后的测试范围
+
+只保留 5 组直接相关验证：注册与注入、后台服务核心行为、Job/Runner 生命周期、ImageSaver/artifact/SQLite 文件链路、调试/预览隔离。采用 Event 和临时目录做确定性测试，不新增全算子遍历、长时间压力/soak、现场设备或独立性能基准。
 
 ## 仍需实施验证
 
-- 生产 Job 的多算子共享、异步重叠和 Job 隔离。
-- SQLite FILE_REFERENCE 延迟绑定的成功/失败路径。
-- artifact.created、ArtifactStore 复制/校验、preview capture 与 job terminal 的严格顺序。
-- 调试模式的能力传递与 drain。
-- 任务记录达到上限时的显式过期行为。
-- graceful stop 超时后不伪造保存成功。
+- OpenSpec strict validation。
+- 受影响的 manifest、后台服务、Runner、ImageSaver、SQLite binding 和调试测试。
+- Windows/Linux Job worker 集成测试。
+- 真实 Designer/现场图片保存体验（如需宣称生产验收）。
 
-本复核仅修订计划文档；没有修改 Runtime 源码，没有运行 OpenSpec CLI、pytest、GUI 或真实设备验收。
-
-
-## 第二轮复核：新增的实现风险
-
-继续沿固定源码检查 ImageSaver、PluginManifest 构造、OperatorExecutor、WorkflowRunner 和 Job 生命周期后，补充以下要求：
-
-1. **异步写入不能直接写最终文件。** 当前 ImageSaver 直接打开最终路径写入；如果进程在写到一半时被现有 5000ms graceful-stop 机制终止，磁盘上可能留下半成品。后台模式改为任务专属临时文件，完整写入后原子发布最终文件。
-2. **异步固定文件名会造成产物错配。** 多个 Job、循环周期或同一工作流的异步任务可能写同一个 fixed path；Runner 延迟处理完成记录时，文件可能已被后一个任务覆盖。首版后台模式要求 `namingMode=unique`，同步模式仍支持 fixed/unique。
-3. **只限制队列任务数量不够。** 图像大小不一，有限个大图也可能占用大量内存。服务需同时限制待处理任务数和估算字节数，超单项上限明确报错；释放额度必须覆盖成功、失败和取消路径。
-4. **未观察失败不能等到 Job 终止才发现。** 连续 Job 可能长期不结束。Runner 必须在节点边界、下一次 workflow run 开始处及 workflow 完成前检查未观察失败；显式 wait 已交给算子处理的失败不重复触发全局失败。
-5. **任务结果记录不能淘汰仍被 Runtime 内部引用的任务。** pending artifact 和 SQLite pending binding 在处理完成前固定保留对应记录；依赖释放后才参与普通有界淘汰。
-6. **单线程服务禁止任务递归 submit/wait。** 否则后台任务在唯一 worker 内等待自己排队的子任务会永久死锁。
-
-上述限制已同步到 design、spec、tasks 和 acceptance。它们是为了保证文件正确性、内存有界和任务失败可见，不改变同步算子的默认行为。
-
-
-7. **连续运行的空闲窗口也必须检查失败。** 源码中的 continuous cycle 间隔和 Dispatch consumer 的 IDLE 等待发生在 `WorkflowRunner.run()` 外；只在节点边界和 workflow 完成前 poll 仍会漏掉任务在空闲窗口内失败的情况。已要求这两个等待循环也定期调用 Runner 的统一完成/失败轮询入口。
-
-
-8. **close 超时后必须防止迟到文件提交。** 仅把 worker 线程设为 daemon 仍不够：close 超时到 Job 进程真正退出之间，任务可能刚好恢复并写入最终文件。已增加 Runtime 注入的 TaskControl 和原子发布门禁；服务 abandoned 后，迟到的最终发布必须被拒绝。正常 Job drain 另设内部 30 秒上限，超时转为 E_BACKGROUND_TASK_DRAIN_TIMEOUT；用户主动 Stop 仍由原 5000ms Supervisor 宽限控制。
+本次仅修改计划文档；未修改 Runtime 源码，未运行测试。

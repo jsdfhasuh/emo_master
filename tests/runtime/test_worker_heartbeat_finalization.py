@@ -48,6 +48,9 @@ def _stubComputation(monkeypatch, run):
         def run(self, *args):
             return run()
 
+        def pollBackgroundTasks(self):
+            pass
+
     for name, value in (("ProjectDocument", Document), ("PluginRegistry", Registry),
                         ("WorkflowCompiler", Compiler), ("WorkflowRunner", Runner),
                         ("ArtifactStore", lambda path: object())):

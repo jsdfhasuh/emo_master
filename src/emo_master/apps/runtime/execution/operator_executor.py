@@ -2,15 +2,17 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from typing import TYPE_CHECKING, Any, Callable, Mapping
+from typing import TYPE_CHECKING, Any, Callable, Mapping, Sequence
 
 from emo_master.apps.runtime.context.coordinate_snapshots import CoordinateSnapshots
 from emo_master.apps.runtime.context.global_variables import ReadOnlyVariables
 from emo_master.apps.runtime.events.operator_logger import OperatorLogger, OperatorLogManager
 from emo_master.apps.runtime.execution.errors import WorkflowExecutionError
 from emo_master.core.contracts.port_types import isPortRequired, matchesPortSpec
+from emo_master.core.plugin.models import PluginDescriptor
 
 if TYPE_CHECKING:
+    from emo_master.apps.runtime.execution.background_tasks import BackgroundTaskService
     from emo_master.apps.runtime.workflow.cancellation import CancellationToken
     from emo_master.apps.runtime.workflow.context import RunContext
     from emo_master.core.workflow.models import CompiledNode
@@ -30,6 +32,8 @@ class OperatorExecutor:
         logManager: OperatorLogManager | None = None,
         communication: Any = None,
         devices: Any = None,
+        backgroundTasks: BackgroundTaskService | None = None,
+        runtimeCapabilities: Mapping[str, Sequence[str]] | None = None,
     ) -> None:
         self.operatorRegistry = operatorRegistry
         self.eventPublisher = eventPublisher
@@ -37,6 +41,9 @@ class OperatorExecutor:
         self.globalCounters = globalCounters
         self.communication = communication
         self.devices = devices
+        self.backgroundTasks = backgroundTasks
+        # Class-only debug workers receive declarations from Runtime's trustedEntries.
+        self.runtimeCapabilities = runtimeCapabilities or {}
         self.coordinateSnapshots = coordinateSnapshots if coordinateSnapshots is not None else CoordinateSnapshots()
         self._operatorLogManager = logManager if logManager is not None else OperatorLogManager(
             self.publish if eventPublisher is not None else None
@@ -201,6 +208,12 @@ class OperatorExecutor:
                 node.devicePlans[slot]['deviceId'], deviceParameters[slot], context.cycleId or context.workflowRunId,
                 source=dict(executionSource, slot=slot),
                 selectors=dict(node.devicePlans[slot].get('selectors', {})))
+        if self.backgroundTasks is not None:
+            descriptor = self.operatorRegistry.get(node.operatorId)
+            capabilities = (descriptor.manifest.runtimeCapabilities if isinstance(descriptor, PluginDescriptor)
+                            else self.runtimeCapabilities.get(node.operatorId, ()))
+            if "backgroundTasks" in capabilities:
+                runtimeContext["backgroundTasks"] = self.backgroundTasks.client(context, node.nodeId)
         if node.operatorId == "vision.io.sqlite_writer":
             from emo_master.apps.runtime.business_sqlite.backend import insert
             runtimeContext["sqliteInsert"] = insert

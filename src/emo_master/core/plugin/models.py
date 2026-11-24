@@ -32,6 +32,7 @@ class PluginManifest:
   iconResource: str = ""
   deviceRequirements: dict[str, DeviceRequirement] = field(default_factory=dict)
   nextCycleParameterPaths: tuple[str, ...] = ()
+  runtimeCapabilities: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)

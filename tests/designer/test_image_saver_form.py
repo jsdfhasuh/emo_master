@@ -24,7 +24,8 @@ def testSavePickerPreservesLegacyParameters(retainedQtApplication, monkeypatch, 
         assert calls and calls[0][0] == "C:/outputs/default.png"
         assert "*.png" in calls[0][1]
         assert form.getValues() == {
-            "outputPath": selected or "C:/outputs/default.png", "overwrite": False, "namingMode": "fixed",
+            "outputPath": selected or "C:/outputs/default.png", "overwrite": False,
+            "namingMode": "fixed", "saveMode": "sync",
         }
     finally:
         form.close()

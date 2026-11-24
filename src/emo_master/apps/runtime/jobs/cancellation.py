@@ -5,11 +5,30 @@ import time
 
 
 class JobCancellation:
-    def __init__(self, context) -> None:
+    def __init__(self, context, stagingWorkspace: str | None = None) -> None:
+        self.stagingWorkspace = stagingWorkspace
         # A single shared byte only moves from 0 to 1. There is no compound
         # update or payload publication, and every writer stores the same value.
         # Spawn passes the shared-memory handle, not a process-local copy.
         self._requested = context.Value("b", 0, lock=False)
+        # The worker updates this byte under its task-service lock. Configuration
+        # drain can read it even while the workflow is parked at beginCycle.
+        self._backgroundPending = context.Value("b", 0, lock=False)
+        # Only the workflow execution thread updates this flag. A finished
+        # write still belongs to the Job until its artifact has been published.
+        self._artifactsPending = context.Value("b", 0, lock=False)
+
+    def setBackgroundPending(self, pending: bool) -> None:
+        self._backgroundPending.value = pending
+
+    def hasPendingBackgroundTasks(self) -> bool:
+        return bool(self._artifactsPending.value or self._backgroundPending.value)
+
+    def setArtifactsPending(self, pending: bool) -> None:
+        self._artifactsPending.value = pending
+
+    def canPollParkedArtifacts(self) -> bool:
+        return bool(self._artifactsPending.value and not self._backgroundPending.value)
 
     def set(self) -> None:
         self._requested.value = 1

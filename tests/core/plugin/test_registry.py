@@ -16,7 +16,18 @@ def testRegistryLoadsValidManifest(tmp_path: Path, monkeypatch) -> None:
     scanResult = PluginRegistry(coreVersion="0.1.0").scan(pluginRoot)
 
     assert "vision.demo.temp" in scanResult.activeOperators
+    assert scanResult.activeOperators["vision.demo.temp"].manifest.runtimeCapabilities == ()
     assert scanResult.rejectedOperators == {}
+
+
+@pytest.mark.parametrize("capabilities", [["unknown"], ["backgroundTasks"] * 2, [1], "backgroundTasks", None])
+def testRegistryRejectsInvalidRuntimeCapability(tmp_path, capabilities):
+    payload = _validManifest(entry="unused.module:UnusedOperator")
+    payload["runtimeCapabilities"] = capabilities
+    _writeManifest(tmp_path, "invalid", payload)
+    result = PluginRegistry(coreVersion="0.1.0").scan(tmp_path)
+    assert not result.activeOperators
+    assert _codes(result.rejectedOperators["vision.demo.temp"]) == {"E_MANIFEST_RUNTIME_CAPABILITY"}
 
 
 @pytest.mark.parametrize("widgetClass", ["QWidget", "QSplitter"])

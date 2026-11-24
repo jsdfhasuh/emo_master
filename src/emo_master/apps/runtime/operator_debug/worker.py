@@ -12,6 +12,7 @@ import threading
 import time
 
 from emo_master.apps.runtime.jobs.heartbeat import HeartbeatCell, monotonicMs
+from emo_master.apps.runtime.execution.temporary_files import retireTemporaryFiles
 from emo_master.apps.runtime.operator_debug.contracts import encode, parse, MAX_INLINE_BYTES, MAX_REQUEST_BYTES
 
 
@@ -44,6 +45,7 @@ def watchParent(workspace, cancellation, stop, heartbeat, finished):
 
 
 def runOperatorDebug(specJson, commands, events, cancellation, stop, heartbeat):
+    from emo_master.apps.runtime.execution.background_tasks import BackgroundTaskService
     from emo_master.apps.runtime.execution.operator_executor import OperatorExecutor
     from emo_master.apps.runtime.workflow.cancellation import CancellationToken
     from emo_master.apps.runtime.workflow.context import RunContext
@@ -95,8 +97,13 @@ def runOperatorDebug(specJson, commands, events, cancellation, stop, heartbeat):
         if spec["operatorId"] == "vision.io.image_batch_loader":
             operator = DebugImageBatchLoader
         registry = {spec["operatorId"]: operator}
-        executor = OperatorExecutor(registry, eventPublisher=publish, globalVariables=variables, globalCounters=counters,
-                                    coordinateSnapshots=resources.coordinates)
+        capabilities = {spec["operatorId"]: spec.get("runtimeCapabilities", ())}
+
+        def makeExecutor():
+            return OperatorExecutor(registry, eventPublisher=publish, globalVariables=variables, globalCounters=counters,
+                                    coordinateSnapshots=resources.coordinates, runtimeCapabilities=capabilities)
+
+        executor = makeExecutor()
         lastParams = None
         send({"kind": "ready"})
         while not stop.is_set():
@@ -109,14 +116,14 @@ def runOperatorDebug(specJson, commands, events, cancellation, stop, heartbeat):
             started = time.monotonic()
             outputAssets = DebugAssets(spec["workspacePath"], budget=command["outputBudget"])
             notes = {}
+            backgroundTasks = None
             try:
                 if spec.get("executionWarning") and not command.get("sideEffectConfirmed"):
                     fail("E_DEBUG_CONFIRM_REQUIRED", "真实设备/文件操作未解锁。")
                 if lastParams is not None and lastParams != command["params"]:
                     executor.closeSession(context)
                     resources = DebugResources(spec)
-                    executor = OperatorExecutor(registry, eventPublisher=publish, globalVariables=variables, globalCounters=counters,
-                                                coordinateSnapshots=resources.coordinates)
+                    executor = makeExecutor()
                 lastParams = command["params"]
                 variables.values = DebugVariables(spec.get("variableDefinitions", {}), command.get("variables", {})).values
                 token = CancellationToken(cancellation)
@@ -131,7 +138,14 @@ def runOperatorDebug(specJson, commands, events, cancellation, stop, heartbeat):
                     from dataclasses import replace
                     executionContext = replace(context, workspacePath=str(Path(spec["workspacePath"]) / "file-output"))
                     notes["debugWorkspace"] = executionContext.workspacePath
+                if "backgroundTasks" in capabilities[spec["operatorId"]]:
+                    backgroundTasks = BackgroundTaskService(token, stagingWorkspace=spec["workspacePath"],
+                                                           stagingRecoveryRoot=spec.get("_stagingRecoveryRoot"))
+                    executor.backgroundTasks = backgroundTasks
                 outputs, metrics, diagnostics = executor.execute(node, values, executionContext, token, mapped)
+                if backgroundTasks is not None:
+                    backgroundTasks.close()
+                    backgroundTasks.raiseUnobservedFailure()
                 diagnostics = {**diagnostics, **notes}
                 inline, references = freezeOutputs(outputs, outputAssets,
                     dict(kind="debug-output", projectId=spec["projectId"], workflowId=spec["workflowId"], nodeId=spec["nodeId"],
@@ -145,6 +159,10 @@ def runOperatorDebug(specJson, commands, events, cancellation, stop, heartbeat):
                 if code == "E_RESOURCE_CLEANUP_FAILED":
                     primary = error
                     stop.set()
+            finally:
+                if backgroundTasks is not None:
+                    backgroundTasks.close(drain=False, waitForActive=token.is_cancelled())
+                    executor.backgroundTasks = None
             result.update(kind="result", executionId=command["executionId"], elapsedMs=(time.monotonic()-started)*1000,
                           finishedAtMs=monotonicMs(), variables=variables.values)
             try:
@@ -201,7 +219,9 @@ class DebugWorker:
         self.started = monotonicMs()
         self.workspace = tempfile.TemporaryDirectory(prefix="emo-operator-debug-")
         target, extra = runOperatorDebug, ()
-        self.snapshotAck = context.Event()
+        # Acknowledge each adopted snapshot without waiting for a possibly
+        # terminated worker to wake, as multiprocessing.Event.set() does.
+        self.snapshotAck = context.Semaphore(0)
         if spec.get("kind") == "workflow":
             from emo_master.apps.runtime.workflow_debug.worker import runWorkflowDebug
             target, extra = runWorkflowDebug, (self.snapshotAck,)
@@ -285,6 +305,7 @@ class DebugWorker:
         if self.retired:
             return True
         if self.processClosed:
+            retireTemporaryFiles(self.workspace.name)
             self.workspace.cleanup()
             self.retired = True
             return True
@@ -311,6 +332,7 @@ class DebugWorker:
         self.processClosed = True
         self.commandPipe.close()
         self.eventPipe.close()
+        retireTemporaryFiles(self.workspace.name)
         self.workspace.cleanup()
         self.retired = True
         return True

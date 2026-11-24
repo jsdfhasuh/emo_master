@@ -318,7 +318,8 @@ class ConfigurationCoordinator:
                 return status
             raise ConfigurationError("E_CONFIG_REQUEST_UNKNOWN", "request not found; read online revision before any new write")
 
-    def beginCycle(self, owner, knownRevision, cancelled=lambda: False, *, parentCycleId=None):
+    def beginCycle(self, owner, knownRevision, cancelled=lambda: False, *, parentCycleId=None,
+                   canPollParkedArtifacts=None):
         import time
         while True:
             if self.closed or cancelled():
@@ -326,6 +327,10 @@ class ConfigurationCoordinator:
             with self.cycleLock:
                 blocked = self._parkForDrain(owner, parentCycleId)
             if blocked:
+                if canPollParkedArtifacts is not None and canPollParkedArtifacts():
+                    # No cycle was admitted. Let the worker register completed
+                    # artifacts on its execution thread before it parks again.
+                    return {"parked": True}
                 time.sleep(.02)
                 continue
             # Shutdown can hold the project lock while waiting for this bridge.

@@ -3,6 +3,7 @@
   "displayName": "Image Saver",
   "version": "1.2.0",
   "entry": "emo_master.plugins.builtins.image_saver.operator:ImageSaverOperator",
+  "runtimeCapabilities": ["backgroundTasks"],
   "category": "输出",
   "iconKey": "output",
   "summary": "将输入图像写出到本地路径，支持固定文件名或自动唯一命名，可通过 fileName 输入指定文件名主体。",
@@ -36,6 +37,14 @@
         "enum": ["fixed", "unique"],
         "default": "fixed",
         "xOptionLabels": {"fixed": "固定名称", "unique": "自动唯一命名"}
+      },
+      "saveMode": {
+        "title": "保存方式",
+        "description": "后台保存使用自动唯一命名，提交后工作流可继续执行。",
+        "type": "string",
+        "enum": ["sync", "background"],
+        "default": "sync",
+        "xOptionLabels": {"sync": "同步保存", "background": "后台保存"}
       },
       "overwrite": {
         "title": "覆盖已有文件",

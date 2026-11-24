@@ -1,6 +1,9 @@
 """Trusted, process-importable fault fixtures; never admitted by production RPC."""
 import os
+from pathlib import Path
 import time
+
+from emo_master.plugins.builtins.number_value.operator import NumberValueOperator
 
 
 class Probe:
@@ -35,6 +38,39 @@ class Probe:
             raise RuntimeError("test cleanup failed")
         if self.disposeMode == "dispose_hang":
             time.sleep(10)
+
+
+class BackgroundProbe(NumberValueOperator):
+    """Probe used only in the test Runtime's trusted workflow-debug entries."""
+
+    def executeNode(self, inputs, params, runtime):
+        client = runtime.get("backgroundTasks")
+        if client is not None:
+            client.submit(_publishMarker, Path(runtime["workspacePath"]), params["value"],
+                          taskName="debug.marker", estimatedBytes=1)
+        return {"status": "ok", "outputs": {"value": int(client is not None)}}
+
+
+class HeldFileProbe(NumberValueOperator):
+    def executeNode(self, inputs, params, runtime):
+        workspace = Path(runtime["workspacePath"])
+        def holdTemporary(control):
+            directory = Path((workspace / "test-output-directory").read_text(encoding="utf-8"))
+            with control.temporaryFile(directory) as stream:
+                stream.write(b"partial")
+                stream.flush()
+                (workspace / "test-write-started").touch()
+                time.sleep(30)
+        runtime["backgroundTasks"].submit(holdTemporary, taskName="held debug image", estimatedBytes=7)
+        return {"status": "ok", "outputs": {"value": 1}}
+
+
+def _publishMarker(control, workspace, value):
+    if value < 0:
+        raise OSError("debug marker failed")
+    temporary = workspace / "marker.tmp"
+    temporary.write_bytes(b"done")
+    control.publish(lambda: temporary.replace(workspace / "marker"))
 
 
 def admitted():

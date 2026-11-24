@@ -76,7 +76,8 @@ class DeviceBridge:
                         result = self.manager.frames.commitWrite(self.owner, request["frameId"])
                     elif request["action"] == "beginCycle":
                         result = self.manager.configuration.beginCycle(self.owner, request["knownRevision"], self.cancelled,
-                            parentCycleId=request.get("parentCycleId"))
+                            parentCycleId=request.get("parentCycleId"),
+                            canPollParkedArtifacts=getattr(self.cancellation, "canPollParkedArtifacts", None))
                     elif request["action"] == "endCycle":
                         self.manager.waitOwner(self.owner, request['cycleId'])
                         self.manager.configuration.endCycle(self.owner, request["cycleId"])

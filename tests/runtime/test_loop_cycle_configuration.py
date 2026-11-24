@@ -67,6 +67,10 @@ def testDrainFinishesNestedCyclesThenParksAtOuterIterationAndCanCancel(tmp_path)
         assert not c.parkedOwners
         assert inner["cycleId"] == outer["cycleId"] and not inner["ownsCycle"]
         c.endCycle("job", outer["cycleId"])
+        # A parked While can service a completed save without admitting its next iteration.
+        assert c.beginCycle("job", 1, parentCycleId=root["cycleId"],
+                            canPollParkedArtifacts=lambda: True) == {"parked": True}
+        assert "job" in c.parkedOwners and not c.childCycles
         def begin():
             try:
                 c.beginCycle("job", 1, cancelled.is_set, parentCycleId=root["cycleId"])

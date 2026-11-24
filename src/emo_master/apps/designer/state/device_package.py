@@ -31,7 +31,7 @@ def exportDevices(session, ids, root):
     if not ids or set(ids) - set(catalog):
         raise ValueError('请选择有效设备')
     package = DevicePackage(devices={key: catalog[key].model_copy(deep=True) for key in ids},
-        resources=resources.dependencyPlan(session.workflows, {}, ids))
+        resources=resources.dependencyPlan(session.workflows, {}, ids, root, inProjectCopy=False))
     resources.embedDependencies(package, root)
     resources.validateDependencies(package)
     return package
@@ -75,7 +75,7 @@ def importDevices(session, package, deviceTypes, root):
                 session.workflows.devices['definitions'][deviceIds[key]] = deepcopy(value)
             plan, resourceIds = resources.remapDependencies(session.workflows, package, {}, {}, deviceIds)
             directory = resources.installDependencies(root, package, plan, resourceIds)
-            resources.applyImportedPaths(session.workflows, plan, resourceIds)
+            resources.applyImportedPaths(session.workflows, plan, resourceIds, package, {}, {})
             session.workflows.projectExtensions['resources'] = plan.model_dump()
     except BaseException:
         resources.discardInstalled(directory)

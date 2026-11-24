@@ -692,7 +692,7 @@ def _importDevices(store: WorkflowStore, document: WorkflowPackageDocument,
 
 
 def _validateWorkflowPackage(document: WorkflowPackageDocument, *, referencesOnly=False) -> None:
-    packagedResources.validateDependencies(document, referencesOnly=referencesOnly)
+    packagedResources.validateDependencies(document, workflows=document.workflows.values(), referencesOnly=referencesOnly)
     if set(document.devices) != _referencedDeviceIds(document.workflows):
         raise ValueError("devices must exactly match referenced device dependencies")
     expectedOperators = _requiredOperatorIds(document.workflows)

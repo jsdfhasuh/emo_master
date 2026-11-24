@@ -8,6 +8,13 @@ import subprocess
 import sys
 
 RECIPES = json.loads(Path(__file__).with_name("recipes.json").read_text(encoding="utf-8"))
+# Per-step wall-clock budgets reserve time to finish the report and seal it.
+STEP_LIMITS = {
+    "runtime-a18-diagnostics": {3: 12, 4: 2, 5: 50, 6: 3, 7: 2},
+    "runtime-capture-diagnostics": {3: 12, 4: 2, 5: 50, 6: 3},
+    "runtime-stop-diagnostics": {3: 12, 4: 2, 5: 50, 6: 3, 7: 3},
+    "runtime-sqlite-failure-diagnostics": {3: 12, 4: 2, 5: 50, 6: 3, 7: 8, 8: 3},
+}
 ARCH_REF = "refs/heads/agent/runtime-workflow-architecture-v1"
 EXPR = re.compile(r"\$\{\{ steps\.([a-z_]+)\.outcome \}\}")
 AFTER = re.compile(r"\$\{\{ always\(\) && !cancelled\(\) && \(steps\.([a-z_]+)\.outcome == 'success' \|\| steps\.\1\.outcome == 'failure'\) \}\}")
@@ -22,7 +29,7 @@ def should_run(condition, failed, outcome):
         return outcome.get(match[1]) in {"success", "failure"}
     raise ValueError("Unsupported recipe condition")
 
-def execute(recipe, ref, product, evidence, source_sha="", run_id="0", run_attempt="1"):
+def execute(recipe, ref, product, evidence, source_sha="", run_id="0", run_attempt="1", *, suite=None):
     if recipe["job_if"] not in (None, f"github.ref == '{ARCH_REF}'"):
         raise ValueError("Unsupported job guard")
     if recipe["job_if"] and ref != ARCH_REF:
@@ -38,6 +45,7 @@ def execute(recipe, ref, product, evidence, source_sha="", run_id="0", run_attem
         number = step["ordinal"]
         ident = step.get("id")
         status = "skipped"
+        timed_out = False
         if should_run(step.get("if"), failed, outcomes):
             env = {**base_env, **{key: EXPR.sub(lambda m: outcomes[m[1]], value)
                                  for key, value in step.get("env", {}).items()}}
@@ -66,22 +74,32 @@ def execute(recipe, ref, product, evidence, source_sha="", run_id="0", run_attem
                                           stdout=output, stderr=subprocess.STDOUT) as child:
                         try:
                             minutes = step.get("timeout-minutes")
+                            limit = STEP_LIMITS.get(suite, {}).get(number)
+                            if limit is not None:
+                                minutes = min(limit, int(minutes)) if minutes else limit
                             code = child.wait(timeout=int(minutes) * 60 if minutes else None)
                         except subprocess.TimeoutExpired:
-                            systemroot = os.environ["SystemRoot"]
-                            subprocess.run([str(Path(systemroot) / "System32" / "taskkill.exe"),
-                                             "/PID", str(child.pid), "/T", "/F"],
-                                            stdin=subprocess.DEVNULL, stdout=output, stderr=subprocess.STDOUT,
-                                            check=False, timeout=20)
-                            if child.poll() is None:
-                                child.kill()
-                            child.wait()
+                            timed_out = True
+                            try:
+                                systemroot = os.environ["SystemRoot"]
+                                subprocess.run([str(Path(systemroot) / "System32" / "taskkill.exe"),
+                                                 "/PID", str(child.pid), "/T", "/F"],
+                                                stdin=subprocess.DEVNULL, stdout=output, stderr=subprocess.STDOUT,
+                                                check=False, timeout=20)
+                            except (OSError, KeyError, subprocess.TimeoutExpired):
+                                pass
+                            finally:
+                                if child.poll() is None:
+                                    child.kill()
+                                child.wait(timeout=15)
                             code = 1
                 except OSError:
                     code = 1
             status = "success" if code == 0 else "failure"
             failed |= status == "failure"
         result.append({"ordinal": number, "status": status})
+        if timed_out:
+            result[-1]["timed_out"] = True
         if ident:
             outcomes[ident] = status
     if "display-evidence" in recipe.get("private_artifacts", ()):
@@ -115,7 +133,7 @@ def main():
         parser.error("Staged source does not match verified SHA")
     evidence.mkdir(exist_ok=False)
     result = execute(RECIPES[args.suite], args.product_ref, product, evidence, args.source_sha,
-                     args.run_id, args.run_attempt)
+                     args.run_id, args.run_attempt, suite=args.suite)
     (evidence / "status.json").write_text(json.dumps(result)+"\n", encoding="utf-8")
     return int(result["status"] == "failure")
 

@@ -25,6 +25,11 @@ def add_junit(step):
         raise ValueError("expected exactly one original pytest command")
     i = matches[0]
     lines[i] = lines[i].removesuffix("\n") + f' --junitxml="$env:RUNNER_TEMP/{filename}"\n'
+    if step.get("id") == "observed_tests":
+        original = "python -m pytest -q "
+        if not lines[i].startswith(original):
+            raise ValueError("expected the default quiet pytest command")
+        lines[i] = lines[i].replace(original, "python -m pytest -v -o faulthandler_timeout=90 ", 1)
     return {**step, "run": "".join(lines)}
 
 def extract(source, dest):

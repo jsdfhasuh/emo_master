@@ -1,6 +1,7 @@
-"""Supervisor safety checks are stdlib-only; no runtime/Qt import or database."""
+"""Supervisor safety checks and the synthetic writer-reuse integration regression."""
 import sys
 import threading
+from pathlib import Path
 
 import pytest
 
@@ -367,3 +368,17 @@ def test_unstarted_timer_and_holder_cleanup_is_safe(monkeypatch):
     with pytest.raises(RuntimeError, match="start failed"):
         holder.start()
     assert holder.close()["thread_joined"]
+
+
+def test_threshold_control_reuses_and_retires_only_its_owned_writer(tmp_path):
+    repo = Path(controls.__file__).resolve().parents[1]
+    work = tmp_path / "threshold"
+    work.mkdir()
+    result = controls.run_worker(repo, work, controls.CASES[4])
+    assert result["status"] == "COMPLETED", result.get("reason")
+    large = result["large_commit"]
+    assert large["threshold_eligible"]
+    assert large["writer_connection_id"] == large["reuse_connection_id"]
+    assert result["verified_rows"] == [4, 4, 1, 4]
+    writer = next(c for c in result["cleanup"]["connections"] if c["id"] == large["writer_connection_id"])
+    assert writer["closed_on_owner_thread"]

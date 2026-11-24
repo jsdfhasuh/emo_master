@@ -527,20 +527,33 @@ def run_worker(repo, directory, case):
         reused = None
 
         def checked_connect():
-            nonlocal reused
-            label = getattr(recorder.local, "label", "setup")
-            if case == CASES[4] and label in ("large_event", "reused_event"):
-                if reused is None:
-                    reused = source_connect()
-                else:
-                    _configureConnection(reused)
-                connection = reused
-            else:
-                connection = source_connect()
+            connection = source_connect()
             connection.verify()
             return connection
 
         store._connect = checked_connect
+        if case == CASES[4]:
+            source_connection = store.connection
+
+            @contextmanager
+            def threshold_control_connection():
+                # The real Store now closes every ordinary transaction's handle.
+                # Only this synthetic control owns and reuses its writer (closed
+                # by recorder.close_owned below); append still runs real Store SQL.
+                nonlocal reused
+                if getattr(recorder.local, "label", "setup") not in ("large_event", "reused_event"):
+                    with source_connection() as connection:
+                        yield connection
+                    return
+                if reused is None:
+                    reused = checked_connect()
+                else:
+                    _configureConnection(reused)
+                    reused.verify()
+                with reused:
+                    yield reused
+
+            store.connection = threshold_control_connection
         store.initialize()
         report["post_initialization_wal"] = wal_capacity(db)
         with recorder.scope("idle_keeper"):
@@ -616,6 +629,7 @@ def run_worker(repo, directory, case):
                 "new_database_pages": after_pages - before_pages,
                 "threshold_eligible": after_pages - before_pages >= threshold,
                 "automatic_checkpoint_observation": "not_instrumented; eligibility only",
+                "reuse_scope": "synthetic control-owned writer; production Store retires ordinary transaction handles",
                 "writer_connection_id": reused.control_id, "wal_after_commit": wal_capacity(db)}
             small_events("reused_event")
             report["large_commit"]["wal_after_reuse"] = wal_capacity(db)

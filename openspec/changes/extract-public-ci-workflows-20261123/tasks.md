@@ -121,3 +121,7 @@
 - [独立 Windows 收证演练](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45298623941) 公共 `28f4bdc9aab95ff6f3a6a8d62d1dcc749267d75b`：主动失败及 Actions 实际一分钟步骤超时均保持失败；两份密文已下载、核对来源、解密并验证合成内容。外层作业被硬取消后不承诺还能上传；取消或缺证绝不算成功。
 - [调度控制草稿 #23](https://github.com/jsdfhasuh/emo_master/pull/23) 配套 [公共调度试验草稿 #9](https://github.com/jsdfhasuh/emo_master_ci/pull/9)，仅定向产品临时提交 `966d6821357b0380d328ee0b1c86243826247cdd`、4 个本地约束测试通过。已查公共默认分支没有该工作流，GitHub 的默认分支前置条件未满足；未启动真实 dispatch，也未写入门禁。所有合并、正式发布和 Private 变更留待确认。
 - [Credit Windows 原工作负载](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45299837841) 使用产品 `50a49af989afb6ca101cad4e4e3314d9cf50e769` 与公共 `3c6f1a3e2b4a1cf9eb8def282cf70811ea2272ad`，此独立可信分支运行原 ABBA 及报告校验；未伪造退役的产品架构分支，路由仍待验证。无打包步骤，证据取回待核对。
+
+### 用户授权的真实调度试验
+
+- 仅合并 [公共 #9](https://github.com/jsdfhasuh/emo_master_ci/pull/9)，默认分支合并 SHA `6284d57659b840f5b852b33540f524ff8c9c2ff7`，文件 blob `fd8ef49acd96b1f5b2b309cc7a35b1599cd4d6d6`，非发布标签 `ci-dispatch-pilot-20261124-v1`；控制分支 `056fe9c789e0fa6b98fbb1d50c76fca3d373cd8d` 的 [实际 GitHub 控制运行](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45302311141) 经 API 取得 [success](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45302337177) 与 [预期 failure](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45302341185) 两个不同的 attempt 1。均通过 SHA 绑定，同一个临时产品提交 `966d6821357b0380d328ee0b1c86243826247cdd` 的 `dot/dispatch-pilot/pass` 与 `dot/dispatch-pilot/fail` 已由独立读回核对状态与链接。无打包器或产品源码执行。对应正式调度、可信结果归集与 required 门禁未启用，不写作生产验收。没有合并任何正式迁移 PR、未发布、未转 Private。

@@ -29,7 +29,9 @@ def add_junit(step):
         original = "python -m pytest -q "
         if not lines[i].startswith(original):
             raise ValueError("expected the default quiet pytest command")
-        lines[i] = lines[i].replace(original, "python -m pytest -v -o faulthandler_timeout=90 ", 1)
+        lines[i] = lines[i].replace(
+            original, "python -m pytest -v -o faulthandler_timeout=90 "
+            '-p scripts.ci_migration.diagnostics.pytest_evidence --emo-pytest-evidence-dir "$env:RUNNER_TEMP" ', 1)
     return {**step, "run": "".join(lines)}
 
 def extract(source, dest):

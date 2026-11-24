@@ -92,7 +92,7 @@
         "name": "Run original full pytest order with the A18 observer alone",
         "id": "observed_tests",
         "shell": "pwsh",
-        "run": "$evidence = Join-Path $env:RUNNER_TEMP 'runtime-a18-phase-diagnostics.json'\npython -m pytest -v -o faulthandler_timeout=90 -p scripts.r3_a18_thread_diagnostics --native-thread-origins $evidence --junitxml=\"$env:RUNNER_TEMP/observed-junit.xml\"\nexit $LASTEXITCODE\n"
+        "run": "$evidence = Join-Path $env:RUNNER_TEMP 'runtime-a18-phase-diagnostics.json'\npython -m pytest -v -o faulthandler_timeout=90 -p scripts.ci_migration.diagnostics.pytest_evidence --emo-pytest-evidence-dir \"$env:RUNNER_TEMP\" -p scripts.r3_a18_thread_diagnostics --native-thread-origins $evidence --junitxml=\"$env:RUNNER_TEMP/observed-junit.xml\"\nexit $LASTEXITCODE\n"
       },
       {
         "ordinal": 6,
@@ -152,7 +152,7 @@
         "name": "Run original pytest order with the exact normal capture observer",
         "id": "observed_tests",
         "shell": "pwsh",
-        "run": "$evidence = Join-Path $env:RUNNER_TEMP 'runtime-capture-diagnostics.json'\npython -m pytest -v -o faulthandler_timeout=90 -p scripts.r3_sqlite_capture_diagnostics --sqlite-capture-diagnostics $evidence --junitxml=\"$env:RUNNER_TEMP/observed-junit.xml\"\nexit $LASTEXITCODE\n"
+        "run": "$evidence = Join-Path $env:RUNNER_TEMP 'runtime-capture-diagnostics.json'\npython -m pytest -v -o faulthandler_timeout=90 -p scripts.ci_migration.diagnostics.pytest_evidence --emo-pytest-evidence-dir \"$env:RUNNER_TEMP\" -p scripts.r3_sqlite_capture_diagnostics --sqlite-capture-diagnostics $evidence --junitxml=\"$env:RUNNER_TEMP/observed-junit.xml\"\nexit $LASTEXITCODE\n"
       },
       {
         "ordinal": 6,
@@ -327,7 +327,7 @@
         "name": "Run original full pytest order with only the failure observer",
         "id": "observed_tests",
         "shell": "pwsh",
-        "run": "$evidence = Join-Path $env:RUNNER_TEMP 'runtime-sqlite-failure-diagnostics.json'\npython -m pytest -v -o faulthandler_timeout=90 -p scripts.r3_sqlite_failure_diagnostics --sqlite-failure-diagnostics $evidence --sqlite-failure-call-details --junitxml=\"$env:RUNNER_TEMP/observed-junit.xml\"\nexit $LASTEXITCODE\n"
+        "run": "$evidence = Join-Path $env:RUNNER_TEMP 'runtime-sqlite-failure-diagnostics.json'\npython -m pytest -v -o faulthandler_timeout=90 -p scripts.ci_migration.diagnostics.pytest_evidence --emo-pytest-evidence-dir \"$env:RUNNER_TEMP\" -p scripts.r3_sqlite_failure_diagnostics --sqlite-failure-diagnostics $evidence --sqlite-failure-call-details --junitxml=\"$env:RUNNER_TEMP/observed-junit.xml\"\nexit $LASTEXITCODE\n"
       },
       {
         "ordinal": 6,
@@ -384,7 +384,7 @@
         "name": "Run original pytest order with the explicit stop observer",
         "id": "observed_tests",
         "shell": "pwsh",
-        "run": "$evidence = Join-Path $env:RUNNER_TEMP 'runtime-stop-diagnostics.json'\n$nativeEvidence = Join-Path $env:RUNNER_TEMP 'runtime-native-thread-origins.json'\npython -m pytest -v -o faulthandler_timeout=90 -p scripts.r3_sqlite_stop_diagnostics --sqlite-stop-diagnostics $evidence -p scripts.r3_a18_thread_diagnostics --native-thread-origins $nativeEvidence --junitxml=\"$env:RUNNER_TEMP/observed-junit.xml\"\nexit $LASTEXITCODE\n"
+        "run": "$evidence = Join-Path $env:RUNNER_TEMP 'runtime-stop-diagnostics.json'\n$nativeEvidence = Join-Path $env:RUNNER_TEMP 'runtime-native-thread-origins.json'\npython -m pytest -v -o faulthandler_timeout=90 -p scripts.ci_migration.diagnostics.pytest_evidence --emo-pytest-evidence-dir \"$env:RUNNER_TEMP\" -p scripts.r3_sqlite_stop_diagnostics --sqlite-stop-diagnostics $evidence -p scripts.r3_a18_thread_diagnostics --native-thread-origins $nativeEvidence --junitxml=\"$env:RUNNER_TEMP/observed-junit.xml\"\nexit $LASTEXITCODE\n"
       },
       {
         "ordinal": 6,

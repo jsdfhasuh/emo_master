@@ -70,7 +70,7 @@ The service MUST return a task identifier when a task is accepted. Acceptance MU
 
 ### Requirement: Background task execution is bounded and does not silently discard accepted work
 
-The first implementation MUST use one FIFO worker thread per Job and a bounded pending queue. A full queue MUST apply backpressure to the submitting operator, with cancellation support. Accepted tasks MUST NOT be silently dropped or automatically retried. Terminal task records MUST also have bounded retention; running tasks MUST NOT be evicted.
+The first implementation MUST use one FIFO worker thread per Job and a bounded pending queue constrained by both task count and estimated pending payload bytes. A full queue MUST apply backpressure to the submitting operator, with cancellation support. A single task exceeding the configured byte limit MUST fail explicitly. Accepted tasks MUST NOT be silently dropped or automatically retried. Terminal task records MUST also have bounded retention; running tasks and records pinned by pending artifact/binding dependencies MUST NOT be evicted.
 
 #### Scenario: Queue reaches capacity
 
@@ -83,6 +83,17 @@ The first implementation MUST use one FIFO worker thread per Job and a bounded p
 - **WHEN** a background task raises an exception
 - **THEN** the task MUST enter FAILED state and publish a Runtime failure event with its task ID and captured source identity
 - **AND** waiting for the task MUST raise a task error that preserves the original cause
+
+#### Scenario: A task exceeds the byte budget
+
+- **WHEN** one submitted task's estimated payload exceeds the configured per-task limit
+- **THEN** submission MUST fail with E_BACKGROUND_TASK_TOO_LARGE
+- **AND** it MUST NOT wait forever or exceed the service memory budget
+
+#### Scenario: A task function recursively waits on the same service
+
+- **WHEN** a running background task attempts to submit or wait for another task on the same single-worker service
+- **THEN** Runtime MUST reject the recursive operation rather than deadlock the worker
 
 ### Requirement: Job lifecycle owns all accepted background tasks
 
@@ -124,9 +135,15 @@ The service MUST capture the submitting invocation identity at submission time. 
 - **THEN** its completion record MAY be processed at the next node boundary
 - **AND** all completion records MUST be processed before the Job terminal event
 
+#### Scenario: An unobserved task fails in a continuous Job
+
+- **WHEN** a background task fails and no operator has waited for/handled that failure
+- **THEN** Runner MUST detect it at the next node boundary, next workflow-run start, or before workflow completion
+- **AND** the active execution MUST fail with E_BACKGROUND_TASK_FAILED without waiting for the continuous Job to be manually stopped
+
 ### Requirement: ImageSaver supports opt-in background writing without changing its default behavior
 
-ImageSaver MUST declare backgroundTasks in its manifest and retain synchronous saving as its default. Its opt-in background mode MUST return an accepted task ID and pending state, and MUST only report saved success after the write task succeeds.
+ImageSaver MUST declare backgroundTasks in its manifest and retain synchronous saving as its default. Its opt-in background mode MUST use unique naming, write to a task-specific temporary file, atomically publish the final file only after a complete write, return an accepted task ID and pending state, and MUST only report saved success after the write task succeeds.
 
 #### Scenario: Existing project uses default ImageSaver settings
 
@@ -149,6 +166,18 @@ ImageSaver MUST declare backgroundTasks in its manifest and retain synchronous s
 
 - **WHEN** the ImageSaver task fails
 - **THEN** Runtime MUST publish the task failure and MUST NOT publish artifact.created for that path
+
+#### Scenario: Background ImageSaver is configured with fixed naming
+
+- **WHEN** saveMode is background and namingMode is fixed
+- **THEN** ImageSaver MUST return a clear parameter error
+- **AND** synchronous fixed naming MUST remain supported
+
+#### Scenario: Background image write is interrupted before publication
+
+- **WHEN** a background image write fails or is terminated before its temporary file is complete
+- **THEN** the final output path MUST NOT expose a partial image
+- **AND** Runtime MUST NOT publish saved success or artifact.created
 
 ### Requirement: Deferred file artifacts are registered only after their task succeeds
 

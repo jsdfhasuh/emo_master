@@ -16,6 +16,7 @@
 | core/plugin/registry.py | scanRoots 通过 validateManifestFields 解析 manifest，成功后创建 PluginDescriptor | 继续沿用现有注册流程，声明自然保存在 descriptor.manifest |
 | core/plugin/validator.py | loadOperatorClass 当前要求 validateParams/executeNode；validateConsistency 比较 meta 的 ID、名称、版本、端口和参数 | 不增加必需方法或 OperatorMeta 字段；运行时能力由 manifest 单点声明 |
 | apps/runtime/execution/operator_executor.py | invoke 为每次 executeNode 构造 runtimeContext 字典；正式 Job registry 值为 PluginDescriptor；日志在 executeNode 返回后关闭 | 可从 descriptor.manifest.runtimeCapabilities 判定是否注入；后台任务不能继续使用已关闭 logger |
+| plugins/builtins/image_saver/manifest.json | ImageSaver 输出端口 result 为 JSON；现有参数支持 fixed/unique 命名，默认 fixed | 后台模式可通过 JSON 回执携带 taskId；为避免异步覆盖和产物错配，首版需限制 unique 命名 |
 | apps/runtime/workflow/runner.py | 节点成功后先调用 _publishArtifacts，再捕获 outgoingBindings；captureBoundValue 会立即调用 toStorage | 仅延迟 artifact 不够；SQLite FILE_REFERENCE 也必须延迟到目标 SQLiteWriter 节点前采集 |
 | apps/runtime/workflow/runner.py | _publishArtifacts 立即处理所有输出值中带 path 的 JSON；启用 ArtifactStore 时 registerPath 会复制文件并计算 SHA-256 | pending artifact 必须等 task 成功后再登记 |
 | core/workflow/parameter_bindings.py | captureBoundValue 立即调用 SQLite toStorage；FILE_REFERENCE 需要 saved=true 且文件存在 | 后台 ImageSaver 返回 saved=false 时，当前绑定采集必然失败；需 Runner 暂存 pending binding 并在消费者执行前 wait |
@@ -27,7 +28,7 @@
 | apps/runtime/operator_debug/contracts.py | trustedEntries 从当前 PluginDescriptor 验证内置算子身份，生成调试准入描述 | 应从这里把已校验 runtimeCapabilities 放入调试 worker spec |
 | apps/runtime/operator_debug/worker.py | 单算子调试 worker 直接创建 class-only OperatorExecutor；输出冻结前没有后台任务 drain | 需显式传递能力映射，并在 freezeOutputs 前 drain |
 | apps/runtime/workflow_debug/worker.py | 工作流调试 worker 创建 WorkflowRunner；clone-safe trial 另建 OperatorExecutor | 调试会话需共享自己的服务；trial 不继承 |
-| plugins/builtins/image_saver/operator.py | 当前在 executeNode 内执行 cv2.imencode、创建目录和文件写入，成功后返回 saved/path | 首个接入者，保留同步默认 |
+| plugins/builtins/image_saver/operator.py | 当前在 executeNode 内执行 cv2.imencode、创建目录并直接写最终路径；支持 fixed/unique 命名 | 后台实现必须使用任务专属临时文件，完整写入后原子发布；unique 命名避免跨 Job/周期同路径竞争 |
 | plugins/builtins/detection_archive/operator.py | 逐个裁剪并同步调用 ImageSaver，保存后累计 cropPaths 和 progress | 首版不改，避免同时改变部分完成语义 |
 | plugins/builtins/result_writer/operator.py | 序列化后执行原子写入 | 保持同步 |
 | plugins/builtins/sqlite_writer/operator.py | 从 runtimeContext.mappedOutputs 读取 BoundValue，并在自身执行中完成事务 | SQLiteWriter 本身不需异步化；Runner 负责在执行前解析延迟文件引用 |
@@ -53,8 +54,10 @@
 
 ## 尚待实施时确认
 
-- BackgroundTaskService 的队列容量、终态记录上限及结果保留策略；作为 Runtime 内部常量，不作为工程配置暴露。
+- BackgroundTaskService 的任务数量上限、待处理字节预算、单任务字节上限和终态记录上限；作为 Runtime 内部常量，不作为工程配置暴露。
 - Runner 完成记录队列的线程归属和 drain 位置，确保 ArtifactStore、ResultCollector 和预览 writer 只由 Runtime 执行线程调用。
+- 未观察失败在节点边界/workflow 完成前的发现时机，以及内部 SQLite wait 的失败观察标记。
+- 后台 unique 命名的参数校验与原子文件发布实现，尤其是 Windows/POSIX 的 no-overwrite 最终提交语义。
 - 调试 worker 如何传递 trustedEntries 生成的能力映射，并在输出冻结前 drain。
 - Worker terminal 发布与 finally 清理顺序的最小调整点；必须保持现有 5000ms graceful stop 超时语义。
 

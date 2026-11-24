@@ -23,7 +23,9 @@
 | B5 失败可见 | 后台异常有 task.failed 事件；wait 能抛出原始错误 | 使用确定性失败函数 |
 | B6 背压 | 队列满时提交方等待；释放一个队列位置后继续，取消时可退出 | 用 Event 控制单线程和有限队列容量 |
 | B7 身份关联 | 完成/失败事件保留提交时 nodeId、nodeRunId 和 workflowRunId | 在算子返回后再释放后台任务，检查事件字段 |
-| B8 记录有界 | 终态记录超过上限时只淘汰最早终态；运行中任务不被淘汰；查询过期 ID 返回明确错误 | 使用小型测试上限和确定性任务序列 |
+| B8 记录有界 | 终态记录超过上限时只淘汰最早终态；运行中任务及 pending artifact/binding 引用不被淘汰；查询已过期 ID 返回明确错误 | 使用小型测试上限和确定性任务序列 |
+| B9 字节背压 | 大图像提交受待处理字节预算限制；单项超限明确失败，不无限等待 | 使用可控图像字节权重验证额度释放和超限错误 |
+| B10 禁止递归等待 | 后台任务函数不能再次 submit/wait 同一服务，不会单线程自锁 | 在测试任务中尝试递归调用，验证明确拒绝 |
 
 ## C. 生命周期与 Runner 完成处理
 
@@ -35,6 +37,7 @@
 | C4 原错误优先 | 工作流已有错误时，后台收尾错误不覆盖主错误 | 同时制造确定性节点错误和后台错误，检查主错误及附加诊断 |
 | C5 连续运行 | 多个 cycle 共用同一个 Job 服务，Job 停止时统一收尾 | 两个 cycle 提交任务，验证线程身份相同及终态顺序 |
 | C6 预览 writer 顺序 | 后台任务完成和 artifact capture 发生在 AsyncPreviewSnapshotWriter 关闭之前 | 用可控任务记录 close/capture 顺序 |
+| C7 失败及时发现 | 未 wait 的后台失败在下一个节点边界、下一次 workflow run 开始或 workflow 完成前被发现，不等待连续 Job 终止 | 连续 Job 中注入失败任务，验证下一轮开始前 Job 已失败 |
 
 ## D. ImageSaver、产物与 SQLite 文件引用
 
@@ -49,6 +52,9 @@
 | D7 SQLite 文件引用等待 | pending ImageSaver 输出绑定 FILE_REFERENCE 时，Runner 在 SQLiteWriter 执行前等待，成功后再形成正常 BoundValue | 用阻塞任务确认中间节点可先运行，SQLite 节点直到文件成功后才启动 |
 | D8 SQLite 文件引用失败 | 保存任务失败时不生成有效 FILE_REFERENCE，不执行数据库 insert，并按现有 SQLite failurePolicy 产生失败 receipt | 注入确定性保存异常并检查 insert 未调用 |
 | D9 普通消费者等待 | 普通 JSON 输出可携带 taskId；声明能力的下游 wait 后读取文件成功，未声明能力的算子不能访问服务 | 两个下游算子对同一输出分别验证 |
+| D10 异步唯一命名 | 后台模式使用 namingMode=unique；fixed 模式返回明确参数错误；同步 fixed 模式不变 | 对比 background/fixed、background/unique、sync/fixed 三条路径 |
+| D11 原子文件发布 | 最终路径只在完整编码/写入后出现；写入异常或取消不留下半成品正式文件 | 在临时写入中途注入异常/终止，检查最终路径不存在、临时文件可清理 |
+| D12 同名并发安全 | 多个 Job/周期异步保存时不会把一个任务的产物登记成另一个任务的内容 | 并发保存不同图像并校验每个 artifact 的 SHA-256 与对应图像 |
 
 ## E. 执行模式边界
 

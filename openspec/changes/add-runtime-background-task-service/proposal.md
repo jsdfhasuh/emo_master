@@ -11,9 +11,9 @@
 - 在每个 Job 进程内建立 Runtime 管理的后台任务服务，首版使用一条 FIFO 工作线程和有界队列。
 - 在插件 manifest 增加可选 runtimeCapabilities 声明；首版支持 backgroundTasks。只有声明的算子才能获得后台任务客户端。
 - 通过客户端提供提交、等待和查询任务结果能力；任务绑定提交时的 Job / Workflow / Node / Run 身份。
-- 明确队列满时的背压、任务结果保留、Job 正常结束、失败和取消时的收尾规则。
-- 为内置 ImageSaver 声明 backgroundTasks，并增加可选后台保存模式，默认仍为同步保存。
-- 让 Runner 在文件真实写入成功后登记 artifact；对 SQLite FILE_REFERENCE 绑定增加延迟采集，避免在文件尚未落地时误判为无效引用。
+- 明确按任务数量和数据字节双重限额、任务结果保留、失败及时发现、Job 正常结束和取消时的收尾规则。
+- 为内置 ImageSaver 声明 backgroundTasks，并增加可选后台保存模式，默认仍为同步保存；首版后台模式使用唯一文件名、临时文件写入和原子发布。
+- 让 Runner 在文件真实写入成功后登记 artifact；对 SQLite FILE_REFERENCE 绑定增加延迟采集；任务失败在下一节点边界或 workflow 完成前被发现，不拖到无限连续 Job 结束。
 - 让正式 Job 和允许副作用的算子调试执行拥有已声明的能力；纯预览和纯计算试运行不开放真实后台副作用。
 
 ## 不做什么

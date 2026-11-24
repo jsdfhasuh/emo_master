@@ -23,3 +23,17 @@
 - graceful stop 超时后不伪造保存成功。
 
 本复核仅修订计划文档；没有修改 Runtime 源码，没有运行 OpenSpec CLI、pytest、GUI 或真实设备验收。
+
+
+## 第二轮复核：新增的实现风险
+
+继续沿固定源码检查 ImageSaver、PluginManifest 构造、OperatorExecutor、WorkflowRunner 和 Job 生命周期后，补充以下要求：
+
+1. **异步写入不能直接写最终文件。** 当前 ImageSaver 直接打开最终路径写入；如果进程在写到一半时被现有 5000ms graceful-stop 机制终止，磁盘上可能留下半成品。后台模式改为任务专属临时文件，完整写入后原子发布最终文件。
+2. **异步固定文件名会造成产物错配。** 多个 Job、循环周期或同一工作流的异步任务可能写同一个 fixed path；Runner 延迟处理完成记录时，文件可能已被后一个任务覆盖。首版后台模式要求 `namingMode=unique`，同步模式仍支持 fixed/unique。
+3. **只限制队列任务数量不够。** 图像大小不一，有限个大图也可能占用大量内存。服务需同时限制待处理任务数和估算字节数，超单项上限明确报错；释放额度必须覆盖成功、失败和取消路径。
+4. **未观察失败不能等到 Job 终止才发现。** 连续 Job 可能长期不结束。Runner 必须在节点边界、下一次 workflow run 开始处及 workflow 完成前检查未观察失败；显式 wait 已交给算子处理的失败不重复触发全局失败。
+5. **任务结果记录不能淘汰仍被 Runtime 内部引用的任务。** pending artifact 和 SQLite pending binding 在处理完成前固定保留对应记录；依赖释放后才参与普通有界淘汰。
+6. **单线程服务禁止任务递归 submit/wait。** 否则后台任务在唯一 worker 内等待自己排队的子任务会永久死锁。
+
+上述限制已同步到 design、spec、tasks 和 acceptance。它们是为了保证文件正确性、内存有界和任务失败可见，不改变同步算子的默认行为。

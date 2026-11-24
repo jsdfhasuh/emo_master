@@ -1,0 +1,17 @@
+{
+  "product_base_sha": "9f3ac8550e7fbfcdd02510d5a1ad7395c82bef11",
+  "active_workflows": {
+    ".github/workflows/ci.yml": "93718266e23979fef9f1ff54b230fc185c14883c",
+    ".github/workflows/display-session-contract.yml": "602dc22cd59a33d64e9c97b2e406c4a5ed65abf1",
+    ".github/workflows/release-windows.yml": "73db53d5dc1ff1bee6c2e4216054a861253268c3",
+    ".github/workflows/runtime-a18-diagnostics.yml": "55806d05b119719585f85d22fabcd49ed0ead2a7",
+    ".github/workflows/runtime-capture-diagnostics.yml": "eb4892c284501ba7edee4867770342bb25d03eb9",
+    ".github/workflows/runtime-credit-diagnostics.yml": "55def4dedc20b0348214881b5b77a54137dee073",
+    ".github/workflows/runtime-sqlite-append-controls.yml": "e4a08b1e2d5644bcd36d8cd70bc6fdc1cb1123fe",
+    ".github/workflows/runtime-sqlite-failure-diagnostics.yml": "c1fbd421cd14d2473962b91faf86b418a90424d3",
+    ".github/workflows/runtime-stop-diagnostics.yml": "4cd4ce5062e020d99cbda22ccdfa141dc83e1b67",
+    ".github/workflows/runtime-windows.yml": "f854ede4b515c12fce5198dbd63651ff9b88267d",
+    ".github/workflows/validate-windows-package.yml": "552fd7c1ddee981691a29354d2af1c888c1513c7",
+    ".github/workflows/web-panel-ci.yml": "ef1c2ee03cc391475816d5309ad44a5b12cf6448"
+  }
+}

@@ -91,7 +91,7 @@ Linux/amd64 在固定提交的 git archive 上运行。Python 3.10.22、OpenCV 4
 
 ## 2026-11-24 独立审查后的修正
 
-修正基于 `50f240f9d47fcfa280ba1520153c8ecf46f55976` 的工作区，包含尚未提交的 Runtime、ImageSaver、Designer、测试和文档更改。[原始审查记录](../../../docs/testing/2026-11-24-runtime-background-task-independent-review.md)保留修正前的行为和证据。
+修正基于 `50f240f9d47fcfa280ba1520153c8ecf46f55976` 的工作区，包含当时尚未提交的 Runtime、ImageSaver、Designer、测试和文档更改。修正前的行为和证据见[原始审查记录](../../../../docs/testing/2026-11-24-runtime-background-task-independent-review.md)。
 
 | 原始问题 | 本轮验证 |
 | --- | --- |
@@ -300,4 +300,6 @@ python -m pytest -q -p no:cacheprovider --tb=short -ra --timeout=120 \
 
 额外在同一 Linux 快照观察两个参数的配置线程和业务结果。纯静态资源替换在 3.811 秒完成，混合资源和参数替换在 4.137 秒完成，均为 `COMMITTED`。生产 Job 持续运行，发布版次、图片内容和可移植路径均符合原用例断言。本次观察未触发超时。原 pytest 失败仍按失败计，超时根因尚未确认。
 
-本轮两个审查问题均已关闭。OpenSpec 严格校验、Ruff（`src tests`）、mypy（656 个源文件）、协议生成一致性和 `git diff --check` 通过。结果覆盖源码和实际子进程。未执行冻结包、现场设备或整机物理断电验收。改动仍在本地工作区。
+本轮两个审查问题均已关闭。OpenSpec 严格校验、Ruff（`src tests`）、mypy（656 个源文件）、协议生成一致性和 `git diff --check` 通过。结果覆盖源码和实际子进程。未执行冻结包、现场设备或整机物理断电验收。
+
+归档前再次核对，1655 个受验文件的指纹与上述 Linux 快照一致。已验收的实现、回归测试和审查记录收录在提交 `59a525399ebb66506b739b40e472a5d3a32860ef`。正式要求见[Runtime 后台任务服务规格](../../../specs/runtime-background-task-service/spec.md)。

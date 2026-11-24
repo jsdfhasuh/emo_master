@@ -168,10 +168,9 @@ def testRemoteUploadIsExplicitBeforeCommitAndSurvivesRestart(tmp_path, pageOnly)
             snapshot = client.getOnlineProjectSnapshot()
             candidate = deepcopy(snapshot["payload"])
             candidate["workflows"]["main"]["nodes"].append(dict(nodeId="file", kind="operator",
-                operatorId="vision.io.image_loader", params=dict(imagePath="unavailable-on-runtime.png")))
+                operatorId="vision.io.image_loader", params=dict(imagePath=source.name)))
             candidate["resources"]["items"]["image"] = dict(manifest(source.read_bytes(), source.name), purpose="input_image")
-            candidate["resources"]["parameterBindings"] = [dict(resourceId="image", target=dict(
-                workflowId="main", nodeId="file", parameterPath=["imagePath"]))]
+            candidate["resources"]["parameterBindings"] = []
             if pageOnly:
                 candidate["workflows"]["main"]["nodes"].pop()
                 candidate["resources"]["parameterBindings"] = []

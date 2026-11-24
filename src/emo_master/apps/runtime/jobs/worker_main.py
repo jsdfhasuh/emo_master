@@ -91,7 +91,7 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue, communicationPi
         inputs = json.loads(spec.inputsJson or "{}")
         if not isinstance(inputs, dict):
             raise ValueError("inputs_json must contain an object")
-        publisher = _eventPublisher(spec.jobId, spec.projectId, eventQueue,
+        publisher = _eventPublisher(spec.jobId, spec.projectId, eventQueue, modelSources=spec.modelSources,
                                     inspectionCredits=spec.inspectionCredits, cancellation=token)
         globalCounters = (
             ProjectGlobalCounters(SqliteStore(Path(spec.runtimeDbPath)), spec.projectId)
@@ -308,8 +308,16 @@ def _collector(spec, eventQueue):
     return ResultCollector(spec.presentation, spec.presentation["queue"].put_nowait)
 
 
-def _eventPublisher(jobId: str, projectId: str, eventQueue, *, inspectionCredits=None, cancellation=None):
+def _eventPublisher(jobId: str, projectId: str, eventQueue, *, inspectionCredits=None, cancellation=None,
+                    modelSources=None):
     def publish(eventType, context, message, level="INFO", code="", payload=None):
+        if modelSources and eventType == "node.completed" and payload:
+            diagnostics = payload.get("diagnostics", {})
+            loaded = diagnostics.get("modelPath") if isinstance(diagnostics, dict) else None
+            if isinstance(loaded, str):
+                source = modelSources.get((context.workflowId, context.callerNodeId, loaded))
+                if source is not None:
+                    payload = {**payload, "diagnostics": {**diagnostics, "modelSource": source}}
         reserved = eventType == 'inspection.snapshot' and inspectionCredits is not None
         if reserved:
             while not inspectionCredits.acquire(timeout=.05):

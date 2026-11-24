@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from pathlib import Path
 from typing import cast
 
 from emo_master.apps.designer.operator_editors.controller_protocol import (
@@ -9,6 +10,7 @@ from emo_master.apps.designer.operator_editors.controller_protocol import (
     OperatorEditorController,
 )
 from emo_master.apps.designer.ui.param_form import SchemaParamForm
+from emo_master.core.project.node_input_files import NODE_INPUT_FILES, projectInputFilePath
 
 
 def _validationMessage(value: object) -> str:
@@ -104,7 +106,8 @@ try:
                 controller.bind(customRoot, context)
                 controller.loadParams(dict(values))
             else:
-                form = SchemaParamForm()
+                form = SchemaParamForm(projectInput=NODE_INPUT_FILES.get(context.operatorId),
+                                       projectDirectory=context.getProjectDirectory)
                 form.setWorkflowOptions(context.workflowOptions)
                 form.setSchema(schema, values)
                 self._schemaForm = form
@@ -263,6 +266,14 @@ try:
                 return dict(self._schemaForm.getValues())
             return {}
 
+        def syncSavedInput(self, field, chosen, relative):
+            if self._schemaForm is None or self._loadedParams.get(field) != chosen:
+                return
+            picker = self._schemaForm._controls.get(field)
+            if picker is not None and picker.text() == chosen:
+                picker.setText(relative)
+            self._loadedParams[field] = relative
+
         def isDirty(self) -> bool:
             try:
                 return (self._dirtyHint or self.collectParams() != self._loadedParams
@@ -323,6 +334,14 @@ try:
                 params = collector() if callable(collector) else self.collectParams()
                 if params is None:
                     return False
+                field = NODE_INPUT_FILES.get(self.context.operatorId)
+                chosen = params.get(field) if field else None
+                picker = self._schemaForm._controls.get(field) if self._schemaForm and field else None
+                picked = picker is not None and getattr(picker, "lastPickedPath", "") == chosen
+                if field and isinstance(chosen, str) and (picked or chosen != self._loadedParams.get(field)):
+                    directory = self.context.getProjectDirectory()
+                    if directory and Path(chosen).is_absolute() and Path(chosen).is_file():
+                        params[field] = projectInputFilePath(chosen, directory, self.context.operatorId)
                 applied = (self.context.applyConfiguration(self.key, params, bindings)
                            if getattr(self.context, "applyConfiguration", None) is not None else self.context.applyParams(params))
                 if not applied:
@@ -332,6 +351,10 @@ try:
                 self.setError(str(err))
                 return False
             self._loadedParams = dict(params)
+            if field and picker is not None:
+                if chosen != params.get(field):
+                    picker.setText(params[field])
+                picker.lastPickedPath = ""
             saved = getattr(self._controller, "onParamsSaved", None)
             if callable(saved):
                 saved(params)

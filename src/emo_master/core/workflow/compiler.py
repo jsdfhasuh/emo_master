@@ -5,8 +5,10 @@ from collections.abc import Mapping
 from copy import deepcopy
 from typing import Callable, cast
 
+from pydantic import BaseModel
+
 from emo_master.core.project.migration import migrateProjectPayload
-from emo_master.core.project.models import ProjectDocument, WorkflowDefinition, WorkflowNode
+from emo_master.core.project.models import ProjectDocument, ProjectMetadata, WorkflowDefinition, WorkflowNode
 from emo_master.core.project.resources import ParameterTarget, ResourceBinding, SiteBinding
 from emo_master.core.contracts.port_compatibility import arePortTypesCompatible
 from emo_master.core.contracts.port_types import normalizePortType
@@ -26,8 +28,17 @@ from emo_master.core.workflow.models import (
 from emo_master.core.workflow.validation import validateProjectDocument
 from emo_master.core.workflow.parameter_bindings import compileBindings
 from emo_master.core.project.global_variables import (
-    VariableError, variablePorts, validateBindings, resolveParams, validateEffectiveParams,
+    VariableDefinition, VariableError, variablePorts, validateBindings, resolveParams, validateEffectiveParams,
 )
+
+
+class WorkflowPortContext(BaseModel):
+    """The graph, workflow interfaces and variables used to look up draft ports."""
+
+    schemaVersion: str
+    project: ProjectMetadata
+    workflows: dict[str, WorkflowDefinition]
+    globalVariables: dict[str, VariableDefinition]
 
 
 class WorkflowCompiler:
@@ -326,7 +337,7 @@ class WorkflowCompiler:
         )
 
     def _nodePorts(
-        self, document: ProjectDocument, workflowId: str, node: WorkflowNode
+        self, document: ProjectDocument | WorkflowPortContext, workflowId: str, node: WorkflowNode
     ) -> tuple[dict[str, object], dict[str, object]]:
         if node.kind in {"dispatch", "join"}:
             from emo_master.core.workflow.dispatch_contracts import dispatchPorts
@@ -359,7 +370,7 @@ class WorkflowCompiler:
                 return inputs, outputs
         return dict(node.inputPorts), dict(node.outputPorts)
 
-    def nodePortDefinitions(self, document: ProjectDocument, workflowId: str, node: WorkflowNode):
+    def nodePortDefinitions(self, document: ProjectDocument | WorkflowPortContext, workflowId: str, node: WorkflowNode):
         """Read formal ports without compiling an unfinished Designer draft."""
         if node.kind == "loop":
             contract = self._loopContract(document, node)
@@ -368,7 +379,7 @@ class WorkflowCompiler:
         return deepcopy(inputs), deepcopy(outputs)
 
     def _loopContract(
-        self, document: ProjectDocument, node: WorkflowNode
+        self, document: ProjectDocument | WorkflowPortContext, node: WorkflowNode
     ) -> LoopContract:
         bodyWorkflowId = node.loop.get("bodyWorkflowId")
         conditionWorkflowId = (node.loop.get("conditionWorkflowId")

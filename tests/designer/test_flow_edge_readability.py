@@ -195,6 +195,21 @@ def testBindingsStaySeparateAndCannotEnterBranchMenu(ownedFlowScene):
     assert not scene._bindingItems[0].flags() & scene._bindingItems[0].ItemIsSelectable
 
 
+def testTabSwitchKeepsBatchedRoutingAfterSidebarRefresh(ownedDesignerWindow):
+    client = SimpleNamespace(listOperators=lambda: [], loadProject=lambda _: SimpleNamespace(ok=True, message="stub"))
+    window = ownedDesignerWindow(client)
+    fixture = Path(__file__).resolve().parents[2] / "examples/flow_edge_readability/project.emoproj"
+    assert window.loadProjectDirectory(str(fixture), confirmed=True)
+    scene = window.flowScene
+
+    for workflowId, edgeCount in (("dense", 60), ("sparse", 3)):
+        window.workflowTabs.selectWorkflow(workflowId)
+        assert window.activeWorkflowId == workflowId
+        assert len(scene._edgeItems) == edgeCount
+        assert scene._routeRefineTimer.isActive()
+        assert not scene._routeTimer.isActive()
+
+
 def testDesignerMenuDeleteUndoAndViewOnlySaveReopen(ownedDesignerWindow, tmp_path):
     client = SimpleNamespace(listOperators=lambda: [], loadProject=lambda _: SimpleNamespace(ok=True, message="stub"))
     window = ownedDesignerWindow(client)

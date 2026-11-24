@@ -25,7 +25,7 @@ def source(tmp_path):
     payload["devices"]["definitions"]["camera"]["defaults"]["modelPath"] = "PRIVATE/model.bin"
     workflow = payload["workflows"]["main"]
     workflow["nodes"].append(dict(nodeId="file", kind="operator", operatorId="vision.io.image_loader",
-        params=dict(imagePath="PRIVATE/model.bin", output="PRIVATE/output")))
+        params=dict(imagePath="model.bin", output="PRIVATE/output")))
     data = b"workflow-model-bytes"
     (tmp_path / "model.bin").write_bytes(data)
     payload["resources"] = dict(items={"model": dict(path="model.bin", size=len(data),
@@ -66,9 +66,10 @@ def testPortableClosureRemapsBytesDevicesNodesAndSiteFields(tmp_path):
     assert document.devices.definitions[result.deviceIdMap["camera"]].defaults["modelPath"] == item.path
     assert not document.devices.definitions[result.deviceIdMap["camera"]].enabled
     assert {b.field for b in plan.siteBindings}.isdisjoint({"serial", "output"})
-    nodeBinding = next(b for b in plan.parameterBindings if hasattr(b.target, "workflowId"))
-    assert nodeBinding.target.workflowId == result.rootWorkflowId != "main"
-    assert nodeBinding.target.nodeId == "file"
+    assert all(hasattr(b.target, "deviceId") for b in plan.parameterBindings)
+    assert result.rootWorkflowId != "main"
+    node = next(n for n in document.workflows[result.rootWorkflowId].nodes if n.nodeId == "file")
+    assert node.params["imagePath"] == item.path
     assert store.toPayload() == before
 
 
@@ -79,12 +80,31 @@ def testInProjectCopyRetainsBytesAndDeviceBindingsWithoutFilesystemWrites(tmp_pa
     result = importWorkflowPackage(store, package, reuseVariableIds=True, deviceMapping={"camera": "camera"})
     resources = store.projectExtensions["resources"]
     assert list(resources["items"]) == ["model"]
-    assert len(resources["parameterBindings"]) == 3 and len(resources["siteBindings"]) == 3
+    assert len(resources["parameterBindings"]) == 2 and len(resources["siteBindings"]) == 3
+    assert all(b["target"].get("workflowId") != result.rootWorkflowId for b in resources["parameterBindings"])
     assert result.deviceIdMap == {"camera": "camera"}
     assert (tmp_path / "model.bin").read_bytes() == data
     assert len(list(tmp_path.iterdir())) == 1
     with pytest.raises(ValueError):
         writeWorkflowPackage(tmp_path / "reference-only", package)
+
+
+def testExportCarriesChosenFileWithoutBindingAndImportRewritesOnlyNewNode(tmp_path):
+    store, old = source(tmp_path)
+    node = next(n for n in store.get("main").nodes if n["nodeId"] == "file")
+    node["params"]["imagePath"] = "new.png"
+    (tmp_path / "new.png").write_bytes(b"new picture")
+    package = buildWorkflowPackage(store, "main", sourceRoot=tmp_path)
+    assert len(package.resources.items) == 2
+    assert all(hasattr(b.target, "deviceId") for b in package.resources.parameterBindings)
+    assert {base64.b64decode(data) for data in package.resourceData.values()} == {old, b"new picture"}
+    destination = tmp_path / "destination"
+    destination.mkdir()
+    target = deepcopy(store)
+    result = importWorkflowPackage(target, package, targetRoot=destination, deviceMapping={"camera": None})
+    imported = next(n for n in target.get(result.rootWorkflowId).nodes if n["nodeId"] == "file")
+    assert (destination / imported["params"]["imagePath"]).read_bytes() == b"new picture"
+    assert next(n for n in target.get("main").nodes if n["nodeId"] == "file")["params"]["imagePath"] == "new.png"
 
 
 @pytest.mark.parametrize("changed", ["digest", "missing-bytes", "site-value", "target", "resource-path"])
@@ -98,7 +118,7 @@ def testMalformedDependenciesFailBeforeDestinationMutation(tmp_path, changed):
     elif changed == "site-value":
         package.devices["camera"].connection["serial"] = "OLD-SITE"
     elif changed == "target":
-        package.resources.parameterBindings[1].target.nodeId = "missing"
+        package.resources.siteBindings[1].target.nodeId = "missing"
     else:
         package.resources.items["model"].path = "../escape"
     target = WorkflowStore()

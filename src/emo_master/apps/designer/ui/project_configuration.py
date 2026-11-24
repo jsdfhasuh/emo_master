@@ -15,6 +15,10 @@ from PySide2.QtWidgets import (QDialog, QFileDialog, QVBoxLayout, QHBoxLayout, Q
 
 from emo_master.core.project.configuration import projectConfigurationChanges, requiredProjectChanges, changeCategory
 from emo_master.apps.designer.services.runtime_client import localProjectSourceChange
+from emo_master.apps.designer.services.runtime_client import runtimeConnectionDescription
+from emo_master.apps.designer.services.project_file_publication import (
+    comparisonFilePayload, filePublicationPayload, selectedFilePublication, stageNodeFiles,
+)
 
 
 class ChangeLocationDelegate(QStyledItemDelegate):
@@ -152,6 +156,7 @@ class ProjectConfigurationDialog(QDialog):
         self.kind = ""
         self.validatedSelection = None
         self.validationSelection = None
+        self.validatedFileWrite = None
         self.uploadCancelled = Event()
         self.downloadCancelled = Event()
         self.pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="online-configuration")
@@ -491,6 +496,7 @@ class ProjectConfigurationDialog(QDialog):
         if self.initial:
             self._showInitial()
         elif self.snapshot is not None:
+            self.local = comparisonFilePayload(self.snapshot['payload'], self.local, self.c.directory)
             self._showSnapshot(self.snapshot)
         self.diagnosticEntries = []
         self.diagnosticChoice.hide()
@@ -562,7 +568,8 @@ class ProjectConfigurationDialog(QDialog):
     def _controls(self):
         self._showRevisionDetails()
         idle = self.pending is None and not self.notifying and not self.confirming and self._valid()
-        uploading = self.pending is not None and self.kind == 'upload' and self._valid()
+        autoTransfer = self.kind in {'prewrite', 'initialPrewrite'}
+        uploading = self.pending is not None and (self.kind == 'upload' or autoTransfer) and self._valid()
         self.locateButton.setEnabled(idle and not self.writePending)
         self.diagnosticChoice.setEnabled(idle and not self.writePending)
         ready = idle and self.snapshot is not None and not self.writePending
@@ -627,13 +634,20 @@ class ProjectConfigurationDialog(QDialog):
         self.validationSelection = self.validatedSelection = None
         self._formatFeedback()
         self._feedback('正在读取在线配置…', 'busy')
-        self._submit("snapshot", self._readSnapshot)
+        self._submit("snapshot", self._readSnapshot, self.local, self.c.directory)
 
-    def _readSnapshot(self):
+    def _readSnapshot(self, draft, directory):
         reader = getattr(self.client, 'listDeviceTypes', None)
         if callable(reader):
             self.deviceTypes, self.deviceRequirements, _ = reader()
-        return self.client.getOnlineProjectSnapshot('')
+        try:
+            snapshot = self.client.getOnlineProjectSnapshot('')
+        except Exception as error:
+            if getattr(error, 'code', '') != 'E_CONFIG_NOT_LOADED':
+                raise
+            snapshot = None
+        local = comparisonFilePayload(snapshot and snapshot['payload'], draft, directory, refreshExisting=True)
+        return dict(snapshot=snapshot, local=local)
 
     @staticmethod
     def _sectionSummary(key, value):
@@ -688,6 +702,14 @@ class ProjectConfigurationDialog(QDialog):
         elif section == 'globalVariables' and len(parts) > 1:
             title = '工程变量：' + self._objectName(section, parts[1])
             fieldParts = parts[2:]
+        elif parts[:2] == ['resources', 'items'] and len(parts) >= 3:
+            online = (self.snapshot or {}).get('payload', {})
+            for payload in (self.local, online):
+                descriptor = (payload.get('resources') or {}).get('items', {}).get(parts[2])
+                if descriptor:
+                    title = '工程文件 / ' + descriptor['path']
+                    fieldParts = parts[3:]
+                    break
         names = dict(name='名称', description='说明', operators='算子清单', plugins='插件清单',
             edges='节点连线', nodes='节点', inputs='流程输入', outputs='流程输出',
             inputPorts='输入接口', outputPorts='输出接口', layout='画布布局', nodePositions='节点位置',
@@ -698,6 +720,7 @@ class ProjectConfigurationDialog(QDialog):
             minimum='最小值', maximum='最大值', default='默认值', required='必填项',
             schemaVersion='格式版本', entryWorkflowId='启动流程', version='版本',
             properties='可填写参数', x='横向位置', y='纵向位置',
+            sha256='SHA-256', size='文件大小（字节）', purpose='文件用途',
             vehicles='车辆检测结果', image='图片', frame='图像范围', detections='检测结果',
             hasNext='是否还有下一帧', frameIndex='原视频帧号', timestampSec='视频时间（秒）')
         field = []
@@ -1137,8 +1160,9 @@ class ProjectConfigurationDialog(QDialog):
             options['localProjectPath'] = sourcePath
         if not validate and self.validatedSelection != selection:
             self.validationSelection = selection
-            self._submit('prewrite', lambda: self.client.writeProjectConfiguration(
-                self.snapshot, self.local, paths, uuid4().hex, validate=True, **options))
+            self.uploadCancelled.clear()
+            self._submit('prewrite', self._publishSelected, self.snapshot, self.local, paths, uuid4().hex,
+                         True, options, self.c.directory)
             return
         requestId = uuid4().hex
         self.validationSelection = selection
@@ -1157,8 +1181,20 @@ class ProjectConfigurationDialog(QDialog):
                 return
             self.requestId = requestId
             self.writePending = True
-        self._submit("validate" if validate else "write", lambda: self.client.writeProjectConfiguration(
-            self.snapshot, self.local, paths, requestId, validate=validate, **options))
+        if validate:
+            self._submit("validate", self._publishSelected, self.snapshot, self.local, paths,
+                         requestId, False, options, self.c.directory)
+        else:
+            candidate, selected = self.validatedFileWrite
+            self._submit("write", lambda: self.client.writeProjectConfiguration(
+                self.snapshot, candidate, selected, requestId, **options))
+
+    def _publishSelected(self, snapshot, local, paths, requestId, stage, options, directory):
+        candidate, selected = selectedFilePublication(snapshot['payload'], local, paths, directory)
+        if stage and runtimeConnectionDescription(self.client)['kind'] in {'grpc', 'embedded'}:
+            stageNodeFiles(self.client, snapshot, candidate, directory, self.uploadCancelled)
+        result = self.client.writeProjectConfiguration(snapshot, candidate, selected, requestId, validate=True, **options)
+        return dict(result, preparedFileWrite=(candidate, selected))
 
     def _writeInitial(self, *, validate=False):
         if self.pending is not None or self.writePending or not self._valid():
@@ -1170,9 +1206,10 @@ class ProjectConfigurationDialog(QDialog):
         if not self._requireFormat():
             return
         if validate or not self.initialValidated:
+            self.uploadCancelled.clear()
             self._submit('initialValidate' if validate else 'initialPrewrite',
-                lambda: initialize(self.local, self.c.directory, uuid4().hex, validate=True,
-                    projectPath=self.c.window.projectController.currentProjectFile))
+                self._validateInitialFiles, self.local, self.c.directory, self.c.window.projectController.currentProjectFile,
+                not validate)
             return
         if self._confirm('首次写入 Runtime',
                 '将完整当前草稿写入目标 Runtime？\n' + self.c.chrome.runtimeStatus.text() + '\n' + self.impact.text()) != QMessageBox.Yes:
@@ -1183,6 +1220,16 @@ class ProjectConfigurationDialog(QDialog):
         self.writePending = True
         self._submit('write', lambda: initialize(self.local, self.c.directory, self.requestId,
             runtimeInstanceId=self.initialRuntimeId, projectPath=self.c.window.projectController.currentProjectFile))
+
+    def _validateInitialFiles(self, local, directory, projectFile, stage):
+        candidate = filePublicationPayload(local, directory)
+        requestId = uuid4().hex
+        if stage and getattr(self.client, 'usesRemoteProjectImport', lambda: False)():
+            staged = self.client.prepareProjectImport(candidate, requestId)
+            stageNodeFiles(self.client, staged, candidate, directory, self.uploadCancelled)
+        result = self.client.initializeProjectConfiguration(candidate, directory, requestId, validate=True,
+                                                           projectPath=projectFile)
+        return dict(result, preparedFilePayload=candidate)
 
     def _confirm(self, title, text):
         self.confirming = True
@@ -1203,7 +1250,7 @@ class ProjectConfigurationDialog(QDialog):
     def cancelUploads(self):
         if not self.cancelUploadButton.isEnabled() or not self._valid():
             return
-        if self.pending is not None and self.kind == 'upload':
+        if self.pending is not None and self.kind in {'upload', 'prewrite', 'initialPrewrite'}:
             self.uploadCancelled.set()
             self.status.setText('已请求取消上传；等待当前请求返回后停止后续上传。'
                                 '已进入提交的资源按实际结果核对；在线配置未改变。')
@@ -1247,13 +1294,22 @@ class ProjectConfigurationDialog(QDialog):
     def uploadResources(self):
         if (self.snapshot is None and not self.initial) or self.pending is not None or self.writePending or not self._valid():
             return
-        from emo_master.core.project.configuration import selectedCandidate
+        from emo_master.core.project.configuration import projectChanges, selectedCandidate
         from emo_master.core.project.models import ProjectDocument
         paths = [self.table.item(row, 0).data(Qt.UserRole) for row in range(self.table.rowCount())
                  if self.table.item(row, 0).checkState() == Qt.Checked]
         try:
-            candidate = (deepcopy(self.local) if self.initial else
-                selectedCandidate(self.snapshot["payload"], self.local, paths) if paths else deepcopy(self.snapshot["payload"]))
+            draft = self.session.payload()
+            if self.initial:
+                candidate = filePublicationPayload(draft, self.c.directory, bestEffort=True)
+            else:
+                online = self.snapshot['payload']
+                # Explicit transfers verify the registered sizes and checksums. File publication
+                # prepares implicit node dependencies separately when committing a configuration.
+                source = draft if (draft.get('resources') or {}).get('items') else self.local
+                selected = set(paths)
+                transferPaths = [c['path'] for c in projectChanges(online, source) if c['path'] in selected]
+                candidate = selectedCandidate(online, source, transferPaths) if transferPaths else deepcopy(online)
             document = ProjectDocument.model_validate(candidate)
             items = document.resources.items if document.resources else {}
             if not items:
@@ -1319,6 +1375,10 @@ class ProjectConfigurationDialog(QDialog):
         snapshotReceived = False
         try:
             result = future.result()
+            if kind in {'initialPrewrite', 'prewrite'} and self.uploadCancelled.is_set():
+                self._feedback('已取消文件准备；未提交在线配置。')
+                self._controls()
+                return
             previousIssue = self._lastOperationLog
             if kind not in {'write', 'connectionObserve'} and result.get('state') != 'FAILED':
                 self._lastOperationLog = None
@@ -1351,10 +1411,18 @@ class ProjectConfigurationDialog(QDialog):
                 self._feedback(text, 'error' if result['errors'] else 'info')
             elif kind == "snapshot":
                 snapshotReceived = True
-                self._showSnapshot(result)
+                if checkpoint is not self.session._checkpoint:
+                    self.refresh()
+                    return
+                snapshot, self.local = result['snapshot'], result['local']
+                if snapshot is None:
+                    self._showInitial()
+                else:
+                    self._showSnapshot(snapshot)
                 self._revalidateUpgraded()
                 self._lastOperationLog = None
             elif kind in {'initialValidate', 'initialPrewrite'}:
+                self.local = result.pop('preparedFilePayload')
                 self.initialRuntimeId = result['runtimeInstanceId']
                 self.initialImportId = result.get('importId', '')
                 if self.initialImportId:
@@ -1374,6 +1442,7 @@ class ProjectConfigurationDialog(QDialog):
                     self._notify('资源操作未完成', self.status.text(), json.dumps(result['errors'], ensure_ascii=False, indent=2),
                         key=(kind, json.dumps(result['errors'], sort_keys=True)))
             elif kind in {"validate", 'prewrite'}:
+                self.validatedFileWrite = result.pop('preparedFileWrite')
                 self._showEffects(result)
                 details = []
                 if not result.get("cycleSafe", True) and result.get("affectedJobs"):

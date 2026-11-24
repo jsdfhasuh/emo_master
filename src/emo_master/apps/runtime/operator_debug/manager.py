@@ -15,9 +15,11 @@ from emo_master.apps.runtime.operator_debug.contracts import (
     identifier, executionParams, parse,
 )
 from emo_master.apps.runtime.operator_debug.assets import CACHE_BYTES, CHUNK_BYTES, DebugAssets
+from emo_master.apps.runtime.operator_debug.bound_resources import resolveBoundResources, uploadedNodeInputs
 from emo_master.apps.runtime.operator_debug.data import prepareInputs, retainedAssetIds
 from emo_master.apps.runtime.operator_debug.state import DebugVariables
 from emo_master.apps.runtime.operator_debug.worker import DebugWorker
+from emo_master.core.project.node_input_files import NODE_INPUT_FILES, nodeInputPathKey
 
 
 @dataclass
@@ -48,16 +50,19 @@ class Session:
     events: deque = field(default_factory=lambda: deque(maxlen=1000))
     flow: dict = field(default_factory=dict)
     checkpoints: OrderedDict = field(default_factory=OrderedDict)
+    projectInputs: dict = field(default_factory=dict)
 
 
 class OperatorDebugManager:
     def __init__(self, runtimeInstanceId, admitted, *, resourceBusy=lambda: False,
                  leaseSeconds=60.0, graceSeconds=3.0, workerFactory=DebugWorker,
-                 maxRequests=4096, maxResults=32, maxOpens=128, sourceProvider=None, variableProvider=None):
+                 maxRequests=4096, maxResults=32, maxOpens=128, sourceProvider=None, variableProvider=None,
+                 loadedDocumentProvider=lambda: None):
         self.runtimeInstanceId = runtimeInstanceId
         self.admitted = admitted
         self.resourceBusy = resourceBusy
         self.sourceProvider, self.variableProvider = sourceProvider, variableProvider
+        self.loadedDocumentProvider = loadedDocumentProvider
         self.leaseSeconds = leaseSeconds
         self.graceSeconds = graceSeconds
         self.workerFactory = workerFactory
@@ -121,6 +126,7 @@ class OperatorDebugManager:
                     code=session.code, message=session.message, lastSequence=session.sequence,
                     draftDigest=session.spec["draftDigest"], operatorId=session.spec["operatorId"],
                     resourceRoot=session.spec.get("resourceRoot", ""),
+                    boundResourceParams=session.spec.get("boundResourceParams", {}),
                     variables=deepcopy(session.variables), cacheBytes=session.assets.used if session.assets else 0,
                     debugKind=session.spec.get("kind", "operator"), flow=deepcopy(session.flow),
                     snapshots=[dict(snapshotId=key, phase=row.get("phase", ""), nodeId=row.get("nodeId", ""),
@@ -288,6 +294,9 @@ class OperatorDebugManager:
                     inputPorts=inputPorts, outputPorts=outputPorts, variables=session.variables,
                     sideEffectConfirmed=bool(session.spec.get("executionWarning")),
                     outputBudget=CACHE_BYTES-session.assets.used)
+                if session.projectInputs:
+                    field = NODE_INPUT_FILES[session.spec["operatorId"]]
+                    command["projectInputPath"] = session.projectInputs.get(nodeInputPathKey(params.get(field)))
                 encode(command)
                 session.worker.execute(command)
                 if session.spec.get("executionWarning"):
@@ -355,11 +364,23 @@ class OperatorDebugManager:
         else:
             spec = draft(request["projectJson"], request["projectId"], request["workflowId"], request["nodeId"],
                          request["operatorId"], self.admitted)
+        resourcePlan = spec.pop("resourcePlan", None)
+        useLoadedRoot = request.get("useLoadedProjectRoot", False)
+        projectInputs = {}
+        if useLoadedRoot and spec.get("operatorId") in NODE_INPUT_FILES:
+            payload = parse(request["projectJson"], MAX_REQUEST_BYTES)
+            inventory = (payload.get("resources") or {}).get("items", {})
+            projectInputs = uploadedNodeInputs(spec["projectId"], inventory, self.loadedDocumentProvider())
         if request.get("resourceRoot"):
             from .resources import runtimePath
-            spec["resourceRoot"] = str(runtimePath(request["resourceRoot"], directory=True).resolve())
+            # A loaded configuration can own a verified copy after its original directory is gone.
+            requireDirectory = not ((resourcePlan or projectInputs) and useLoadedRoot)
+            spec["resourceRoot"] = str(runtimePath(request["resourceRoot"], directory=True, mustExist=requireDirectory))
+        if resourcePlan:
+            spec["boundResourceParams"] = resolveBoundResources(
+                spec, resourcePlan, self.loadedDocumentProvider(), preferProjectFiles=not useLoadedRoot)
         encode(spec, MAX_REQUEST_BYTES if spec.get("kind") == "workflow" else MAX_INLINE_BYTES)
-        session = Session(uuid4().hex, spec, expiresAt=time.monotonic()+self.leaseSeconds,
+        session = Session(uuid4().hex, spec, projectInputs=projectInputs, expiresAt=time.monotonic()+self.leaseSeconds,
                           variables=DebugVariables(spec.get("variableDefinitions", {})).values)
         # Record acceptance before starting a process. A failed start must not replay.
         self.sessions[session.sessionId] = session

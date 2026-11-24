@@ -146,7 +146,8 @@ class ConfigurationStore:
             revision = expectedRevision + 1
             sourcePath = sourcePath or current["sourcePath"]
             execution = current["executionRevision"] + int(
-                executionDigest(payload) != executionDigest(current["payload"])
+                executionDigest(payload, projectRoot=Path(sourcePath).parent)
+                != executionDigest(current["payload"], projectRoot=Path(current["sourcePath"]).parent)
                 or Path(sourcePath).resolve() != Path(current["sourcePath"]).resolve())
             receipt = dict(state="COMMITTED", requestId=requestId, runtimeInstanceId=runtimeInstanceId,
                            documentRevision=revision, executionRevision=execution, code="", message="configuration committed")

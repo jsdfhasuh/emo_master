@@ -8,7 +8,7 @@ from uuid import uuid4
 import grpc
 
 from PySide2.QtCore import QCoreApplication, QEvent, QPoint, QPointF, Qt
-from PySide2.QtGui import QMouseEvent
+from PySide2.QtGui import QMouseEvent, QWheelEvent
 from PySide2.QtTest import QTest
 from PySide2.QtWidgets import QAbstractItemView, QPushButton
 
@@ -33,6 +33,22 @@ from tests.runtime.test_loop_cycle_configuration import loopProject
 def _click(button):
     assert button.isVisible() and button.isEnabled(), button.text()
     QTest.mouseClick(button, Qt.LeftButton)
+
+
+def scrollDownToEnd(tree):
+    viewport = tree.viewport()
+    assert viewport.isVisible()
+    point = viewport.rect().center()
+    bar = tree.verticalScrollBar()
+    while True:
+        previous = bar.value()
+        atEnd = previous == bar.maximum()
+        event = QWheelEvent(point, viewport.mapToGlobal(point), QPoint(), QPoint(0, -120),
+                            Qt.NoButton, Qt.NoModifier, Qt.NoScrollPhase, False)
+        QCoreApplication.sendEvent(viewport, event)
+        if atEnd:
+            return
+        assert bar.value() > previous
 
 
 def _capture(dialog, name):
@@ -344,7 +360,7 @@ def testNativeWhileLogsWarningDeviceReturnAndTimeline(ownedDesignerWindow, tmp_p
         assert active.childCount() == 1
         workbench.directory.setCurrentItem(active.child(0))
         _click(workbench.openButton)
-        waitUntil(lambda: workbench._upper is not None and workbench.earlier.isEnabled(), timeout=10)
+        waitUntil(lambda: workbench._upper is not None and workbench._canReadEarlier(), timeout=10)
         releaseFirst.set()
         waitUntil(second.is_set, timeout=10)
 
@@ -367,6 +383,7 @@ def testNativeWhileLogsWarningDeviceReturnAndTimeline(ownedDesignerWindow, tmp_p
         _click(workbench.infoToggle)
         assert workbench.info.isHidden()
         locate = next(button for button in workbench.findChildren(QPushButton) if button.text() == "定位当前")
+        waitUntil(lambda: workbench.job.status == "RUNNING", timeout=10)
         _click(locate)
         waitUntil(lambda: workbench._detailEntry is not None or "尚未确认" in workbench.jobHint.text(), timeout=5)
         assert workbench._detailEntry is not None, (workbench.jobHint.text(), workbench.job.status,
@@ -422,7 +439,7 @@ def testNativeWhileLogsWarningDeviceReturnAndTimeline(ownedDesignerWindow, tmp_p
         workbench.mode.setCurrentIndex(0)
         _click(workbench.readContext)
         assert "本轮已加载上下文" in workbench.rangeStatus.text()
-        _click(workbench.earlier)
+        scrollDownToEnd(workbench.events)
         waitUntil(lambda: any(row.eventType == "test.history.fixture" and row.message == "Q1 pagination 0"
                              for row in workbench.window.entries), timeout=10)
         _click(workbench.returnContext)

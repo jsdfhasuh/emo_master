@@ -66,6 +66,21 @@ def testOfflineUpdatePreservesOutputsAndBacksUpConfiguration(tmp_path):
                for backup in tmp_path.glob(".runtime-backup-*") if (backup / "project.json").exists())
 
 
+def testPackageDoesNotCollectConnectedVideoNodesDormantFile(tmp_path):
+    from emo_master.core.project.models import WorkflowEdge, WorkflowNode
+    source = tmp_path / "source"
+    document = productionProject(source)
+    workflow = document.workflows["main"]
+    workflow.inputs["movie"] = "string"
+    workflow.nodes.append(WorkflowNode(nodeId="reader", operatorId="vision.io.video_loader",
+                                      params={"videoPath": "unused.avi"}))
+    workflow.edges.append(WorkflowEdge(fromNode="input", fromPort="movie", toNode="reader", toPort="videoPath"))
+    package = buildRuntimePackage(source, tmp_path / "packages", document=document)
+    installed = installRuntimePackage(package, tmp_path / "installed")
+    assert installed.workflows["main"].nodes[-1].params["videoPath"] == "unused.avi"
+    assert not (tmp_path / "installed/unused.avi").exists()
+
+
 def testUpdateRequiresDirectoryOwnershipAndDifferentProjectUsesNewDirectory(tmp_path):
     source = tmp_path / "source"
     document = productionProject(source)

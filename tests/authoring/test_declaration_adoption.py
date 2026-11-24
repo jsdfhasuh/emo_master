@@ -58,10 +58,10 @@ def test_public_copy_preserves_resource_site_bindings_bytes_and_single_history(t
         history = len(draft.session._undo)
         state = edit(client, state, 'node.copy', workflowId='main', nodeId='image')
         copied_id = state['createdIds']['nodeId']
-        bindings = state['project']['resources']['parameterBindings']
-        assert bindings[0] == before['resources']['parameterBindings'][0]
-        assert bindings[1] == {'target': {'workflowId': 'main', 'nodeId': copied_id, 'parameterPath': ['imagePath']},
-                               'resourceId': resource_id}
+        assert state['project']['resources']['parameterBindings'] == before['resources']['parameterBindings'] == []
+        for nid in ('image', copied_id):
+            node = next(n for n in state['project']['workflows']['main']['nodes'] if n['nodeId'] == nid)
+            assert node['params']['imagePath'] == before['resources']['items'][resource_id]['path']
         assert state['project']['resources']['items'] == before['resources']['items']
         assert list((draft.directory / 'assets').rglob('*')) == paths
         assert len(draft.session._undo) == history + 1

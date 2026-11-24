@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, field, replace
 from time import perf_counter
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from typing import Callable, cast
 
 from emo_master.apps.designer.ui.operator_bubble import OPERATOR_MIME_TYPE
@@ -671,7 +671,7 @@ try:
             if isinstance(scene, FlowScene):
                 scene._routeEdges([self])
 
-        def applyRoute(self, route: Route) -> None:
+        def applyRoute(self, route: Route, *, refreshWires: bool = True) -> None:
             self.route = route
             scene = self.scene()
             key = self.data(int(Qt.UserRole))
@@ -696,7 +696,8 @@ try:
             self.setPath(path)
             self._setDisplayPath(path)
             if isinstance(scene, FlowScene):
-                scene._wireGeometryChanged()
+                if refreshWires:
+                    scene._wireGeometryChanged()
             else:
                 self._applySelectionStyle(self.isSelected())
 
@@ -1230,6 +1231,7 @@ try:
         def refreshPresentations(self) -> None:
             if self.presentationProvider is None:
                 return
+            rebuiltNodes = []
             previous = self.blockSignals(True)
             try:
                 for nodeId, old in list(self._nodeItems.items()):
@@ -1245,6 +1247,7 @@ try:
                             del self._portItems[key]
                     self.removeItem(old)
                     self.addFlowNode(model)
+                    rebuiltNodes.append(nodeId)
                     item = self._nodeItems[nodeId]
                     item.setSelected(selected)
                     item.setRuntimeState(state)
@@ -1256,10 +1259,23 @@ try:
                             edge.targetPort = self._portItems[(nodeId, "input", edge.edge.toPort)]
             finally:
                 self.blockSignals(previous)
-            self._hoverPort = None
-            self._refreshPortVisibility(*self._nodeItems)
+            if rebuiltNodes:
+                self._hoverPort = None
+                self._refreshPortVisibility(*rebuiltNodes)
+                if not self._routeBatch:
+                    self._scheduleRouteRefinement()
             self._refreshEdgePresentation()
-            self._scheduleRoutes()
+
+        def renderWorkflowEdges(self, edges: Iterable[FlowEdgeViewModel]) -> None:
+            self._routeBatch = self._wireBatch = True
+            try:
+                for edge in edges:
+                    self.renderEdge(edge)
+            finally:
+                self._routeBatch = self._wireBatch = False
+            if self._edgeItems:
+                self._wireGeometryChanged()
+                self._scheduleRouteRefinement()
 
         def renderEdge(self, edge: FlowEdgeViewModel) -> None:
             sourcePort = self._portItems.get((edge.fromNodeId, "output", edge.fromPort))
@@ -1312,12 +1328,8 @@ try:
                 return
             nodes, requests = self._routingInputs(items)
             routes = OrthogonalRouter(nodes, requests).routeAll()
-            self._wireBatch = True
-            try:
-                for item, request in zip(items, requests):
-                    item.applyRoute(routes[request.key])
-            finally:
-                self._wireBatch = False
+            for item, request in zip(items, requests):
+                item.applyRoute(routes[request.key], refreshWires=False)
             self._wireGeometryChanged()
 
         def refreshAllRoutes(self) -> None:
@@ -1338,25 +1350,20 @@ try:
                 self._routeRefineTimer.start(0)
 
         def _continueRouteRefinement(self) -> None:
-            # Refine a snapshot cooperatively, rather than blocking a mouse
-            # release for the whole graph. A new edit/clear cancels the snapshot.
+            # Edits and workflow switches cancel the in-progress scene snapshot.
             if self.mouseGrabberItem() is not None:
                 self._routeRefineTimer.start(16)
                 return
             deadline = perf_counter() + .008
             if self._routeRefinement is None:
                 nodes, requests = self._routingInputs(list(self._edgeItems.values()))
-                self._routeRefinement = OrthogonalRouter(nodes, requests).iterRoutes(stepNodes=64)
+                self._routeRefinement = OrthogonalRouter(nodes, requests, deferGrid=True).iterRoutes(stepNodes=64)
             while perf_counter() < deadline:
                 try:
                     result = next(self._routeRefinement)
                 except StopIteration:
-                    self._wireBatch = True
-                    try:
-                        for key, route in self._refinedRoutes.items():
-                            self._edgeItems[key].applyRoute(route)
-                    finally:
-                        self._wireBatch = False
+                    for key, route in self._refinedRoutes.items():
+                        self._edgeItems[key].applyRoute(route, refreshWires=False)
                     self._wireGeometryChanged()
                     self._refreshBindingPaths()
                     self._routesDirty = False
@@ -1364,7 +1371,17 @@ try:
                     return
                 if result is not None:
                     key, route = result
-                    self._refinedRoutes[key] = route
+                    edge = self._edgeItems[key]
+                    if edge.route.points:
+                        self._refinedRoutes[key] = route
+                    else:
+                        # Show new workflow edges as soon as their exact paths
+                        # are ready. Merge shared segments once at completion.
+                        edge.applyRoute(route, refreshWires=False)
+                        if route.blocked:
+                            self._presentationSignature = None
+            if self._presentationSignature is None:
+                self._refreshEdgePresentation()
             self._routeRefineTimer.start(1)
 
         def refreshEdgesForNode(self, nodeId: str) -> None:
@@ -2310,6 +2327,10 @@ except Exception:  # pragma: no cover
         def addFlowNode(self, model: FlowNodeViewModel) -> None:
             self._nodes[model.nodeId] = model
             self._selectedNodeId = model.nodeId
+
+        def renderWorkflowEdges(self, edges: Iterable[FlowEdgeViewModel]) -> None:
+            for edge in edges:
+                self.renderEdge(edge)
 
         def renderEdge(self, edge: FlowEdgeViewModel) -> None:
             self._edges = [

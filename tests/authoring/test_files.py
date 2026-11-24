@@ -34,6 +34,28 @@ def _zip(members):
     return output.getvalue()
 
 
+def testImportedNodeSelectionCarriesItsOwnBytesThroughExport(services):
+    drafts, files = services
+    payload = drafts.create()["project"]
+    graph = payload["workflows"][payload["entryWorkflowId"]]
+    graph["nodes"].append(dict(nodeId="loader", operatorId="vision.io.image_loader",
+                               params=dict(imagePath="chosen.png")))
+    payload["resources"]["items"]["old"] = dict(path="old.png", sha256="f"*64, size=0, purpose="input_image")
+    payload["resources"]["parameterBindings"].append(dict(resourceId="old", target=dict(
+        workflowId=payload["entryWorkflowId"], nodeId="loader", parameterPath=["imagePath"])))
+    archive = _zip({"project.emoproj": json.dumps(payload), "chosen.png": b"chosen"})
+    state = files.import_project(archive, "import.zip")
+    assert state["missingInputs"] == []
+    with files.snapshot_zip(state["draftId"], state["draftRevision"]) as (path, metadata):
+        assert metadata["missingInputs"] == []
+        with zipfile.ZipFile(path) as exported:
+            assert set(exported.namelist()) == {"project.emoproj", "chosen.png"}
+            assert exported.read("chosen.png") == b"chosen"
+            resources = json.loads(exported.read("project.emoproj"))["resources"]
+            assert not resources["parameterBindings"]
+            assert [item["sha256"] for item in resources["items"].values()] == [hashlib.sha256(b"chosen").hexdigest()]
+
+
 def test_upload_revisions_replacement_and_undo_keep_old_bytes(services):
     drafts, files = services
     state = drafts.create("Image project")

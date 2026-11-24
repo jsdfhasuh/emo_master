@@ -96,6 +96,21 @@ def testLocalAllowlistRejectsDeviceBeforeRuntimeAccess(tmp_path):
         checkLocalDraft(document)
 
 
+def testLocalPreviewUsesTheImageSelectedOnTheNode(tmp_path):
+    from emo_master.core.project.resources import ResourceBinding, ParameterTarget
+    document = sampleProject(tmp_path)
+    workflow = document.workflows['main']
+    loader = next(node for node in workflow.nodes if node.operatorId == 'vision.io.image_loader')
+    target = ParameterTarget(workflowId='main', nodeId=loader.nodeId, parameterPath=['imagePath'])
+    image = next(key for key, item in document.resources.items.items() if item.path == loader.params['imagePath'])
+    document.resources.parameterBindings = []
+    checkLocalDraft(document, tmp_path)
+    document.resources.parameterBindings.append(ResourceBinding(target=target, resourceId=image))
+    loader.params['imagePath'] = str(tmp_path.parent / 'outside.png')
+    with pytest.raises(ValueError, match='选择工程内的输入图片'):
+        checkLocalDraft(document, tmp_path)
+
+
 def testBorrowedJobClosingDesignerLeavesRuntimeAndOtherObserver(qtApp, tmp_path, monkeypatch):
     from emo_master.apps.designer.page_designer.preview import LocalBackend
     from emo_master.clients.runtime.display_session import DisplaySession

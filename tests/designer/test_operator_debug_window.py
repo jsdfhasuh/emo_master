@@ -135,10 +135,57 @@ def testUnsupportedOperatorDoesNotStartWorker(runtime):
     try:
         wait(lambda: dialog.state == "FAULTED")
         assert "E_DEBUG_UNSUPPORTED" in dialog.status.text()
+        assert dialog.retryOpen.isHidden()
         assert not runtime.operatorDebugManager.opens
         dialog.close()
         wait(lambda: not isValid(dialog))
     finally:
+        editor.forceClose()
+
+
+def testBusyDebugWindowCanReopenAfterStoppingJob(runtime, tmp_path):
+    from emo_master.apps.designer.state.project_store import saveProject
+    from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
+    from tests.runtime.test_candidate_project_precheck import imageProject
+
+    payload, image = imageProject(runtime)
+    payload["production"]["mode"] = "continuous"
+    resource = tmp_path / payload["resources"]["items"]["image"]["path"]
+    resource.parent.mkdir()
+    resource.write_bytes(image)
+    projectFile = tmp_path / "inspection.emoproj"
+    saveProject(projectFile, payload)
+    loaded = runtime.LoadProject(pb.LoadProjectRequest(project_path=str(projectFile)), None)
+    assert loaded.ok, loaded.message
+    key = EditorKey(payload["project"]["projectId"], "main", "load")
+    job = runtime.StartJob(pb.StartJobRequest(project_id=key.projectId, workflow_id=key.workflowId,
+        follow_project_run_mode=True, start_request_id="busy-window", expected_runtime_instance_id=runtime.runtimeInstanceId), None)
+    assert job.ok, job.message
+    wait(lambda: any(event.eventType == "workflow.completed" for event in runtime.eventStore.read(job.job_id)))
+    node = next(n for n in payload["workflows"]["main"]["nodes"] if n["nodeId"] == key.nodeId)
+    context = EditorContext(key=key, operatorId=node["operatorId"], version="1", previewMode="none",
+        paramSchema=node["paramSchema"], runtimeClient=RuntimeClient(runtime), applyParams=lambda *_: pytest.fail("apply"),
+        appendLog=lambda *_: None, getPreviewProject=lambda _: payload, getProjectDirectory=lambda: str(tmp_path))
+    editor = OperatorWorkspaceWindow(key=key, title="图像加载", context=context, schema=node["paramSchema"], values=node["params"])
+    dialog = OperatorDebugWindow(editor)
+    editor._debugWindow = dialog
+    dialog.show()
+    try:
+        wait(lambda: dialog.retryOpen.isVisible())
+        assert not dialog.run.isEnabled() and not runtime.operatorDebugManager.ownsResources()
+        stopped = runtime.StopJob(pb.StopJobRequest(job_id=job.job_id, mode="graceful"), None)
+        assert stopped.ok, stopped.message
+        wait(lambda: runtime.jobRepository.get(job.job_id).isTerminal and not runtime.jobSupervisor.ownsJobResources(job.job_id))
+        assert dialog.retryOpen.isVisible() and not runtime.operatorDebugManager.opens
+        QTest.mouseClick(dialog.retryOpen, Qt.LeftButton)
+        wait(lambda: dialog.run.isEnabled())
+        assert dialog.retryOpen.isHidden() and not dialog.records and not dialog.executionId
+        QTest.mouseClick(dialog.run, Qt.LeftButton)
+        wait(lambda: bool(dialog.records) and dialog.run.isEnabled())
+        assert dialog.records[0]["status"] == "SUCCEEDED"
+    finally:
+        dialog.close()
+        wait(lambda: not isValid(dialog))
         editor.forceClose()
 
 

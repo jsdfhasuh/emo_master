@@ -7,14 +7,16 @@ from types import SimpleNamespace
 
 from PySide2.QtCore import QTimer, Qt, Signal
 from PySide2.QtWidgets import (
-    QAbstractItemView, QCheckBox, QComboBox, QGridLayout, QHBoxLayout, QHeaderView,
+    QAbstractItemView, QAbstractSlider, QCheckBox, QComboBox, QGridLayout, QHBoxLayout, QHeaderView,
     QLabel, QLineEdit, QPushButton, QSizePolicy, QSplitter, QStackedWidget, QTreeWidget,
     QTreeWidgetItem, QVBoxLayout, QWidget,
 )
 
 from emo_master.apps.designer.presenters.node_run_presenter import frameworkLogMessage
 from emo_master.apps.designer.services.display_calls import DisplayCallContext
-from emo_master.apps.designer.state.job_log import ExecutionTree, JobEventWindow, jobExecutionTime
+from emo_master.apps.designer.state.job_log import (
+    ExecutionTree, JobEventWindow, JobIterationPage, jobExecutionTime,
+)
 from emo_master.apps.designer.ui.log_filters import (
     OptionalDateTimeRange, describeDateBounds, deviceChoices as _deviceChoices, includesTimestamp, updateIdentityChoices,
 )
@@ -50,8 +52,25 @@ def _button(layout, title, action):
     return button
 
 
-def _tree(headers):
-    tree = QTreeWidget()
+class _JobEventTree(QTreeWidget):
+    userScrolled = Signal(bool)  # True when moving down the list.
+
+    def wheelEvent(self, event):
+        delta = event.pixelDelta().y() or event.angleDelta().y()
+        super().wheelEvent(event)
+        if delta:
+            self.userScrolled.emit(delta < 0)
+
+    def keyPressEvent(self, event):
+        super().keyPressEvent(event)
+        if event.key() in (Qt.Key_Down, Qt.Key_PageDown, Qt.Key_End):
+            self.userScrolled.emit(True)
+        elif event.key() in (Qt.Key_Up, Qt.Key_PageUp, Qt.Key_Home):
+            self.userScrolled.emit(False)
+
+
+def _tree(headers, widgetType=QTreeWidget):
+    tree = widgetType()
     tree.setHeaderLabels(headers)
     tree.setUniformRowHeights(True)
     tree.setVerticalScrollMode(QAbstractItemView.ScrollPerPixel)
@@ -112,6 +131,7 @@ class RuntimeJobLogs(QWidget):
         self._readerOnline = False
         self._readerGeneration = 0
         self._opening = False
+        self._readingEarlier = False
         self._dirty = False
         self._shownMode = 0
         self._historyMode = False
@@ -285,7 +305,6 @@ class RuntimeJobLogs(QWidget):
         self.timeRange = QCheckBox("显示起止时间")
         row.addWidget(self.timeRange)
         row.addStretch(1)
-        self.earlier = _button(row, "加载更早", self._readEarlier)
         self.olderWindow = _button(row, "切换到更早范围", lambda: self._readEarlier(replace=True))
         self.olderWindow.hide()
         _button(row, "返回最新", self._openLatest)
@@ -300,7 +319,7 @@ class RuntimeJobLogs(QWidget):
         panel.addLayout(filterStatus)
 
         self.split = QSplitter(Qt.Horizontal)
-        self.events = _tree(["事件 / 执行结构", "等级 / 状态", "时间", "运行时间"])
+        self.events = _tree(["事件 / 执行结构", "等级 / 状态", "时间", "运行时间"], _JobEventTree)
         self.events.setObjectName("runtimeJobExecutionTree")
         self.events.setColumnWidth(1, 82)
         self.events.setColumnWidth(2, 100)
@@ -344,8 +363,8 @@ class RuntimeJobLogs(QWidget):
         self.events.itemClicked.connect(self._eventClicked)
         self.events.itemExpanded.connect(self._expandedItem)
         self.events.itemCollapsed.connect(lambda item: self._expanded.discard(item.data(0, _ROLE)))
-        self.events.verticalScrollBar().sliderMoved.connect(self._readAt)
-        self.events.viewport().installEventFilter(self)
+        self.events.userScrolled.connect(self._userScrolled)
+        self.events.verticalScrollBar().actionTriggered.connect(self._scrollAction)
 
     def _buildRelated(self):
         self.relatedPage = QWidget()
@@ -404,14 +423,6 @@ class RuntimeJobLogs(QWidget):
             self.window.pause()
         super().hideEvent(event)
 
-    def eventFilter(self, watched, event):
-        from PySide2.QtCore import QEvent
-        if watched is self.events.viewport() and event.type() == QEvent.Wheel:
-            if event.angleDelta().y() > 0 and self.window is not None:
-                self.window.pause()
-                self._updateRange()
-        return super().eventFilter(watched, event)
-
     def synchronize(self, client, instance):
         transport = getattr(client, "runtimeService", None)
         if transport is self.transport and instance == self.instance:
@@ -458,6 +469,7 @@ class RuntimeJobLogs(QWidget):
 
     def _cancel(self):
         self.poll.stop()
+        self._readingEarlier = False
         if self.pending is not None:
             future, context, _, _ = self.pending
             context.cancel()
@@ -481,6 +493,7 @@ class RuntimeJobLogs(QWidget):
             return
         future, _, accept, reportError = self.pending
         self.pending = None
+        self._readingEarlier = False
         self.poll.stop()
         if getattr(self.client, "runtimeService", None) is not self.transport:
             return
@@ -493,6 +506,8 @@ class RuntimeJobLogs(QWidget):
         self._ticks += 1
         if self.job is not None:
             self._updateTimes()
+            if self.window is not None and self.window.paused and self.window.newCount:
+                self._updateRange()
         if self._ticks % 3 or self.pending is not None or self._historyMode and self.pages.currentWidget() is self.catalog:
             return
         if self.pages.currentWidget() in (self.jobPage, self.catalog, self.relatedPage):
@@ -901,9 +916,38 @@ class RuntimeJobLogs(QWidget):
         def request(context):
             if restore is not None and restore["first"] is not None:
                 return self._readBookmarkedRange(client, query, restore["first"], context)
-            return client.queryRuntimeLogs(**query, latestFirst=True, cancellation=context)
+            if target:
+                return client.queryRuntimeLogs(**query, latestFirst=True, cancellation=context)
+            return self._readIterationPage(client, query, context)
 
         self._read(request, accept, self.jobHint, reportError=failed)
+
+    def _readIterationPage(self, client, query, context):
+        rounds = JobIterationPage()
+        rows = []
+        while True:
+            # Keep the usual first page for ordinary jobs. For a loop, fetch
+            # larger batches within the same snapshot until the oldest round starts.
+            limit = min(1000 if rows else 200, self.maximumEntries - len(rows))
+            pageContext = DisplayCallContext()
+            context.attach(pageContext)
+            reply = client.queryRuntimeLogs(**query, latestFirst=True, limit=limit, cancellation=pageContext)
+            if not reply["ok"] or reply["runtimeInstanceId"] != query["runtimeInstanceId"]:
+                return reply
+            page = reply["events"]
+            for offset, row in enumerate(page):
+                rows.append(row)
+                if rounds.observe(row["event"]):
+                    if offset + 1 < len(page):
+                        # The remaining raw rows can be read with this exclusive cursor.
+                        return dict(reply, events=rows, nextEventId=row["eventId"], hasMore=True)
+                    return dict(reply, events=rows)
+            if not reply["hasMore"] or not rounds.hasLoopEvidence or len(rows) >= self.maximumEntries:
+                return dict(reply, events=rows)
+            cursor = reply["nextEventId"]
+            if cursor <= 0 or cursor >= query.get("beforeEventId", reply["upperEventId"] + 1):
+                raise ValueError("Runtime 日志游标未推进。")
+            query = dict(query, beforeEventId=cursor, upperEventId=reply["upperEventId"])
 
     def _readBookmarkedRange(self, client, query, first, context):
         # The bookmark holds two range keys. Rebuild only the old bounded
@@ -1014,7 +1058,7 @@ class RuntimeJobLogs(QWidget):
         self._read(request, accept, self.jobHint, reportError=failed)
 
     def _readEarlier(self, *, replace=False):
-        if not self._canReadEarlier():
+        if self._readingEarlier or not self._canReadEarlier():
             return
         if self._earlierUpper is None:
             self._earlierUpper = self._upper
@@ -1023,8 +1067,7 @@ class RuntimeJobLogs(QWidget):
                 self._earlierUpper = max(self._upper, self.window.lastEventId)
         self.window.pause()
         client = self.client
-        scope = dict(self._queryScope(), beforeEventId=self._before, upperEventId=self._earlierUpper, latestFirst=True,
-                     limit=min(200, self.maximumEntries))
+        scope = dict(self._queryScope(), beforeEventId=self._before, upperEventId=self._earlierUpper)
 
         def accept(reply):
             self._requirePage(reply)
@@ -1054,7 +1097,8 @@ class RuntimeJobLogs(QWidget):
             self._before = reply["nextEventId"] if reply["hasMore"] else None
             self._render()
 
-        self._read(lambda context: client.queryRuntimeLogs(**scope, cancellation=context), accept, self.jobHint)
+        self._read(lambda context: self._readIterationPage(client, scope, context), accept, self.jobHint)
+        self._readingEarlier = True
 
     def _canReadEarlier(self):
         return self.window is not None and not self._opening and bool(
@@ -1073,8 +1117,8 @@ class RuntimeJobLogs(QWidget):
             self._stagedTruncated |= len(self._staged) == self._staged.maxlen
             self._staged.append(entry)
         elif self._upper is not None and entry.eventId > self._upper:
-            self.window.appendLive((entry,))
-            self._scheduleRender()
+            if self.window.appendLive((entry,)):
+                self._scheduleRender()
 
     def _toggleInfo(self):
         self.info.setVisible(self.info.isHidden())
@@ -1181,6 +1225,8 @@ class RuntimeJobLogs(QWidget):
         item = self.events.itemAt(0, 1)
         if item is not None and item.data(0, _ROLE):
             self._anchors[self._shownMode] = item.data(0, _ROLE)
+            return self.events.visualItemRect(item).top()
+        return 0
 
     def _modeChanged(self):
         self._rememberAnchor()
@@ -1190,13 +1236,15 @@ class RuntimeJobLogs(QWidget):
     def _render(self, *, captureAnchor=True, restore=None):
         if self.window is None:
             return
-        if captureAnchor:
-            self._rememberAnchor()
+        anchorOffset = self._rememberAnchor() if captureAnchor else 0
         follow = not self.window.paused
         self._dirty = False
+        previousDefaults = self.structure.defaultExpandedKeys if self.structure is not None else set()
         self.structure = ExecutionTree(self.window.entries)
         if restore is not None:
             self._restoreBookmarkedScope(restore)
+        else:
+            self._expanded.update(self.structure.defaultExpandedKeys - previousDefaults)
         if not self.filters.isHidden():
             updateIdentityChoices(self.inputs, self.window.entries)
         matches = self._scopePredicate()
@@ -1205,7 +1253,6 @@ class RuntimeJobLogs(QWidget):
         self.events.blockSignals(True)
         self.events.setUpdatesEnabled(False)
         scrollBar = self.events.verticalScrollBar()
-        previousScrollBlock = scrollBar.blockSignals(True)
         try:
             self.events.clear()
             if self.mode.currentIndex():
@@ -1221,10 +1268,10 @@ class RuntimeJobLogs(QWidget):
             anchor = self._items.get(self._anchors.get(self.mode.currentIndex()))
             if anchor is not None and self.window.paused:
                 self.events.scrollToItem(anchor, QAbstractItemView.PositionAtTop)
+                scrollBar.setValue(scrollBar.value() - anchorOffset)
             elif follow:
-                self.events.scrollToBottom()
+                self._scrollToLatest()
         finally:
-            scrollBar.blockSignals(previousScrollBlock)
             self.events.setUpdatesEnabled(True)
             self.events.blockSignals(False)
         if self._focus:
@@ -1274,8 +1321,29 @@ class RuntimeJobLogs(QWidget):
         parent.addChild(item)
         for child in branch.children:
             self._addBranch(child, item)
-        item.setExpanded(branch.key in self._expanded or (
-            parent == self.events.invisibleRootItem() and not self._expanded))
+        item.setExpanded(branch.key in self._expanded)
+
+    def _roundsFirst(self):
+        return self.mode.currentIndex() == 0 and self.structure is not None and self.structure.hasOuterIterations
+
+    def _scrollToLatest(self):
+        if not self._roundsFirst():
+            self.events.scrollToBottom()
+            return
+        self.events.scrollToTop()
+        rounds = (branch for branch in self._branches.values() if branch.isOuterIteration)
+        latest = max(rounds, key=lambda branch: (branch.end or branch.start).eventId, default=None)
+        if latest is not None:
+            item = self._items[latest.key]
+            current = self.structure.currentNode(jobStatus=self.job.status, runtimeInstanceId=self.instance,
+                                                 continuous=self._continuous)
+            if (current is not None and current.iterationPathRecorded and not current.iterationPath
+                    and current.eventId > (latest.end or latest.start).eventId):
+                item = self._items.get(("node", current.workflowRunId, current.nodeRunId), item)
+                while item.parent() is not None and not self.events.visualItemRect(item).isValid():
+                    item = item.parent()
+            if self.events.visualItemRect(item).bottom() >= self.events.viewport().height():
+                self.events.scrollToItem(item, QAbstractItemView.PositionAtTop)
 
     def _updateRange(self):
         if self.window is None:
@@ -1291,7 +1359,7 @@ class RuntimeJobLogs(QWidget):
         self.clearFilters.setVisible(bool(filters or dates or invalidDates or self.search.text().strip()
                                          or self.warning.isChecked() or self.level.currentIndex()))
         if self._context is not None:
-            suffix.append("本轮已加载上下文" + (" · 可加载更早事件" if self._canReadEarlier() else ""))
+            suffix.append("本轮已加载上下文")
         else:
             summary = [f"{label} {filters[key]}" for key, label in (*_COMMON_FIELDS, *_TECHNICAL_FIELDS) if key in filters]
             if dates:
@@ -1309,13 +1377,14 @@ class RuntimeJobLogs(QWidget):
             suffix.append(f"已加载 {self.structure.rootCount} 次根调用")
         if self.window.trimmed:
             suffix.append("部分事件已移出当前窗口")
+        if self._canReadEarlier():
+            suffix.append("下滑到底加载更早轮次" if self._roundsFirst() else "上滑到顶加载更早事件")
         if self.window.paused:
             suffix.append(f"历史阅读 · 已观察到 {self.window.newCount} 条新事件"
                           if self.window.newCount else "历史阅读")
         else:
             suffix.append("实时跟随" if not self._opening and self._upper is not None else "等待最近页")
         self.rangeStatus.setText(f"已加载 {len(self.window.entries)} 条 · " + " · ".join(suffix))
-        self.earlier.setEnabled(self._canReadEarlier())
 
     def _updateTimes(self):
         if self.job is None:
@@ -1368,10 +1437,33 @@ class RuntimeJobLogs(QWidget):
             item.setText(3, label)
             item.setToolTip(3, timing.display(showRange=True))
 
-    def _readAt(self, value):
-        if self.window is not None and value < self.events.verticalScrollBar().maximum():
+    def _scrollAction(self, action):
+        bar = self.events.verticalScrollBar()
+        if action == QAbstractSlider.SliderMove:
+            if not bar.isSliderDown() or bar.sliderPosition() == bar.value():
+                return
+            down = bar.sliderPosition() > bar.value()
+        elif action in (QAbstractSlider.SliderSingleStepAdd, QAbstractSlider.SliderPageStepAdd,
+                        QAbstractSlider.SliderToMaximum):
+            down = True
+        elif action in (QAbstractSlider.SliderSingleStepSub, QAbstractSlider.SliderPageStepSub,
+                        QAbstractSlider.SliderToMinimum):
+            down = False
+        else:
+            return
+        self._userScrolled(down, bar.sliderPosition())
+
+    def _userScrolled(self, down, position=None):
+        if (self.window is None or self._opening or self.pages.currentWidget() is not self.jobPage
+                or down != self._roundsFirst()):
+            return
+        if not self.window.paused:
             self.window.pause()
             self._updateRange()
+        bar = self.events.verticalScrollBar()
+        edge = bar.maximum() if down else bar.minimum()
+        if (bar.value() if position is None else position) == edge and self.olderWindow.isHidden():
+            self._readEarlier()
 
     def _expandedItem(self, item):
         self._expanded.add(item.data(0, _ROLE))
@@ -1391,7 +1483,9 @@ class RuntimeJobLogs(QWidget):
         self._selection = key
         if not key or key[0] != "event":
             if key in self._branches:
+                self.window.pause()
                 self.jobHint.setText(self._items[key].text(3))
+                self._updateRange()
             self._closeDrawer()
             return
         entry = next((row for row in self.window.entries if row.eventId == key[1]), None)
@@ -1449,8 +1543,6 @@ class RuntimeJobLogs(QWidget):
         item = self._items.get(key)
         if item is None:
             return
-        scrollBar = self.events.verticalScrollBar()
-        previousScrollBlock = scrollBar.blockSignals(True)
         self.events.blockSignals(True)
         try:
             parent = item.parent()
@@ -1462,7 +1554,6 @@ class RuntimeJobLogs(QWidget):
             self.events.scrollToItem(item, QAbstractItemView.PositionAtCenter)
         finally:
             self.events.blockSignals(False)
-            scrollBar.blockSignals(previousScrollBlock)
         if followEntry is None:
             self._eventSelected()
         else:
@@ -1524,7 +1615,7 @@ class RuntimeJobLogs(QWidget):
         entry = self.structure.currentNode(jobStatus=self.job.status, runtimeInstanceId=self.instance,
             continuous=self._continuous and not self.window.paused)
         if entry is None:
-            self.events.scrollToBottom()
+            self._scrollToLatest()
             self.jobHint.setText("当前执行节点尚未确认。")
             return
         key = ("event", entry.eventId)

@@ -20,7 +20,8 @@ from emo_panel_protocol.canonical import canonicalJson, revisionOf
 from emo_master.core.presentation.models import walkComponents
 from emo_master.core.presentation.validation import validateBindings
 from emo_master.core.project.models import ProjectDocument
-from emo_master.core.project.resources import ParameterTarget, ResourceBinding, SiteBinding, safeRelativePath
+from emo_master.core.project.node_input_files import NODE_INPUT_FILES, activeNodeInputFile, nodeInputResource, alignNodeInputFiles
+from emo_master.core.project.resources import ParameterTarget, Resource, ResourceBinding, SiteBinding, safeRelativePath
 from emo_master.core.workflow.validation import validateProjectDocument
 
 
@@ -67,35 +68,49 @@ def _inside(root: Path, relative: str) -> Path:
 
 
 def verifyResources(project: ProjectDocument, root: Path, *, resourcePaths=None) -> dict[str, str]:
-    from emo_master.core.workflow.errors import locatedValidationError, ValidationIssue, WorkflowCompileError
     assert project.resources is not None
+    return verifyResourceItems(project.project.projectId, project.resources.items, root, resourcePaths=resourcePaths)
+
+
+def verifyResourceItems(projectId: str, items: Mapping[str, Resource], root: Path | None, *,
+                        resourcePaths: Mapping[str, str | Path] | None = None) -> dict[str, str]:
+    from emo_master.core.workflow.errors import locatedValidationError, ValidationIssue, WorkflowCompileError
     resolved: dict[str, str] = {}
     issues = []
-    for resourceId, item in project.resources.items.items():
+    for resourceId, item in items.items():
         location = 'resources.items.'+resourceId
         try:
-            path = Path(resourcePaths[resourceId]) if resourcePaths and resourceId in resourcePaths else _inside(root, item.path)
+            if resourcePaths and resourceId in resourcePaths:
+                path = Path(resourcePaths[resourceId])
+            elif root is not None:
+                path = _inside(root, item.path)
+            else:
+                issues.append(ValidationIssue('E_RESOURCE_MISSING',
+                    f'Runtime 找不到已加载的绑定资源 {resourceId}（{item.path}），也没有可用的工程目录。'
+                    '请先将工程及资源写入 Runtime，或使用已保存的本地工程。',
+                    projectId=projectId, fieldPath=location+'.path'))
+                continue
         except FileNotFoundError:
             # A replacement's managed root is created only when it is published.
             issues.append(ValidationIssue('E_RESOURCE_MISSING',
                 f'resource unavailable: {resourceId} ({item.path}); resource root not found: {root}',
-                projectId=project.project.projectId, fieldPath=location+'.path'))
+                projectId=projectId, fieldPath=location+'.path'))
             continue
         except ValueError as error:
-            issues.extend(locatedValidationError(error, 'E_RESOURCE_INPUT', projectId=project.project.projectId,
+            issues.extend(locatedValidationError(error, 'E_RESOURCE_INPUT', projectId=projectId,
                                                   fieldPath=location+'.path').issues)
             continue
         if not path.is_file():
             exists = path.exists()
             issues.append(ValidationIssue('E_RESOURCE_INPUT' if exists else 'E_RESOURCE_MISSING',
                 f'resource {"is not a file" if exists else "missing"}: {resourceId} ({path})',
-                projectId=project.project.projectId, fieldPath=location+'.path'))
+                projectId=projectId, fieldPath=location+'.path'))
             continue
         size = path.stat().st_size
         if size != item.size:
             issues.append(ValidationIssue('E_RESOURCE_SIZE',
                 f'resource size mismatch: {resourceId} ({path}); expected {item.size}, actual {size}',
-                projectId=project.project.projectId, fieldPath=location+'.size'))
+                projectId=projectId, fieldPath=location+'.size'))
             continue
         digest = hashlib.sha256()
         with path.open("rb") as stream:
@@ -103,7 +118,7 @@ def verifyResources(project: ProjectDocument, root: Path, *, resourcePaths=None)
                 digest.update(block)
         if digest.hexdigest() != item.sha256:
             issues.append(ValidationIssue('E_RESOURCE_DIGEST', f'resource digest mismatch: {resourceId} ({path})',
-                projectId=project.project.projectId, fieldPath=location+'.sha256'))
+                projectId=projectId, fieldPath=location+'.sha256'))
             continue
         resolved[resourceId] = str(path)
     if issues:
@@ -206,6 +221,10 @@ def freezeProjectSnapshot(
     issues = validateBindings(project, manifests, publish=mode == "release", counterNames=counterNames)
     if issues:
         raise ValueError("; ".join(f"{i.path}: {i.message}" for i in issues))
+    # Preserve integrity of declarations supplied by the project before deriving
+    # descriptors for additional inputs. Legacy binding overrides are discarded.
+    project = alignNodeInputFiles(project, resourceRoot, refreshExisting=False)
+    assert project.resources is not None and project.presentation is not None
     resources = verifyResources(project, resourceRoot)
     sites = dict(siteValues or {})
     if set(sites) - {binding.field for binding in project.resources.siteBindings}:
@@ -239,6 +258,9 @@ def freezeProjectSnapshot(
             defaults = {name: deepcopy(spec["default"]) for name, spec in properties.items()
                         if "default" in spec} if isinstance(properties, dict) else {}
             params = {**defaults, **deepcopy(node.params)}
+            fileResource = nodeInputResource(project, workflow, node)
+            if fileResource and (field := activeNodeInputFile(workflow, node)):
+                params[field] = resources[fileResource[0]]
             canonicalParams[key] = deepcopy(params)
             resolvedParams[key] = params
 
@@ -298,6 +320,8 @@ def freezeProjectSnapshot(
         # Reject undeclared known file parameters; never retain a developer path fallback.
         for (operatorId, path), purpose in purposes.items():
             if operatorIds[key] == operatorId and purpose in {"input_image", "model", "output_directory", "output_file"}:
+                if path == (NODE_INPUT_FILES.get(operatorId),):
+                    continue
                 declarations: list[ResourceBinding | SiteBinding] = [
                     *project.resources.parameterBindings, *project.resources.siteBindings]
                 if not any(isinstance(b.target, ParameterTarget) and (b.target.workflowId, b.target.nodeId) == key
@@ -307,7 +331,7 @@ def freezeProjectSnapshot(
         if isinstance(properties, dict):
             for name, spec in properties.items():
                 if isinstance(spec, dict) and spec.get("xWidget") == "file":
-                    if (operatorIds[key], (name,)) not in purposes:
+                    if (operatorIds[key], (name,)) not in purposes and NODE_INPUT_FILES.get(operatorIds[key]) != name:
                         raise ValueError("custom file parameter has no trusted purpose adapter")
 
     # Replace expanded locations after normalization; machine paths never enter content revisions.
@@ -329,6 +353,9 @@ def freezeProjectSnapshot(
         for node in workflow.nodes:
             graphNode = node.model_dump(exclude={"displayName", "paramSchema"})
             graphNode["params"] = canonicalParams.get((workflowId, node.nodeId), node.params)
+            fileResource = nodeInputResource(project, workflow, node)
+            if fileResource and (field := activeNodeInputFile(workflow, node)):
+                graphNode["params"][field] = {"resourceId": fileResource[0]}
             nodes.append(graphNode)
         algorithms[workflowId] = {"inputs": workflow.inputs, "outputs": workflow.outputs,
                                   "nodes": nodes, "edges": [e.model_dump() for e in workflow.edges]}
@@ -340,7 +367,7 @@ def freezeProjectSnapshot(
                  **({"communication": project.communication.model_dump()} if project.communication is not None else {}),
                  "resources": {key: item.model_dump(exclude={"path"})
                                for key, item in project.resources.items.items()
-                               if item.purpose in {"input_image", "model"}}}
+                               if item.purpose in {"input_image", "model", "input_file"}}}
     return ProjectSnapshot(
         snapshotId, mode, project.project.projectId,
         project.project.revision if mode == "debug" else None, releaseRevision,

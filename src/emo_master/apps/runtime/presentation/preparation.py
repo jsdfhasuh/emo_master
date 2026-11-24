@@ -6,6 +6,7 @@ from pathlib import Path
 import shutil
 
 from emo_master.core.project.models import ProjectDocument
+from emo_master.core.project.node_input_files import activeNodeInputFile, nodeInputResource
 from emo_master.core.project.snapshots import ProjectSnapshot, freezeProjectSnapshot
 from emo_master.core.workflow.compiler import WorkflowCompiler
 from emo_master.apps.runtime.context.sqlite_store import SqliteStore
@@ -67,6 +68,9 @@ def prepare(project, registry, root: Path, resourceRoot: Path, *, siteValues=Non
         for workflowId, workflow in document.workflows.items():
             for node in workflow.nodes:
                 if node.kind == "operator":
+                    fileResource = nodeInputResource(document, workflow, node)
+                    if fileResource:
+                        parameters[workflowId][node.nodeId][activeNodeInputFile(workflow, node)] = paths[fileResource[0]]
                     node.params = parameters[workflowId][node.nodeId]
         from emo_master.apps.runtime.business_sqlite.backend import freezeTargets
         document = freezeTargets(document, resourceRoot.resolve(),

@@ -343,7 +343,9 @@ class ProjectConfigurationRpcMixin:
                 maintenance = bool(runtime.deviceManager.maintenanceOwners)
             if maintenance or sourceCycleOwners(runtime):
                 raise ConfigurationError('E_CONFIG_REQUIRES_STOP', '工程目录切换需等待当前任务、检测周期和设备操作结束并释放资源')
-        executionChanged = sourceChanged or executionDigest(payload) != executionDigest(runtime.projectConfiguration.current["payload"])
+        root = runtime.loadedProjectPath
+        executionChanged = sourceChanged or (
+            executionDigest(payload, projectRoot=root) != executionDigest(runtime.projectConfiguration.current["payload"], projectRoot=root))
         scopedDevices = self._supportsDeviceReplacement(payload)
         from .impact import affectedJobs
         affected = affectedJobs(runtime, payload, sourceChanged=sourceChanged)
@@ -380,7 +382,8 @@ class ProjectConfigurationRpcMixin:
         projected = deepcopy(current)
         applyDeviceCycleParameters(projected, payload, runtime.pluginScanResult.deviceTypes)
         applyCycleParameters(projected, payload, runtime.pluginScanResult.activeOperators)
-        return executionDigest(projected) == executionDigest(payload)
+        root = runtime.loadedProjectPath
+        return executionDigest(projected, projectRoot=root) == executionDigest(payload, projectRoot=root)
 
     def _publishProjectConfiguration(self, document, receipt):
         runtime: Any = self

@@ -26,6 +26,7 @@ from emo_master.apps.designer.state.project_store import loadProjectDocument, sa
 from emo_master.authoring.errors import AuthoringError
 from emo_master.core.project.files import isProjectFile
 from emo_master.core.project.models import ProjectDocument
+from emo_master.core.project.node_input_files import activeNodeInputFile, alignNodeInputFiles, nodeInputResource
 from emo_master.core.project.resources import Resource, safeRelativePath
 from emo_master.core.project.snapshots import verifyResources
 from emo_master.core.workflow.errors import WorkflowCompileError, locatedValidationError
@@ -70,6 +71,20 @@ def _inventory(document: ProjectDocument, directory: Path):
         available.resources.items = {key: value for key, value in available.resources.items.items()
                                      if key not in missing_ids}
         return verifyResources(available, directory), issues
+
+
+def _draftInputs(document, directory):
+    # Drafts may be incomplete. Preserve declared checksums so integrity
+    # failures remain distinct from files that have not been supplied yet.
+    document = alignNodeInputFiles(document, directory, bestEffort=True, refreshExisting=False)
+    resolved, missing = _inventory(document, directory)
+    for wid, workflow in document.workflows.items():
+        for node in workflow.nodes:
+            field = activeNodeInputFile(workflow, node)
+            if field and node.params.get(field) and nodeInputResource(document, workflow, node) is None:
+                missing.append(dict(code="E_RESOURCE_INPUT_MISSING", workflowId=wid, nodeId=node.nodeId,
+                                    fieldPath="params." + field, message="请提供节点所选的工程输入文件"))
+    return document, resolved, missing
 
 
 def _checked_member(name: str) -> str:
@@ -206,7 +221,7 @@ class FilesService:
                           for issue in located.issues]
                 raise AuthoringError("INVALID_PROJECT", "Imported project is not a valid formal document",
                                      status=422, fieldPath="project", errors=issues) from error
-            resolved, missing = _inventory(document, project_path.parent)
+            document, resolved, missing = _draftInputs(document, project_path.parent)
             state = self.drafts.create(document.project.name, payload=document.model_dump(mode="json"))
             with self.drafts.locked(state["draftId"]) as draft:
                 if document.resources is not None:
@@ -219,9 +234,9 @@ class FilesService:
     def _freeze(self, draft_id: str, expected_revision: str, directory: Path):
         payload, revision, source_root = self.drafts.snapshot(draft_id, expected_revision)
         document = ProjectDocument.model_validate(payload)
-        resolved, missing = _inventory(document, source_root)
+        document, resolved, missing = _draftInputs(document, source_root)
         project_path = directory / "project.emoproj"
-        saveProject(project_path, deepcopy(payload))
+        saveProject(project_path, document.model_dump(mode="json"))
         # Use the same loader used by Designer, not JSON-only roundtrip validation.
         reloaded = loadProjectDocument(project_path)
         if reloaded != document:

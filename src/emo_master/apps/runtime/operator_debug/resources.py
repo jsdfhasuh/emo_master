@@ -60,7 +60,7 @@ class DebugResources:
         self.sqliteParams = None
         self.sqliteTarget = None
 
-    def prepare(self, params, values, context, cancellation):
+    def prepare(self, params, values, context, cancellation, *, projectInputPath=None):
         """Return invocation params/ports without mutating the submitted draft."""
         operatorId = self.spec["operatorId"]
         effective = dict(params)
@@ -70,7 +70,8 @@ class DebugResources:
         root = self.spec.get("resourceRoot", "")
         def resolve(key, *, directory=False, mustExist=True, fromInput=False):
             raw = values[key] if fromInput else params.get(key)
-            path = str(runtimePath(raw, directory=directory, mustExist=mustExist, resourceRoot=root))
+            selected = projectInputPath if projectInputPath and not fromInput else raw
+            path = str(runtimePath(selected, directory=directory, mustExist=mustExist, resourceRoot=root))
             notes.setdefault("resourcePaths", {})[key] = dict(original=raw, baseDirectory=root, resolved=path)
             effective[key] = path
             return path

@@ -237,6 +237,81 @@ def testRuntimeHistoryUsesGlobalIdsAndDoesNotAcceptLiveAppend(ownedDesignerWindo
     assert any(entry.message == "live must stay in live cache" for entry in view._entries)
 
 
+def testJobDetailsPageByFiftyCompletedLoopIterations(designerApplication, globalServer):
+    from PySide2.QtCore import Qt
+    from emo_master.apps.designer.ui.log_dialog import StructuredLogEntry
+    from emo_master.apps.designer.ui.runtime_job_logs import RuntimeJobLogs
+    from tests.designer.test_runtime_job_workbench import scrollDownToEnd
+
+    service, stub = globalServer
+    job = pb.RunState(project_id="project", job_id="job", workflow_id="main", status="ABORTED")
+    scope = dict(projectId=job.project_id, workflowId=job.workflow_id,
+                 workflowRunId="run", nodeId="poll", nodeRunId="poll-run")
+
+    def append(kind, path=(), **payload):
+        service.events.append(job.job_id, kind, kind, iterationPath=path, payload=payload, **scope)
+
+    append("loop.started", mode="while")
+    for index in range(105):
+        append("loop.iteration.started", (index,))
+        for _ in range(3):
+            append("node.log", (index,))
+        append("loop.iteration.completed", (index,), bodyExecuted=True)
+    append("loop.iteration.started", (105,))
+    # The latest RPC page can contain only the unfinished iteration's child events.
+    for _ in range(200):
+        append("node.log", (105,))
+    cancelled = service.events.append(job.job_id, "job.aborted", "execution cancelled", projectId=job.project_id)
+
+    def assertIterations(first):
+        loop = view._items[("node", "run", "poll-run")]
+        keys = [loop.child(index).data(0, Qt.UserRole) for index in range(loop.childCount())]
+        assert [key[-1] for key in keys if key[0] == "iteration"] == list(range(105, first - 1, -1))
+        branches = {key[-1]: branch for key, branch in view._branches.items() if key[0] == "iteration"}
+        for index in range(first, 105):
+            assert branches[index].start is not None and branches[index].bodyExecuted is True
+        assert branches[105].start is not None and branches[105].end is None
+
+    def scrollForEarlier(first):
+        scrollDownToEnd(view.events)
+        anchor = view.events.itemAt(0, 1).data(0, Qt.UserRole)
+        waitUntil(lambda: ("iteration", "run", "poll", first) in view._items)
+        assert view.events.itemAt(0, 1).data(0, Qt.UserRole) == anchor
+        assertIterations(first)
+
+    view = RuntimeJobLogs(1000, StructuredLogEntry.fromRuntimeEvent)
+    try:
+        client = SimpleNamespace(runtimeService=stub, queryRuntimeLogs=RuntimeClient(runtimeService=stub).queryRuntimeLogs)
+        view.synchronize(client, service.runtimeInstanceId)
+        view.capabilities = {"runtime_logs_recent_v1"}
+        view.progress(service.runtimeInstanceId, 0)
+        view.openJob(job)
+        view.resize(900, 600)
+        view.show()
+        waitUntil(lambda: not view._opening)
+        assertIterations(55)
+        tree = view.events
+        newest = view._items[("iteration", "run", "poll", 105)]
+        designerApplication.processEvents()
+        assert newest.parent().isExpanded() and not newest.isExpanded()
+        assert tree.itemAt(tree.visualItemRect(newest).center()) is newest
+        completed = view._items[("iteration", "run", "poll", 104)]
+        eventIds = [completed.child(index).data(0, Qt.UserRole)[1] for index in range(completed.childCount())]
+        assert len(eventIds) == 5 and eventIds == sorted(eventIds)
+        assert tree.verticalScrollBar().maximum() > 0
+        scrollForEarlier(5)
+        scrollForEarlier(0)
+        assert [entry.sequence for entry in view.window.entries] == list(range(1, cancelled.sequence + 1))
+        assert not view._canReadEarlier()
+        requests = len(service.requests)
+        scrollDownToEnd(tree)
+        designerApplication.processEvents()
+        assert view.pending is None and len(service.requests) == requests
+    finally:
+        view.close()
+        view.shutdown()
+
+
 def testRuntimeHistoryBusinessFailureKeepsRecordsAndCursor(ownedDesignerWindow):
     class QueryClient(Client):
         runtimeService = object()
@@ -442,7 +517,7 @@ def testNativeWorkbenchHistoryAndWholeJobExportAfterRestart(ownedDesignerWindow,
         click(jobs.openButton)
         waitUntil(lambda: jobs.window is not None and not jobs._opening and jobs._upper is not None, timeout=10)
         assert jobs.instance == "q2-after-restart"
-        assert len(jobs.window.entries) == 200 and jobs.earlier.isEnabled()
+        assert len(jobs.window.entries) == 200 and jobs._canReadEarlier()
         assert {entry.runtimeInstanceId for entry in jobs.window.entries} == {"q2-before-restart"}
         assert all(entry.message != "早期范围命中" for entry in jobs.window.entries)
         jobs.warning.setChecked(True)

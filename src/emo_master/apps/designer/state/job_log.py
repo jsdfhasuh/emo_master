@@ -24,6 +24,41 @@ _LOOP_START = "loop.started"
 _LOOP_END = {"loop.completed", "loop.failed", "loop.timeout", "loop.limit_reached"}
 _ITERATION_START = "loop.iteration.started"
 _ITERATION_END = "loop.iteration.completed"
+JOB_LOG_PAGE_ROUNDS = 50
+
+
+class JobIterationPage:
+    """Find the oldest complete outer round in a newest-first page of raw Job events."""
+
+    def __init__(self):
+        self.hasLoopEvidence = False
+        self._pendingStarts: set[tuple[str, str, int]] = set()
+        self._completed = 0
+
+    def observe(self, event: Mapping) -> bool:
+        """Return true at the start event that completes the page's round quota."""
+        path = event.get("iterationPath")
+        eventType = event.get("eventType")
+        if not isinstance(path, (list, tuple)) or not path:
+            if eventType == _LOOP_START or eventType in _LOOP_END:
+                self.hasLoopEvidence = True
+            return False
+        self.hasLoopEvidence = True
+        if len(path) != 1 or eventType not in {_ITERATION_START, _ITERATION_END}:
+            return False
+        runId, nodeId = event.get("workflowRunId"), event.get("nodeId")
+        if not runId or not nodeId or type(path[0]) is not int or path[0] < 0:
+            return False
+        key = (runId, nodeId, path[0])
+        if eventType == _ITERATION_END:
+            # While records false for its exit check. Repeat and ForEach omit the flag.
+            if event.get("payload", {}).get("bodyExecuted") is not False:
+                self._pendingStarts.add(key)
+        elif key in self._pendingStarts:
+            self._pendingStarts.remove(key)
+            self._completed += 1
+            return self._completed == JOB_LOG_PAGE_ROUNDS
+        return False
 
 
 class JobEventWindow:
@@ -190,6 +225,11 @@ class ExecutionBranch:
     bodyExecuted: bool | None = None
     completedIterations: int = 0
 
+    @property
+    def isOuterIteration(self) -> bool:
+        # Iteration keys contain the kind, workflow run, node and the full index path.
+        return self.kind == "iteration" and len(self.key) == 4
+
     def executionTime(self, active: bool = False, hasEarlier: bool = False,
                       nowMs: int | None = None) -> ExecutionTime:
         start = self.start.rawTimestampMs if self.start else None
@@ -298,7 +338,34 @@ class ExecutionTree:
         if self._unlinked.children:
             roots.append(self._unlinked)
         self._sortBranches(roots)
+        latestRoundId: dict[BranchKey, int] = {}
+        groupChildren = [roots]
+        for loop in loops.values():
+            rounds = [child for child in loop.children if child.isOuterIteration]
+            if not rounds:
+                continue
+            self._newestInPlace(loop.children, {child.key: int(child.key[-1]) for child in rounds})
+            latest = max(event.eventId or 0 for child in rounds for event in (child.start, child.end) if event)
+            ancestor: ExecutionBranch | None = loop
+            while ancestor is not None and latest > latestRoundId.get(ancestor.key, -1):
+                if ancestor.key not in latestRoundId:
+                    groupChildren.append(ancestor.children)
+                latestRoundId[ancestor.key] = latest
+                ancestor = self._parents.get(ancestor.key)
+        for siblings in groupChildren:
+            self._newestInPlace(siblings, latestRoundId)
+        self.hasOuterIterations = bool(latestRoundId)
+        self.defaultExpandedKeys = {branch.key for branch in roots} | latestRoundId.keys()
         self.roots = tuple(roots)
+
+    @staticmethod
+    def _newestInPlace(siblings: list[ExecutionBranch], ranks: dict[BranchKey, int]) -> None:
+        """Reorder only ranked siblings, preserving all other execution slots."""
+        positions = [i for i, child in enumerate(siblings) if child.key in ranks]
+        if len(positions) > 1:
+            newest = sorted((siblings[i] for i in positions), key=lambda child: ranks[child.key], reverse=True)
+            for position, branch in zip(positions, newest):
+                siblings[position] = branch
 
     @staticmethod
     def _nodeKey(entry: StructuredLogEntry) -> BranchKey:
@@ -374,6 +441,7 @@ class ExecutionTree:
     @staticmethod
     def _describeLoop(loop: ExecutionBranch) -> None:
         completedIndices = []
+        unknownBodyEnds = 0
         for child in loop.children:
             if child.kind != "iteration":
                 continue
@@ -383,14 +451,19 @@ class ExecutionTree:
                 child.title = f"第 {index} 次 · 退出条件检查（未进入循环体）"
             elif child.bodyExecuted is True or loop.mode in {"foreach", "repeat"}:
                 child.title = f"第 {index} 轮"
+                if child.end:
+                    completedIndices.append(index)
             else:
                 child.title = f"第 {index} 次迭代 · 执行情况未记录"
-            if child.end and (child.bodyExecuted is True or loop.mode in {"foreach", "repeat"}):
-                completedIndices.append(index)
+                if child.end:
+                    unknownBodyEnds += 1
         loop.completedIterations = len(completedIndices)
         modeLabels = {"while": "While", "foreach": "ForEach", "repeat": "Repeat"}
         label = modeLabels.get(loop.mode, loop.mode or "循环类型未记录")
         info = f"已加载 {loop.completedIterations} 轮完成"
+        if unknownBodyEnds:
+            prefix = f"{info} · 另有" if completedIndices else "已加载"
+            info = f"{prefix} {unknownBodyEnds} 次迭代结束记录（循环体执行情况未记录）"
         if loop.totalIterations is not None:
             # ForEach and Repeat process consecutive indices. A recorded completion
             # provides progress even when earlier per-iteration rows fell out of the window.

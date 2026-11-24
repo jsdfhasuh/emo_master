@@ -248,10 +248,10 @@ def testUpgradeRechecksRuntimeThatAcquiredAnotherOnlineProject(ownedDesignerWind
             dialog.useLocalSource.setChecked(False)
             dialog.validateButton.click()
             waitUntil(lambda: dialog.pending is None)
-        # A different online project's managed resource root cannot resolve an
-        # unbound local legacy input. Comparing/revalidating is required, not a
-        # forced initial install or an invented successful replacement.
-        assert len(messages) == 1 and 'input file not found' in messages[0]['detail']
+        # Validation reports the selected file by its derived transfer declaration.
+        # Revalidating a candidate does not install it on the other Runtime.
+        assert len(messages) == 1 and 'input.png' in messages[0]['text']
+        assert 'resource unavailable' in messages[0]['detail'] or 'resource missing' in messages[0]['detail']
         assert not dialog.validatedSelection and not dialog.requestId
         assert service.loadedProjectId == online['project']['projectId'] and not service.jobRepository.all()
     finally:
@@ -629,7 +629,8 @@ def testUpgradedDraftResourceFailureCanBeFixedAndRevalidated(ownedDesignerWindow
         details, _ = json.JSONDecoder().raw_decode(messages[0]['detail'][messages[0]['detail'].index('{'):])
         assert any(issue['workflowId'] == 'main' and issue['nodeId'] == 'load'
                    and issue['fieldPath'] == 'params.imagePath' for issue in details['issues'])
-        assert 'input file not found' in messages[0]['text'] and not dialog.initialValidated
+        assert '找不到输入文件' in messages[0]['text'] and 'missing.png' in messages[0]['text']
+        assert not dialog.initialValidated
         assert dialog.diagnosticEntries[0]['target'] == 'node'
         assert dialog.diagnosticEntries[0]['nodeId'] == 'load'
         window.flowModel.nodes['load'].params['imagePath'] = 'input.png'

@@ -2,6 +2,8 @@
 import base64
 from contextlib import closing, contextmanager
 from concurrent.futures import ThreadPoolExecutor
+from copy import deepcopy
+import hashlib
 import json
 from pathlib import Path
 import socket
@@ -192,6 +194,145 @@ def testYoloUsesRealOnnxSession(runtime, tmp_path, relative):
         assert record["status"] == "SUCCEEDED", record
         assert record["metrics"]["detectionCount"] == 1
         assert record["outputs"]["detections"]["items"][0]["label"] == "screw"
+
+
+@pytest.fixture
+def boundYoloProject(tmp_path):
+    from emo_master.apps.designer.state.project_store import loadProjectDocument, saveProject
+    from emo_master.apps.designer.state.workflow_store import WorkflowStore
+    from emo_master.core.contracts.port_types import normalizePortType
+    from emo_master.plugins.builtins.image_loader.operator import ImageLoaderOperator
+    from emo_master.plugins.builtins.yolo_inference.operator import YoloInferenceOperator
+    from tests.plugins.test_yolo_onnx_backend import _TINY_YOLO_ONNX
+
+    model = tmp_path / "models" / "bound.onnx"
+    model.parent.mkdir()
+    data = base64.b64decode(_TINY_YOLO_ONNX)
+    model.write_bytes(data)
+    meta = YoloInferenceOperator.meta
+    imageMeta = ImageLoaderOperator.meta
+    image = tmp_path / "input.png"
+    assert cv2.imwrite(str(image), np.full((7, 9, 3), 135, np.uint8))
+    store = WorkflowStore()
+    workflow = store.get("main")
+    workflow.outputs = {"detections": "detectionCollection"}
+    outputId = next(node["nodeId"] for node in workflow.nodes if node["kind"] == "workflow_output")
+    workflow.nodes.insert(1, dict(nodeId="image", kind="operator", operatorId=imageMeta.operatorId,
+                                  params={"imagePath": "input.png"}))
+    workflow.nodes.insert(1, dict(nodeId="yolo", kind="operator", operatorId=meta.operatorId,
+        params={"modelPath": "models/bound.onnx"},
+        outputPorts={name: normalizePortType(port) for name, port in meta.outputPorts.items()}))
+    workflow.edges = [
+        dict(fromNode="image", fromPort="image", toNode="yolo", toPort="image"),
+        dict(fromNode="yolo", fromPort="detections", toNode=outputId, toPort="detections"),
+    ]
+    store.dependencies["operators"] = [dict(operatorId=operator.operatorId, version=operator.version)
+                                       for operator in (imageMeta, meta)]
+    payload = store.toPayload("Bound YOLO")
+    payload["production"]["mode"] = "continuous"
+    payload["resources"]["items"]["model"] = dict(path="models/bound.onnx", purpose="model",
+        size=len(data), sha256=hashlib.sha256(data).hexdigest())
+    payload["resources"]["items"]["image"] = dict(path="input.png", purpose="input_image",
+        size=image.stat().st_size, sha256=hashlib.sha256(image.read_bytes()).hexdigest())
+    payload["resources"]["parameterBindings"] = [
+        dict(resourceId="model", target=dict(workflowId="main", nodeId="yolo", parameterPath=["modelPath"])),
+        dict(resourceId="image", target=dict(workflowId="main", nodeId="image", parameterPath=["imagePath"])),
+    ]
+    projectFile = tmp_path / "bound.emoproj"
+    saveProject(projectFile, payload)
+    return loadProjectDocument(projectFile).toPayload(), projectFile, model
+
+
+def assertSelectedYoloInference(client, payload, projectDirectory):
+    before = deepcopy(payload)
+    with closing(DebugConnection(client)) as debug:
+        debug.projectDirectory = str(projectDirectory)
+        debug.open(payload, EditorKey(payload["project"]["projectId"], "main", "yolo"), "vision.inference.yolo")
+        waitFor(lambda: debug.snapshot()["session"]["state"] == "READY")
+        raw = next(n["params"] for n in payload["workflows"]["main"]["nodes"] if n["nodeId"] == "yolo")
+        record = run(debug, raw, {"image": uploadImage(debug)})
+        assert record["status"] == "SUCCEEDED", record
+        assert record["metrics"]["detectionCount"] == 1
+        assert record["outputs"]["detections"]["items"][0]["label"] == "screw"
+        assert record["rawParams"]["modelPath"] == raw["modelPath"]
+        missing = run(debug, {"modelPath": "missing-literal.onnx"}, {"image": uploadImage(debug)})
+        assert missing["status"] == "FAILED" and missing["code"] == "E_INPUT_MISSING"
+    assert payload == before
+
+
+def testYoloDebugUsesSelectedModel(runtime, boundYoloProject):
+    payload, projectFile, _ = boundYoloProject
+    assertSelectedYoloInference(RuntimeClient(runtime), payload, projectFile.parent)
+    assert runtime.loadedDocument is None
+    assert not runtime.jobRepository.all()
+
+
+def testImageLoaderDebugReadsSelectedPngDespiteLegacyBinding(runtime, boundYoloProject):
+    payload, projectFile, _ = boundYoloProject
+    with closing(DebugConnection(RuntimeClient(runtime))) as debug:
+        debug.projectDirectory = str(projectFile.parent)
+        debug.open(payload, EditorKey(payload["project"]["projectId"], "main", "image"), "vision.io.image_loader")
+        waitFor(lambda: debug.snapshot()["session"]["state"] == "READY")
+        pixelsExpected = np.full((4, 6, 3), 41, np.uint8)
+        assert cv2.imwrite(str(projectFile.parent / "selected.png"), pixelsExpected)
+        record = run(debug, {"imagePath": "selected.png"})
+        assert record["status"] == "SUCCEEDED", record
+        raw = debug.download(record["outputAssets"]["image"]["assetId"])["content"]
+        pixels = cv2.imdecode(np.frombuffer(raw, np.uint8), cv2.IMREAD_COLOR)
+        assert np.array_equal(pixels, pixelsExpected)
+
+
+def testWorkflowDebugKeepsResourceBoundNodesInSingleNodeDebug(runtime, boundYoloProject):
+    payload, _, _ = boundYoloProject
+    reply = runtime.OpenWorkflowDebugSession(pb.OperatorDebugRequest(runtime_instance_id=runtime.runtimeInstanceId,
+        open_request_id=uuid4().hex, project_id=payload["project"]["projectId"],
+        workflow_id="main", project_json=json.dumps(payload)), None)
+    assert not reply.ok and reply.code == "E_DEBUG_UNSUPPORTED"
+    assert "single-node" in reply.message
+    assert not runtime.operatorDebugManager.sessions
+
+
+def testYoloDebugUsesRuntimeManagedModelOverGrpcAfterStoppingJob(runtime, boundYoloProject):
+    import grpc
+    from emo_master.apps.runtime.grpc_server.generated.runtime_pb2_grpc import RuntimeServiceStub
+    from emo_master.apps.runtime.main import createRuntimeServer
+
+    payload, projectFile, model = boundYoloProject
+    loaded = runtime.LoadProject(pb.LoadProjectRequest(project_path=str(projectFile)), None)
+    assert loaded.ok, loaded.message
+    started = runtime.StartJob(pb.StartJobRequest(project_id=payload["project"]["projectId"], workflow_id="main",
+        follow_project_run_mode=True, start_request_id=uuid4().hex, expected_runtime_instance_id=runtime.runtimeInstanceId), None)
+    assert started.ok, started.message
+    try:
+        waitFor(lambda: any(event.eventType == "workflow.completed" for event in runtime.eventStore.read(started.job_id)))
+    finally:
+        stopped = runtime.StopJob(pb.StopJobRequest(job_id=started.job_id, mode="graceful"), None)
+        assert stopped.ok, stopped.message
+    waitFor(lambda: runtime.jobRepository.get(started.job_id).isTerminal and
+            not runtime.jobSupervisor.ownsJobResources(started.job_id))
+    assert runtime.jobRepository.get(started.job_id).status == "ABORTED"
+    managedNode = next(n for n in runtime.loadedDocument.workflows["main"].nodes if n.nodeId == "yolo")
+    managedModel = Path(managedNode.params["modelPath"])
+    assert managedModel.is_file() and managedModel != model
+    model.unlink()
+    server, port, _ = createRuntimeServer(port=0, runtimeService=runtime)
+    server.start()
+    try:
+        with grpc.insecure_channel(f"127.0.0.1:{port}") as channel:
+            client = RuntimeClient(RuntimeServiceStub(channel))
+            assertSelectedYoloInference(client, payload, projectFile.parent / "designer-only")
+    finally:
+        server.stop(0).wait()
+    assert [job.jobId for job in runtime.jobRepository.all()] == [started.job_id]
+
+
+def testYoloDebugIgnoresMissingLegacyResourceWithUsableNodePath(runtime, boundYoloProject):
+    payload, projectFile, model = boundYoloProject
+    literal = model.rename(model.with_name("literal.onnx"))
+    node = next(n for n in payload["workflows"]["main"]["nodes"] if n["nodeId"] == "yolo")
+    node["params"]["modelPath"] = str(literal)
+    assertSelectedYoloInference(RuntimeClient(runtime), payload, projectFile.parent)
+    assert not runtime.operatorDebugManager.ownsResources()
 
 
 @pytest.mark.parametrize("relative", [False, True])

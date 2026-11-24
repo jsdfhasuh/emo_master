@@ -1,0 +1,16 @@
+name: Expect private build callable to refuse public product
+on:
+  push:
+    branches: [dot/readonly-package-private-negative-20261124]
+permissions:
+  contents: read
+jobs:
+  refusal:
+    uses: jsdfhasuh/python_build_scripts/.github/workflows/emo-master-product-build.yml@23b6774c4f99c6ad7fffbf13b3ebbc8a453d7984
+    permissions:
+      contents: read
+    with:
+      target: emo-master-runtime
+      source_ref: '2e46f24b88f8624937b4465ddaf4490cbe831fb7'
+      packager_ref: '23b6774c4f99c6ad7fffbf13b3ebbc8a453d7984'
+      release_tag: 'v0.6.6'

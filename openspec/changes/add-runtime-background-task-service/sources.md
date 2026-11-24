@@ -21,7 +21,7 @@
 | apps/runtime/workflow/runner.py | _publishArtifacts 立即处理所有输出值中带 path 的 JSON；启用 ArtifactStore 时 registerPath 会复制文件并计算 SHA-256 | pending artifact 必须等 task 成功后再登记 |
 | core/workflow/parameter_bindings.py | captureBoundValue 立即调用 SQLite toStorage；FILE_REFERENCE 需要 saved=true 且文件存在 | 后台 ImageSaver 返回 saved=false 时，当前绑定采集必然失败；需 Runner 暂存 pending binding 并在消费者执行前 wait |
 | core/contracts/sqlite_writer.py | FILE_REFERENCE 只接受已保存的持久文件；拒绝不存在文件和预览/临时路径 | SQLiteWriter 事务代码不需改，但 Runner 必须先解析 pending 引用 |
-| apps/runtime/jobs/worker_main.py | 每个 Job worker 进程扫描插件、构造 WorkflowRunner；publishTerminal 当前先关闭 previewWriter，再发 terminal event | 后台服务 drain 和 Runner completion/artifact drain 必须发生在 previewWriter.close 之前 |
+| apps/runtime/jobs/worker_main.py | 每个 Job worker 进程扫描插件、构造 WorkflowRunner；continuous cycle 间隔和 Dispatch consumer IDLE 循环在 Runner.run() 外等待；publishTerminal 当前先关闭 previewWriter | 后台失败轮询还需覆盖 Runner.run() 外的等待循环；后台服务 drain 和 Runner completion/artifact drain 必须发生在 previewWriter.close 之前 |
 | apps/runtime/jobs/supervisor.py | JobSupervisor 使用 multiprocessing spawn 创建 Job 进程；gracefulStopTimeoutMs 默认 5000ms，超时会终止 worker | 后台任务停止必须尊重现有停止宽限，不承诺无限等待或强行中断 Python I/O |
 | apps/runtime/preview/async_writer.py | AsyncPreviewSnapshotWriter 有独立线程、有界缓存、同节点合并/丢弃策略 | 可借鉴线程生命周期，不可直接复用其丢弃策略保存业务图片 |
 | apps/runtime/preview/executor.py | PurePreviewExecutor 自己使用 ThreadPoolExecutor 执行纯预览，并设置 isPreview=True；runtimeContext 没有通用后台服务 | 纯预览必须继续隔离后台副作用 |

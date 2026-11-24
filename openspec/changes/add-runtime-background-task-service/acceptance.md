@@ -38,6 +38,7 @@
 | C5 连续运行 | 多个 cycle 共用同一个 Job 服务，Job 停止时统一收尾 | 两个 cycle 提交任务，验证线程身份相同及终态顺序 |
 | C6 预览 writer 顺序 | 后台任务完成和 artifact capture 发生在 AsyncPreviewSnapshotWriter 关闭之前 | 用可控任务记录 close/capture 顺序 |
 | C7 失败及时发现 | 未 wait 的后台失败在下一个节点边界、下一次 workflow run 开始或 workflow 完成前被发现，不等待连续 Job 终止 | 连续 Job 中注入失败任务，验证下一轮开始前 Job 已失败 |
+| C8 空闲阶段失败发现 | 连续 Job 的 cycle 间隔和 Dispatch consumer IDLE 阶段仍轮询后台完成记录 | 在两种空闲状态下注入失败任务，验证无需等待下一次外部触发即可失败 |
 
 ## D. ImageSaver、产物与 SQLite 文件引用
 

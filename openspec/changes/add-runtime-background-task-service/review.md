@@ -37,3 +37,6 @@
 6. **单线程服务禁止任务递归 submit/wait。** 否则后台任务在唯一 worker 内等待自己排队的子任务会永久死锁。
 
 上述限制已同步到 design、spec、tasks 和 acceptance。它们是为了保证文件正确性、内存有界和任务失败可见，不改变同步算子的默认行为。
+
+
+7. **连续运行的空闲窗口也必须检查失败。** 源码中的 continuous cycle 间隔和 Dispatch consumer 的 IDLE 等待发生在 `WorkflowRunner.run()` 外；只在节点边界和 workflow 完成前 poll 仍会漏掉任务在空闲窗口内失败的情况。已要求这两个等待循环也定期调用 Runner 的统一完成/失败轮询入口。

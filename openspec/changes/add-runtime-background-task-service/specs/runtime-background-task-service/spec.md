@@ -141,6 +141,12 @@ The service MUST capture the submitting invocation identity at submission time. 
 - **THEN** Runner MUST detect it at the next node boundary, next workflow-run start, or before workflow completion
 - **AND** the active execution MUST fail with E_BACKGROUND_TASK_FAILED without waiting for the continuous Job to be manually stopped
 
+#### Scenario: A task fails while the Job is between workflow cycles or waiting for a Dispatch invocation
+
+- **WHEN** an unobserved task fails while the worker is in a cycle delay or Dispatch IDLE wait
+- **THEN** the worker MUST poll the task service during that idle period
+- **AND** the Job MUST fail without waiting indefinitely for another cycle or external dispatch
+
 ### Requirement: ImageSaver supports opt-in background writing without changing its default behavior
 
 ImageSaver MUST declare backgroundTasks in its manifest and retain synchronous saving as its default. Its opt-in background mode MUST use unique naming, write to a task-specific temporary file, atomically publish the final file only after a complete write, return an accepted task ID and pending state, and MUST only report saved success after the write task succeeds.

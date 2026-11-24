@@ -18,6 +18,7 @@
 
 - [ ] 3.1 在 Job worker 创建服务，并沿 WorkflowRunner → OperatorExecutor → 每次 executeNode runtimeContext 注入；OperatorExecutor 仅对声明 backgroundTasks 的算子注入。
 - [ ] 3.2 让 BackgroundTaskService 提供完成记录队列；WorkflowRunner 在节点边界、workflow run 开始、workflow 完成前和 Job 收尾阶段于 Runtime 执行线程处理任务事件及延迟产物，不从后台线程直接操作 ArtifactStore、ResultCollector 或预览对象。
+- [ ] 3.2a 连续 Job 的 cycle 间隔等待和 Dispatch consumer 的 IDLE 轮询定期调用 Runner poll，未观察失败不能因主工作流暂时空闲而滞留。
 - [ ] 3.3 确认并覆盖正式 Job、单算子调试、工作流调试；调试能力必须来自 trustedEntries() 的已校验 manifest，不能信任客户端自报。
 - [ ] 3.4 单算子调试在输出冻结前 drain 并解析最终任务状态；工作流调试在最终快照/会话关闭前 drain，暂停期间允许后台任务继续运行。
 - [ ] 3.5 保持 PurePreviewExecutor 和工作流 clone-safe trial 无后台提交能力，验证纯预览不能产生延迟副作用。
@@ -36,7 +37,7 @@
 
 - [ ] 5.1 覆盖 manifest 缺省、声明、重复值、未知值、非字符串值和 descriptor 能力保留；未声明算子不得获得客户端。
 - [ ] 5.2 覆盖任务提交/返回、FIFO、等待结果、异常传播、任务数量/字节双重背压、超大任务拒绝、记录淘汰与依赖固定、取消、正常 drain、Job 隔离和任务事件身份。
-- [ ] 5.3 覆盖 Runner 完成记录 drain、ArtifactStore 延迟登记、预览 writer 关闭顺序、Job terminal 顺序和 graceful stop 超时边界。
+- [ ] 5.3 覆盖 Runner 完成记录 drain、ArtifactStore 延迟登记、预览 writer 关闭顺序、Job terminal 顺序、连续间隔/Dispatch IDLE 失败轮询和 graceful stop 超时边界。
 - [ ] 5.4 覆盖 ImageSaver 同步回归、后台 unique 命名约束、源图快照、临时文件原子发布、失败/取消不暴露半成品、artifact 延迟登记，以及 SQLite FILE_REFERENCE 的成功等待和失败路径。
 - [ ] 5.5 覆盖正式 Job、单算子调试、工作流调试、纯预览和 clone-safe trial 的能力边界。
 - [ ] 5.6 运行受影响的现有测试和 OpenSpec strict validation；记录固定源码 SHA、实际测试结果、未执行项。不得把静态审查或单测通过表述为真实设备验收。

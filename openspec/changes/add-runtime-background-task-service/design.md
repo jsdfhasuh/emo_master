@@ -101,7 +101,7 @@ manifest 是能力声明的唯一来源。首版支持值：
 - 通用服务不擅自复制任意 Python 参数。提交方必须保证传入参数在任务完成前不可变；图像算子在提交前复制图像，避免上游继续修改同一 ndarray。
 - 任务函数返回值应是小型结果（例如最终路径、字节数）；不得把图片 ndarray 或大型缓存放入任务结果记录。
 
-后台任务不复用 `executeNode()` 返回后即关闭的 `OperatorLogger`。任务开始、完成和失败事件由服务记录完成结果，`WorkflowRunner` 在每个节点边界、每次 workflow run 开始处、workflow.completed 发布前以及 Job 收尾时取出完成记录，在 Runtime 执行线程中发布事件及处理产物，避免后台线程直接操作 Runner、ResultCollector 或 Qt 对象。任务失败若已被算子显式 wait 并捕获，视为已处理；Runner 为 SQLite FILE_REFERENCE 做的内部 wait 也视为已观察，再由 SQLite 现有 failurePolicy 决定是否继续。
+后台任务不复用 `executeNode()` 返回后即关闭的 `OperatorLogger`。任务开始、完成和失败事件由服务记录完成结果，`WorkflowRunner` 在每个节点边界、每次 workflow run 开始处、workflow.completed 发布前以及 Job 收尾时取出完成记录，在 Runtime 执行线程中发布事件及处理产物，避免后台线程直接操作 Runner、ResultCollector 或 Qt 对象。连续 Job 的 cycle 间隔等待和 Dispatch consumer 的 IDLE 等待也必须定期调用同一 poll 入口，避免后台失败在长时间空闲期间一直无人发现。任务失败若已被算子显式 wait 并捕获，视为已处理；Runner 为 SQLite FILE_REFERENCE 做的内部 wait 也视为已观察，再由 SQLite 现有 failurePolicy 决定是否继续。
 
 ## 5. 队列与执行规则
 
@@ -151,7 +151,7 @@ manifest 是能力声明的唯一来源。首版支持值：
 
 - ImageSaver 后台输出使用明确的待完成标记（`state=SUBMITTED`、`taskId`、`path`、`saved=false`）。Runner 将它登记为 pending artifact，不立即调用 `registerPath()`，不发布 `artifact.created`。
 - 后台完成记录由 Runner 在自己的执行线程中处理。任务成功后，Runner 才调用现有 `ArtifactStore.registerPath()`、发布 `artifact.created` 并调用预览快照的 `captureArtifact()`；任务失败不发布 artifact.created。
-- Runner 在每个节点边界处理完成记录，并在 Job 收尾 drain 后处理最后一批，保证完成事件和 artifact.created 都早于 Job terminal event。
+- Runner 在每个节点边界处理完成记录，并在 Job 收尾 drain 后处理最后一批，保证完成事件和 artifact.created 都早于 Job terminal event。连续运行的间隔等待和 Dispatch consumer 的空闲轮询也必须检查未观察失败。
 - pending artifact 在 ArtifactStore 登记完成前固定保留任务结果；任务完成文件必须是该任务的唯一最终路径，避免后续写入覆盖它再被错误登记。
 - 同步输出仍走原有立即登记路径。
 

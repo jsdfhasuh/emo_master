@@ -1,5 +1,5 @@
 """Exact native forwarding, bounded metadata, and retryable wrapper retirement."""
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 import importlib.util
 import json
 import multiprocessing
@@ -88,6 +88,35 @@ def testImportAndConstructionAreDefaultOff():
     assert ResultCollector.__init__ is original_init and ResultCollector.image is original_image
     assert not trace.hooks and not trace.rows and not trace.installed
     assert "lock" not in vars(trace)
+
+
+@pytest.mark.parametrize("credit_enabled", [False, True])
+def testMeasuredJobPreservesImageTargets(monkeypatch, tmp_path, credit_enabled):
+    from scripts import r3_measure
+    from emo_master.apps.runtime.jobs import worker_main
+    from emo_master.apps.runtime.presentation.collector import ResultCollector
+
+    targets = [{"key": "result-1", "sourceId": "image"}]
+    calls = []
+    returned = object()
+
+    def capture(_collector, _key, _value, _item, *, targets):
+        calls.append(targets)
+        return returned
+
+    def job(*_):
+        collector = ResultCollector({"plan": '{"scopes": {}, "sources": {}}', "versions": {}},
+                                    lambda event: None)
+        pixels = np.zeros((1, 1), dtype=np.uint8)
+        assert collector.image("image", pixels, image_item(), targets=targets) is returned
+
+    monkeypatch.setenv("EMO_R3_TRACE_DIR", str(tmp_path))
+    monkeypatch.setattr(ResultCollector, "image", capture)
+    monkeypatch.setattr(worker_main, "runJobProcess", job)
+    trace = capture_trace.CaptureCreditTrace()
+    with capture_trace.installed(trace, ROOT) if credit_enabled else nullcontext():
+        r3_measure.measuredJob(None, None, None)
+    assert len(calls) == 1 and calls[0] is targets
 
 
 def testNativeSemLockForwardsExactlyOnceAndRestoresRawAttribute(monkeypatch, tmp_path):

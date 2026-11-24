@@ -19,6 +19,7 @@ import sys
 
 MIB = 1024 * 1024
 REPORT_BYTES = MIB
+LOCAL_REPORT_BYTES = 8 * MIB
 CHUNK_BYTES = 16 * 1024 - 128
 INPUT_BYTES = 256 * MIB
 INPUT_FILES = 64
@@ -1067,16 +1068,24 @@ def main(argv=None):
     parser.add_argument("--expected-sha", default=os.environ.get("GITHUB_SHA", ""))
     parser.add_argument("--original-step", choices=("success", "failure", "cancelled", "skipped", "unknown"), default="unknown")
     parser.add_argument("--output-json", type=Path, help="Exclusive-write sanitized bounded report only; never raw logs")
+    parser.add_argument("--local-file-only", action="store_true",
+                        help="Write a private report for encryption; do not frame on stdout")
     args = parser.parse_args(argv)
+    if args.local_file_only and args.output_json is None:
+        parser.error("--local-file-only requires --output-json")
     report = None
     try:
         report = build_report(args.evidence, args.repo, args.expected_sha, args.original_step)
-        # Validate the same complete transport cap before publishing an artifact.
-        transport(report)
+        payload = encoded(report)
+        if args.local_file_only:
+            require(len(payload) <= LOCAL_REPORT_BYTES, "complete_report_exceeds_local_file_budget")
+        else:
+            transport(report)
         if args.output_json is not None:
             with args.output_json.open("xb") as stream:
-                stream.write(encoded(report))
-        emit(report)
+                stream.write(payload)
+        if not args.local_file_only:
+            emit(report)
         return int(report["observation_status"] != "COMPLETE")
     except Exception as error:
         rejected = {"schema_version": 1, "role": "hosted_export_credit_diagnostic", "observation_status": "INVALID",
@@ -1093,7 +1102,8 @@ def main(argv=None):
                 # Preserve any first artifact and always emit the sanitized
                 # failure on stdout, even if publication itself failed.
                 pass
-        emit(rejected)
+        if not args.local_file_only:
+            emit(rejected)
         return 1
 
 

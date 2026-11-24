@@ -1,12 +1,13 @@
 """One temporary engineering draft progresses from pending bindings to real Jobs."""
 from copy import deepcopy
 import json
+import os
 import socket
 
 import numpy as np
 import pytest
 from PySide2.QtCore import QTimer, Qt
-from PySide2.QtWidgets import QMessageBox
+from PySide2.QtWidgets import QApplication, QMessageBox
 
 from emo_master.apps.designer.state.device_catalog import DeviceCatalogEditor
 from emo_master.apps.designer.state.workflow_package import buildWorkflowPackage, importWorkflowPackage
@@ -97,6 +98,17 @@ def testC1ThroughC6PendingDraftPublicationAndRun(runtime, ownedDesignerWindow, t
     try:
         with monkeypatch.context() as patch:
             patch.setattr(QMessageBox, 'question', lambda *_: QMessageBox.Yes)
+            if os.name == 'nt' and QApplication.platformName() == 'offscreen':
+                originalOpen = QMessageBox.open
+
+                def openMessage(box, *args):
+                    # This Runtime test does not load tests/designer/conftest.py.
+                    # Its identical Windows offscreen guard avoids a native
+                    # QMessageBox rendering crash; native Qt still opens it.
+                    if box.objectName() != 'deviceConnectionTestResult':
+                        return originalOpen(box, *args)
+
+                patch.setattr(QMessageBox, 'open', openMessage)
             createTest.testConnection()
             waitUntil(lambda: createTest.setupPending is None)
         assert createTest.error.text() == tested['message']

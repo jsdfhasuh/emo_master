@@ -164,6 +164,7 @@ def trustedEntries(registry):
                 "entry": entry, "version": manifest.version,
                 "inputPorts": manifest.inputPorts, "outputPorts": manifest.outputPorts,
                 "paramSchema": manifest.paramSchema, "displayName": manifest.displayName,
+                "runtimeCapabilities": list(manifest.runtimeCapabilities),
                 "stateful": folder in {"global_counter", "variable_read", "variable_write", "image_batch_loader", "video_loader", "coordinate_reader", "patchcore_inference", "yolo_classification", "elapsed_time"},
                 "singleNodeOnly": folder in SINGLE_NODE_FOLDERS,
                 "executionWarning": EXECUTION_WARNINGS.get(operatorId, ""),

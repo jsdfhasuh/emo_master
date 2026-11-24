@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from datetime import datetime, timezone
+import os
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 from time import perf_counter
 from typing import Any
 from uuid import uuid4
@@ -47,6 +49,11 @@ class ImageSaverOperator:
                     "type": "string", "enum": ["fixed", "unique"], "default": "fixed",
                     "xOptionLabels": {"fixed": "固定名称", "unique": "自动唯一命名"},
                 },
+                "saveMode": {
+                    "title": "保存方式", "description": "后台保存使用自动唯一命名，提交后工作流可继续执行。",
+                    "type": "string", "enum": ["sync", "background"], "default": "sync",
+                    "xOptionLabels": {"sync": "同步保存", "background": "后台保存"},
+                },
                 "overwrite": {"title": "覆盖已有文件", "description": "仅固定名称模式使用；自动唯一命名始终创建新文件。",
                               "type": "boolean", "default": True, "xEnabledWhen": {"namingMode": ["fixed"]}},
             },
@@ -67,6 +74,11 @@ class ImageSaverOperator:
             return {"code": "E_PARAM_INVALID", "message": "overwrite must be boolean"}
         if namingMode not in ("fixed", "unique"):
             return {"code": "E_PARAM_INVALID", "message": "namingMode must be fixed or unique"}
+        saveMode = params.get("saveMode", "sync")
+        if saveMode not in ("sync", "background"):
+            return {"code": "E_PARAM_INVALID", "message": "saveMode must be sync or background"}
+        if saveMode == "background" and namingMode != "unique":
+            return {"code": "E_PARAM_INVALID", "message": "background save requires namingMode=unique"}
         return None
 
     def executeNode(
@@ -126,6 +138,19 @@ class ImageSaverOperator:
         checkCancellation = runtimeContext.get("raiseIfCancellationRequested")
         if callable(checkCancellation):
             checkCancellation()
+        if params.get("saveMode") == "background":
+            submit = getattr(runtimeContext.get("backgroundTasks"), "submit", None)
+            if not callable(submit):
+                return _error("E_BACKGROUND_TASK_UNAVAILABLE", "background saving requires a Runtime task client")
+            task = submit(_saveInBackground, image.copy(), outputFile,
+                          taskName="image.save", estimatedBytes=image.nbytes)
+            return {
+                "status": "ok",
+                "outputs": {"result": {"accepted": True, "saved": False, "state": "SUBMITTED",
+                                       "path": str(outputFile), "taskId": task.id}},
+                "metrics": {"latencyMs": round((perf_counter() - startAt) * 1000, 3)},
+                "diagnostics": {"text": "Image save submitted"},
+            }
         try:
             writeOk, encoded = cv2.imencode(outputFile.suffix, image)
             if not writeOk:
@@ -149,6 +174,25 @@ class ImageSaverOperator:
             "metrics": {"latencyMs": round(elapsedMs, 3)},
             "diagnostics": {"text": "Image saved"},
         }
+
+
+def _saveInBackground(control, image: np.ndarray, outputFile: Path) -> dict[str, object]:
+    control.raiseIfCancelled()
+    ok, encoded = cv2.imencode(outputFile.suffix, image)
+    if not ok:
+        raise OSError(f"failed to encode image: {outputFile}")
+    control.raiseIfCancelled()
+    outputFile.parent.mkdir(parents=True, exist_ok=True)
+    tempPath = None
+    try:
+        with NamedTemporaryFile(dir=outputFile.parent, suffix=".tmp", delete=False) as stream:
+            tempPath = stream.name
+            stream.write(encoded.data)
+        control.publish(lambda: os.replace(tempPath, outputFile))
+    finally:
+        if tempPath is not None:
+            Path(tempPath).unlink(missing_ok=True)
+    return {"saved": True, "path": str(outputFile)}
 
 
 def _error(code: str, message: str) -> dict[str, Any]:

@@ -12,6 +12,7 @@ from emo_master import __version__
 from emo_master.apps.runtime.context.global_counters import ProjectGlobalCounters
 from emo_master.apps.runtime.context.global_variables import ProjectGlobalVariables
 from emo_master.apps.runtime.context.sqlite_store import SqliteStore
+from emo_master.apps.runtime.execution.background_tasks import BackgroundTaskService
 from emo_master.apps.runtime.workflow.cancellation import CancellationRequested, CancellationToken
 from emo_master.apps.runtime.workflow.context import RunContext
 from emo_master.apps.runtime.workflow.runner import WorkflowRunner
@@ -37,9 +38,28 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue, communicationPi
     heartbeatEmissionLock = threading.Lock()
     runner = None
     token = CancellationToken(cancelEvent)
+    backgroundTasks = None
     previewWriter = None
 
     def publishTerminal(event):
+        completed = event["eventType"] == "job.completed"
+        if backgroundTasks is not None:
+            try:
+                if event["eventType"] == "job.aborted" and token.is_cancelled():
+                    # Gate late publication, then let cooperative I/O clean up.
+                    # The Supervisor owns the existing graceful-stop deadline.
+                    backgroundTasks.close(drain=False, waitForActive=True)
+                else:
+                    backgroundTasks.close(drain=completed)
+                if runner is not None:
+                    runner.pollBackgroundTasks()
+            except Exception as error:
+                if completed:
+                    raise
+                event["payload"] = dict(event.get("payload", {}), backgroundTaskCleanup={
+                    "code": getattr(error, "code", "E_EXEC_FAILED"), "message": str(error),
+                    **errorDetails(error),
+                })
         if previewWriter is not None:
             # Finish final captures before promotion/retirement; cancellation
             # discards queued diagnostics, never replays business operations.
@@ -113,6 +133,7 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue, communicationPi
                 inlineInspection=False,
                 errorPublisher=publisher, cancellation=token,
                 minIntervalMs=50 if spec.continuous or spec.targetSlotId else 0)
+        backgroundTasks = BackgroundTaskService(token)
         runner = WorkflowRunner(
             compiledProject=compiled,
             operatorRegistry=registry,
@@ -125,6 +146,7 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue, communicationPi
             retainOperators=spec.continuous or bool(spec.targetSlotId),
             communication=communication,
             devices=devices,
+            backgroundTasks=backgroundTasks,
         )
         runner.prepareResources(spec.workflowId,
             RunContext.root(spec.jobId, spec.workflowId, spec.jobWorkspacePath, projectId=spec.projectId), token)
@@ -224,9 +246,10 @@ def _runContinuous(runner, spec, inputs, token, cancelEvent, runCycle=None):
                 runner.run(spec.workflowId, deepcopy(inputs), context, token)
             else:
                 runCycle(context, deepcopy(inputs))
-            delay = max(0.0, spec.cycleIntervalMs / 1000.0 - (time.monotonic() - started))
-            if cancelEvent.wait(delay):
-                token.raise_if_cancelled()
+            deadline = started + spec.cycleIntervalMs / 1000.0
+            while (remaining := deadline - time.monotonic()) > 0:
+                token.wait(min(remaining, .05))
+                runner.pollBackgroundTasks()
     except Exception as error:
         primaryError = error
         raise
@@ -244,6 +267,7 @@ def _runConsumer(runner, spec, devices, cyclePlans, token, cancelEvent, publish)
             if invocation["status"] == "CLOSED":
                 return
             if invocation["status"] == "IDLE":
+                runner.pollBackgroundTasks()
                 cancelEvent.wait(.02)
                 continue
             context = replace(RunContext.root(spec.jobId, spec.workflowId, spec.jobWorkspacePath,

@@ -1,6 +1,9 @@
 """Trusted, process-importable fault fixtures; never admitted by production RPC."""
 import os
+from pathlib import Path
 import time
+
+from emo_master.plugins.builtins.number_value.operator import NumberValueOperator
 
 
 class Probe:
@@ -35,6 +38,25 @@ class Probe:
             raise RuntimeError("test cleanup failed")
         if self.disposeMode == "dispose_hang":
             time.sleep(10)
+
+
+class BackgroundProbe(NumberValueOperator):
+    """Probe used only in the test Runtime's trusted workflow-debug entries."""
+
+    def executeNode(self, inputs, params, runtime):
+        client = runtime.get("backgroundTasks")
+        if client is not None:
+            client.submit(_publishMarker, Path(runtime["workspacePath"]), params["value"],
+                          taskName="debug.marker", estimatedBytes=1)
+        return {"status": "ok", "outputs": {"value": int(client is not None)}}
+
+
+def _publishMarker(control, workspace, value):
+    if value < 0:
+        raise OSError("debug marker failed")
+    temporary = workspace / "marker.tmp"
+    temporary.write_bytes(b"done")
+    control.publish(lambda: temporary.replace(workspace / "marker"))
 
 
 def admitted():

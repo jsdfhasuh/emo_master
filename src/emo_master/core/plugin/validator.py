@@ -223,6 +223,16 @@ def validateManifestFields(
         issues.append(ValidationIssue("D01", "E_DEVICE_REQUIREMENT", str(error)))
         requirements = {}
 
+    capabilities = manifestData.get("runtimeCapabilities", [])
+    if (not isinstance(capabilities, list)
+            or any(value != "backgroundTasks" for value in capabilities)
+            or len(capabilities) != len(set(capabilities))):
+        issues.append(ValidationIssue(
+            "R01", "E_MANIFEST_RUNTIME_CAPABILITY",
+            "runtimeCapabilities must be a list of unique supported capabilities: backgroundTasks",
+        ))
+        capabilities = []
+
     nextCycle = manifestData.get("nextCycleParameterPaths", [])
     if (not isinstance(nextCycle, list) or any(not isinstance(path, str) for path in nextCycle)
             or len(nextCycle) != len(set(nextCycle))):
@@ -270,6 +280,7 @@ def validateManifestFields(
         iconResource=parseIconResource(manifestData)[0],
         deviceRequirements=requirements,
         nextCycleParameterPaths=tuple(nextCycle),
+        runtimeCapabilities=tuple(capabilities),
     )
     return manifest, []
 

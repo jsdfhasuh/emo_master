@@ -3,7 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 import json
 import re
-from threading import Barrier
+from threading import Barrier, Event
 from types import SimpleNamespace
 
 import cv2
@@ -251,3 +251,70 @@ def testCancellationBeforeWritePropagatesWithoutCreatingOutput(tmp_path, monkeyp
             {'outputPath': str(tmp_path / 'images/saved.png'), 'namingMode': mode},
             {'raiseIfCancellationRequested': token.raise_if_cancelled})
     assert not list(tmp_path.iterdir())
+
+
+@pytest.mark.parametrize("params,code", [
+    ({"saveMode": "background", "namingMode": "fixed"}, "E_PARAM_INVALID"),
+    ({"saveMode": "background"}, "E_PARAM_INVALID"),
+    ({"saveMode": "later"}, "E_PARAM_INVALID"),
+    ({"saveMode": "background", "namingMode": "unique"}, "E_BACKGROUND_TASK_UNAVAILABLE"),
+])
+def testBackgroundSaveRequiresUniqueNameAndClient(tmp_path, params, code):
+    result = ImageSaverOperator().executeNode({"image": np.zeros((4, 4), np.uint8)},
+        dict(params, outputPath=str(tmp_path / "result.png")), {})
+    assert result["error"]["code"] == code
+    assert list(tmp_path.iterdir()) == []
+
+
+@pytest.mark.parametrize("cancel", [False, True])
+def testBackgroundSaveOwnsPixelsAndOnlyPublishesClosedCompleteFile(tmp_path, monkeypatch, cancel):
+    from emo_master.apps.runtime.execution.background_tasks import BackgroundTaskService, TaskControl
+    from emo_master.apps.runtime.workflow.context import RunContext
+
+    encoding, allowEncode, publishing, allowPublish = (Event() for _ in range(4))
+    encode, publish = cv2.imencode, TaskControl.publish
+
+    def heldEncode(*args):
+        encoding.set()
+        assert allowEncode.wait(5)
+        return encode(*args)
+
+    def heldPublish(control, finalize):
+        publishing.set()
+        assert allowPublish.wait(5)
+        return publish(control, finalize)
+
+    monkeypatch.setattr(cv2, "imencode", heldEncode)
+    monkeypatch.setattr(TaskControl, "publish", heldPublish)
+    service = BackgroundTaskService()
+    client = service.client(RunContext.root("image", "main").forNode("save"), "save")
+    image = np.arange(60, dtype=np.uint8).reshape(4, 5, 3)
+    expected = image.copy()
+    try:
+        receipt = ImageSaverOperator().executeNode({"image": image},
+            {"outputPath": str(tmp_path / "结果.png"), "saveMode": "background", "namingMode": "unique"},
+            {"backgroundTasks": client})["outputs"]["result"]
+        assert receipt["accepted"] and receipt["state"] == "SUBMITTED" and receipt["saved"] is False
+        path = Path(receipt["path"])
+        assert encoding.wait(5) and not path.exists()
+        image.fill(0)
+        allowEncode.set()
+        assert publishing.wait(5) and not path.exists()
+        temp, = tmp_path.glob("*.tmp")
+        np.testing.assert_array_equal(cv2.imdecode(np.fromfile(temp, np.uint8), -1), expected)
+        if cancel:
+            service.close(drain=False)
+        allowPublish.set()
+        if cancel:
+            # The daemon may still be unwinding its finally block after abandonment.
+            from tests.runtime.production_fixture import waitFor
+            waitFor(lambda: not temp.exists())
+            assert not path.exists()
+        else:
+            assert client.wait(receipt["taskId"]) == {"saved": True, "path": str(path)}
+            assert not temp.exists()
+            np.testing.assert_array_equal(cv2.imdecode(np.fromfile(path, np.uint8), -1), expected)
+    finally:
+        allowEncode.set()
+        allowPublish.set()
+        service.close(drain=False)

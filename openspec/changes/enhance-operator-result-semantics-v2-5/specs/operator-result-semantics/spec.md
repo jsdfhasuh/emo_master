@@ -8,7 +8,7 @@
 
 ### Requirement: Every built-in operator has a field-level audit
 
-系统 SHALL 对本 Change 基线中的全部 82 个内置 operatorId 逐项审查输入端口、输出端口、配置参数、实际生效参数、metrics、diagnostics 和执行失败信息。
+系统 SHALL 对本 Change 基线中的全部 82 个内置 operatorId 逐项审查输入端口、输出端口、配置参数、实际生效参数、metrics 和 diagnostics。Runtime 通用失败、跳过和取消生命周期由框架统一审查；只有算子存在专属处理时才纳入该算子的字段审查。
 
 审查 SHALL 以实际 Manifest、OperatorMeta、执行实现、共享 helper、继承类和托管设备执行路径为依据。共享模块中的不同 operatorId SHALL 分别记录结论。每个字段 SHALL 有真实语义、类型、单位（适用时）、数据来源和展示建议。无法确认的内容 SHALL 标记待确认，不得推测。
 

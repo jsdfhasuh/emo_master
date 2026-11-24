@@ -1,9 +1,10 @@
-# Run only inside the credential-free, network-denied Windows build worker.
+# Run only inside the credential-free Windows build worker.
 param(
   [Parameter(Mandatory)][ValidateSet('emo-master','emo-master-runtime')][string]$Target,
   [Parameter(Mandatory)][string]$SourceRoot,
   [Parameter(Mandatory)][ValidatePattern('\A[0-9a-f]{40}\z')][string]$SourceSha,
   [Parameter(Mandatory)][string]$PackagerRoot,
+  [ValidateSet('91766f6d18ca9a333f64cf1c6030202457ec4a8a','23b6774c4f99c6ad7fffbf13b3ebbc8a453d7984')][string]$PackagerSha = '91766f6d18ca9a333f64cf1c6030202457ec4a8a',
   [ValidatePattern('\A[0-9a-f]{40}\z')][string]$PreviousSourceSha,
   [Parameter(Mandatory)][ValidatePattern('\A[A-Za-z0-9][A-Za-z0-9._-]{0,79}\z')][string]$ReleaseTag,
   [Parameter(Mandatory)][string]$OutputDirectory,
@@ -12,7 +13,6 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
-$packagerSha = '91766f6d18ca9a333f64cf1c6030202457ec4a8a'
 if (-not $IsWindows) { throw 'Windows PowerShell 7 worker required' }
 foreach ($key in @('GH_TOKEN','GITHUB_TOKEN','EMO_CI_TOKEN','SOURCE_REPO_TOKEN','RELEASE_REPO_TOKEN','ACTIONS_RUNTIME_TOKEN','ACTIONS_ID_TOKEN_REQUEST_TOKEN')) {
   if ([Environment]::GetEnvironmentVariable($key)) { throw 'Build worker must not contain runner credentials' }

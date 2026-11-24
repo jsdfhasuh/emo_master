@@ -1,0 +1,12 @@
+# Source status reporter staging
+
+This patch is based on product draft #23 at 84c627ed and public draft #12 at 229e4d9e. Copy only scripts/ci_source_status_reporter.py and tests/test_ci_source_status_reporter.py into the product draft; .upstream files are inspection snapshots, not a change set.
+
+This is an opt-in adapter, not a registered workflow, ruleset, status authority, or cutover. It accepts only current main pushes. Product workflow must be exact and complete, with a unique run for the SHA, approved workflow blob, same attempt-named request and dispatch receipt artifacts, verified ZIP digests and bounded JSON. The receipt binds the exact public run, configured tag/SHA/workflow and approved product control commit. Artifact redirects carry no PAT. The reporter requires the pinned GitHub user, exact current status context marker, and one serialized writer.
+
+Invoke report_github(client, verified_source_collector=trusted_callback, selection=..., pins=..., phase='pending') once after the dispatcher completes and then phase='terminal'. The callback is internal trusted code, not user/workflow-provided JSON: it must check the exact four hosted job records, encrypted artifact provenance/digests, and full independent Windows/Linux partition union before returning EvidenceProofs. Source jobs names must be obtained from the real approved workflow run; do not guess reusable-job prefixes.
+
+Pending and terminal replays with identical exact marker are no-ops. A different generation, wrong writer, changed ref, stale/replayed receipt, wrong worker SHA/attempt, changed current status or ambiguous exact dispatch is withheld. Missing verified source proof writes error (never success) only when the exact owned pending status exists. The latest exact marker/ID is read back after POST. GitHub commit status POST is append-only and has no atomic compare-and-set; a single trusted writer and independently guarded required-ruleset update remain necessary. Poll or reconcile from reads before any retry after a POST with uncertain outcome. An attempt change after a prior marker for the same SHA is intentionally not auto-superseded.
+
+Proof so far: unit fixtures only for this adapter. Separate earlier non-required synthetic pilot verified positive/negative GitHub state transport, not this production adapter, required status or Private read. A real exact source ingress run, verified collector integration, writer serialization/pins and PR/manual semantics are still required before changing any official gate.
+

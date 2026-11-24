@@ -1,0 +1,70 @@
+name: P0 manual-event controller (one shot)
+on:
+  push:
+    branches: [dot/p0-manual-control-20261124]
+permissions: {}
+jobs:
+  dispatch:
+    if: github.repository_id == '1343796337'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    name: Dispatch one pinned manual witness and verify the exact run
+    steps:
+      - name: Verify target and dispatch once
+        shell: python
+        env:
+          EMO_CI_TOKEN: ${{ secrets.EMO_CI_TOKEN }}
+        run: |
+          import http.client, json, os, re, time
+
+          REPO = "/repos/jsdfhasuh/emo_master"
+          HEAD = "698b4cce24840f16ca1fcdcbb0c56f6d43494944"
+          TAG = "ci-p0-proof-20261124-v1"
+          token = os.environ.pop("EMO_CI_TOKEN", "")
+          assert re.fullmatch("[A-Za-z0-9_]+", token)
+          def call(path, status=200, body=None):
+              api = http.client.HTTPSConnection("api.github.com", timeout=15)
+              try:
+                  api.request("GET" if body is None else "POST", REPO + path,
+                              body=None if body is None else json.dumps(body),
+                              headers={"Authorization": "Bearer " + token,
+                                       "Accept": "application/vnd.github+json",
+                                       "Content-Type": "application/json",
+                                       "User-Agent": "emo-dot-event-witness",
+                                       "X-GitHub-Api-Version": "2026-03-10"})
+                  response = api.getresponse()
+                  if response.status != status:
+                      raise SystemExit("GitHub HTTP " + str(response.status))
+                  result = response.read(1048577)
+                  assert len(result) <= 1048576
+                  return json.loads(result)
+              finally:
+                  api.close()
+          info = call("")
+          assert info["id"] == 1343796337 and info["default_branch"] == "main"
+          branch = call("/git/ref/heads/dot/p0-proof-base-20261124")
+          assert branch["object"]["sha"] == HEAD
+          workflow = call("/actions/workflows/ci.yml")
+          assert workflow["path"] == ".github/workflows/ci.yml" and workflow["state"] == "active"
+          ref = call("/git/refs", 201, {"ref": "refs/tags/" + TAG, "sha": HEAD})
+          assert ref["ref"] == "refs/tags/" + TAG and ref["object"]["sha"] == HEAD
+          workflow_id = int(workflow["id"])
+          result = call(f"/actions/workflows/{workflow_id}/dispatches", 200, {"ref": TAG})
+          rid = result["workflow_run_id"]
+          assert type(rid) is int and rid > 0
+          print(json.dumps({"manual_run_id": rid, "execution_sha": HEAD}), flush=True)
+          for i in range(110):
+              run = call(f"/actions/runs/{rid}")
+              assert run["event"] == "workflow_dispatch" and run["head_sha"] == HEAD
+              assert run["workflow_id"] == workflow_id and run["run_attempt"] == 1
+              if run["status"] == "completed":
+                  assert run["conclusion"] == "success"
+                  jobs = call(f"/actions/runs/{rid}/attempts/1/jobs")
+                  assert jobs["total_count"] == 1
+                  job = jobs["jobs"][0]
+                  assert job["name"] == "Trusted product event witness" and job["conclusion"] == "success"
+                  print(json.dumps({"manual_run_verified": rid, "job_id": job["id"]}), flush=True)
+                  break
+              time.sleep(5)
+          else:
+              raise SystemExit("Manual witness timed out")

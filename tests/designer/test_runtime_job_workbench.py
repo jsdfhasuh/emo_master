@@ -349,11 +349,27 @@ def testNativeWhileLogsWarningDeviceReturnAndTimeline(ownedDesignerWindow, tmp_p
         assert started.ok, started.message
         waitUntil(first.is_set, timeout=10)
         jobId = started.job_id
+        # Driver entry can precede persistence of its worker events. Fence on
+        # the real capture start before adding ordinary history rows so that
+        # the initial 200-row query is not promoted to a loop-round query.
+        waitUntil(lambda: any(
+            event.eventType == "node.started" and event.workflowId == "body"
+            and event.nodeId == "capture" and json.loads(event.iterationPathJson) == [0]
+            for event in service.eventStore.readFromPersistence(jobId)
+        ), timeout=10)
         # Populate an earlier page without spending hours in the test. The loop,
         # operator lifecycle, SQLite receipt and device event are Runtime output.
         for number in range(207):
             service.eventStore.append(jobId, "test.history.fixture", f"Q1 pagination {number}",
                                       projectId=projectId, level="DEBUG")
+        _, persisted = service.sqliteStore.queryRuntimeLogs(
+            jobId=jobId, projectId=projectId, latestFirst=True, limit=200)
+        assert len(persisted) == 201  # SQLite returns one look-ahead row.
+        assert [event.message for _, event in persisted[:200]
+                if event.eventType == "test.history.fixture"] == [
+            f"Q1 pagination {number}" for number in range(206, 6, -1)
+        ], [(eventId, event.eventType) for eventId, event in persisted[:200]
+            if event.eventType != "test.history.fixture"]
         workbench._refreshCatalog()
         waitUntil(lambda: jobId in workbench.runs, timeout=10)
         active = workbench.directory.topLevelItem(0)

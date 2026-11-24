@@ -95,6 +95,16 @@ The first implementation MUST use one FIFO worker thread per Job and a bounded p
 - **WHEN** a running background task attempts to submit or wait for another task on the same single-worker service
 - **THEN** Runtime MUST reject the recursive operation rather than deadlock the worker
 
+### Requirement: Background task final publication is guarded by Runtime lifecycle
+
+Runtime MUST inject a service-owned TaskControl into each accepted background task callable. TaskControl MUST provide cancellation checks and a guarded final-publication operation. Once service close has abandoned the service, a task MUST NOT publish a new externally visible final result or file. The guarded publication callback MUST be short and limited to the atomic finalization step.
+
+#### Scenario: A task publishes a completed file
+
+- **WHEN** a task has fully written and closed its temporary file
+- **THEN** it MUST perform the final atomic publication through TaskControl.publish
+- **AND** the publication MUST be serialized against service close
+
 #### Scenario: Service close abandons an active task
 
 - **WHEN** service close reaches its drain deadline while a task is still active
@@ -103,7 +113,7 @@ The first implementation MUST use one FIFO worker thread per Job and a bounded p
 
 ### Requirement: Job lifecycle owns all accepted background tasks
 
-The Job worker MUST close the service before publishing its terminal Job event. Normal completion MUST drain accepted tasks and process all resulting task events and deferred artifacts before the terminal event. Cancellation or an existing execution failure MUST stop admission, cancel tasks that have not started, and allow the active task to finish within the existing Job graceful-stop policy.
+The Job worker MUST close the service before publishing its terminal Job event. Normal completion MUST drain accepted tasks and process all resulting task events and deferred artifacts before the terminal event. JobProcessSpec MUST carry an internal backgroundTaskDrainTimeoutMs with a 30000ms default; a normal drain timeout MUST produce E_BACKGROUND_TASK_DRAIN_TIMEOUT, never job.completed. Cancellation or an existing execution failure MUST stop admission, cancel tasks that have not started, and allow the active task to finish within the existing Job graceful-stop policy.
 
 #### Scenario: Job completes normally with pending tasks
 

@@ -93,6 +93,7 @@ manifest 是能力声明的唯一来源。首版支持值：
 - `task.id`：本 Job 内唯一任务 ID，适合放进 JSON 输出并传给后续算子。
 - `background.wait(taskId)`：等待指定任务结束；成功返回任务函数结果，失败抛出带原始错误信息的后台任务异常。等待过程响应当前节点取消。失败被 wait 抛给调用方后视为已观察；算子可明确捕获并处理。
 - `background.status(taskId)`：查询 `QUEUED / RUNNING / SUCCEEDED / FAILED / CANCELLED`。
+- Runtime 注入的 `TaskControl` 提供 `raiseIfCancelled()` 和 `publish(finalize)`；后者在服务生命周期门禁内执行短小的最终发布操作。任务函数先写临时文件，再通过 `publish()` 原子发布正式路径。
 - 任务记录只保留有界数量的终态摘要；达到上限时只淘汰最早的终态记录，不淘汰运行中任务。等待已淘汰任务返回明确的 `E_BACKGROUND_TASK_EXPIRED`，不能伪造成功。
 - Runner 尚未处理的 pending artifact、SQLite pending binding 必须固定保留对应任务结果，不能被普通终态淘汰策略提前清除；释放依赖后才允许淘汰。
 - 任务记录淘汰不能抹去未观察失败：服务另行保留有界失败摘要/计数，Job 收尾仍能识别是否存在未处理失败。
@@ -100,6 +101,16 @@ manifest 是能力声明的唯一来源。首版支持值：
 - 服务只传递轻量任务元数据和结果摘要，不把图片字节放入 Runtime 事件。
 - 通用服务不擅自复制任意 Python 参数。提交方必须保证传入参数在任务完成前不可变；图像算子在提交前复制图像，避免上游继续修改同一 ndarray。
 - 任务函数返回值应是小型结果（例如最终路径、字节数）；不得把图片 ndarray 或大型缓存放入任务结果记录。
+
+ImageSaver 后台写入的任务函数约定：
+
+    def save_image(taskControl, image, finalPath):
+        tempPath = write_complete_temp_file(image, finalPath)
+        taskControl.raiseIfCancelled()
+        taskControl.publish(lambda: os.replace(tempPath, finalPath))
+        return {"path": str(finalPath)}
+
+`publish()` 与服务 close 使用同一生命周期门禁；close 一旦进入 abandoned，任务即使从阻塞 I/O 恢复，也不能再发布最终文件。
 - `TaskControl.raiseIfCancelled()` 检查任务是否因 Job 关闭而取消；`TaskControl.publish(finalize)` 在服务生命周期提交锁内执行短小的最终发布操作。服务关闭/放弃后，publish 必须拒绝执行；ImageSaver 用它包住临时文件到最终路径的原子 rename/replace，避免 close 超时后任务又迟到发布文件。
 
 后台任务不复用 `executeNode()` 返回后即关闭的 `OperatorLogger`。任务开始、完成和失败事件由服务记录完成结果，`WorkflowRunner` 在每个节点边界、每次 workflow run 开始处、workflow.completed 发布前以及 Job 收尾时取出完成记录，在 Runtime 执行线程中发布事件及处理产物，避免后台线程直接操作 Runner、ResultCollector 或 Qt 对象。连续 Job 的 cycle 间隔等待和 Dispatch consumer 的 IDLE 等待也必须定期调用同一 poll 入口，避免后台失败在长时间空闲期间一直无人发现。任务失败若已被算子显式 wait 并捕获，视为已处理；Runner 为 SQLite FILE_REFERENCE 做的内部 wait 也视为已观察，再由 SQLite 现有 failurePolicy 决定是否继续。

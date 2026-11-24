@@ -23,6 +23,7 @@
 | core/contracts/sqlite_writer.py | FILE_REFERENCE 只接受已保存的持久文件；拒绝不存在文件和预览/临时路径 | SQLiteWriter 事务代码不需改，但 Runner 必须先解析 pending 引用 |
 | apps/runtime/jobs/worker_main.py | 每个 Job worker 进程扫描插件、构造 WorkflowRunner；continuous cycle 间隔和 Dispatch consumer IDLE 循环在 Runner.run() 外等待；publishTerminal 当前先关闭 previewWriter | 后台失败轮询还需覆盖 Runner.run() 外的等待循环；后台服务 drain 和 Runner completion/artifact drain 必须发生在 previewWriter.close 之前 |
 | apps/runtime/jobs/supervisor.py | JobSupervisor 使用 multiprocessing spawn 创建 Job 进程；gracefulStopTimeoutMs 默认 5000ms，超时会终止 worker | 后台任务停止必须尊重现有停止宽限，不承诺无限等待或强行中断 Python I/O |
+| apps/runtime/jobs/models.py | JobProcessSpec 是 frozen dataclass，包含 Job worker 参数，当前没有后台 drain deadline | 增加内部 backgroundTaskDrainTimeoutMs 默认值，不暴露为工程配置；Supervisor 仍按原 gracefulStopTimeoutMs 管理用户停止 |
 | apps/runtime/preview/async_writer.py | AsyncPreviewSnapshotWriter 有独立线程、有界缓存、同节点合并/丢弃策略 | 可借鉴线程生命周期，不可直接复用其丢弃策略保存业务图片 |
 | apps/runtime/preview/executor.py | PurePreviewExecutor 自己使用 ThreadPoolExecutor 执行纯预览，并设置 isPreview=True；runtimeContext 没有通用后台服务 | 纯预览必须继续隔离后台副作用 |
 | apps/runtime/operator_debug/contracts.py | trustedEntries 从当前 PluginDescriptor 验证内置算子身份，生成调试准入描述 | 应从这里把已校验 runtimeCapabilities 放入调试 worker spec |

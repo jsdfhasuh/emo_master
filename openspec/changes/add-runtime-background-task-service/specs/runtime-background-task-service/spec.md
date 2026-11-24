@@ -95,6 +95,12 @@ The first implementation MUST use one FIFO worker thread per Job and a bounded p
 - **WHEN** a running background task attempts to submit or wait for another task on the same single-worker service
 - **THEN** Runtime MUST reject the recursive operation rather than deadlock the worker
 
+#### Scenario: Service close abandons an active task
+
+- **WHEN** service close reaches its drain deadline while a task is still active
+- **THEN** Runtime MUST mark the task abandoned and reject any later TaskControl.publish finalization
+- **AND** a normal Job MUST fail with E_BACKGROUND_TASK_DRAIN_TIMEOUT rather than publish job.completed
+
 ### Requirement: Job lifecycle owns all accepted background tasks
 
 The Job worker MUST close the service before publishing its terminal Job event. Normal completion MUST drain accepted tasks and process all resulting task events and deferred artifacts before the terminal event. Cancellation or an existing execution failure MUST stop admission, cancel tasks that have not started, and allow the active task to finish within the existing Job graceful-stop policy.
@@ -184,6 +190,12 @@ ImageSaver MUST declare backgroundTasks in its manifest and retain synchronous s
 - **WHEN** a background image write fails or is terminated before its temporary file is complete
 - **THEN** the final output path MUST NOT expose a partial image
 - **AND** Runtime MUST NOT publish saved success or artifact.created
+
+#### Scenario: Close timeout occurs while image encoding is active
+
+- **WHEN** service close abandons an ImageSaver task before final publication
+- **THEN** its TaskControl.publish operation MUST be rejected
+- **AND** the task MUST NOT create the final path after the Job has entered terminal cleanup
 
 ### Requirement: Deferred file artifacts are registered only after their task succeeds
 

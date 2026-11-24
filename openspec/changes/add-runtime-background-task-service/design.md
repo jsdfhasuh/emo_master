@@ -89,7 +89,7 @@ manifest 是能力声明的唯一来源。首版支持值：
 
 接口语义：
 
-- `submit(callable, *args, taskName=...)`：提交任务并立即返回任务引用；不承诺文件已落地。
+- `submit(callable, *args, taskName=..., estimatedBytes=...)`：提交任务并立即返回任务引用；服务执行时以首个参数注入 Runtime 创建的 `TaskControl`，任务函数签名为 `callable(taskControl, *args)`；不承诺文件已落地。
 - `task.id`：本 Job 内唯一任务 ID，适合放进 JSON 输出并传给后续算子。
 - `background.wait(taskId)`：等待指定任务结束；成功返回任务函数结果，失败抛出带原始错误信息的后台任务异常。等待过程响应当前节点取消。失败被 wait 抛给调用方后视为已观察；算子可明确捕获并处理。
 - `background.status(taskId)`：查询 `QUEUED / RUNNING / SUCCEEDED / FAILED / CANCELLED`。
@@ -100,6 +100,7 @@ manifest 是能力声明的唯一来源。首版支持值：
 - 服务只传递轻量任务元数据和结果摘要，不把图片字节放入 Runtime 事件。
 - 通用服务不擅自复制任意 Python 参数。提交方必须保证传入参数在任务完成前不可变；图像算子在提交前复制图像，避免上游继续修改同一 ndarray。
 - 任务函数返回值应是小型结果（例如最终路径、字节数）；不得把图片 ndarray 或大型缓存放入任务结果记录。
+- `TaskControl.raiseIfCancelled()` 检查任务是否因 Job 关闭而取消；`TaskControl.publish(finalize)` 在服务生命周期提交锁内执行短小的最终发布操作。服务关闭/放弃后，publish 必须拒绝执行；ImageSaver 用它包住临时文件到最终路径的原子 rename/replace，避免 close 超时后任务又迟到发布文件。
 
 后台任务不复用 `executeNode()` 返回后即关闭的 `OperatorLogger`。任务开始、完成和失败事件由服务记录完成结果，`WorkflowRunner` 在每个节点边界、每次 workflow run 开始处、workflow.completed 发布前以及 Job 收尾时取出完成记录，在 Runtime 执行线程中发布事件及处理产物，避免后台线程直接操作 Runner、ResultCollector 或 Qt 对象。连续 Job 的 cycle 间隔等待和 Dispatch consumer 的 IDLE 等待也必须定期调用同一 poll 入口，避免后台失败在长时间空闲期间一直无人发现。任务失败若已被算子显式 wait 并捕获，视为已处理；Runner 为 SQLite FILE_REFERENCE 做的内部 wait 也视为已观察，再由 SQLite 现有 failurePolicy 决定是否继续。
 
@@ -130,7 +131,7 @@ manifest 是能力声明的唯一来源。首版支持值：
 
 正常 Job 终态顺序必须是：停止接收 → 等待/取消后台任务 → Runner 处理完成记录与延迟产物 → 关闭预览快照 writer → 发布 Job terminal event。不能先关闭预览 writer，再让后台完成回调尝试捕获产物。
 
-现有 Supervisor 的 graceful stop 有超时，默认 5000ms；如果正在执行的后台任务超过现有停止宽限，Supervisor 仍可能按现有规则终止整个 Job 进程。首版不延长全局停止时间，也不承诺能强制中断任意 Python 文件操作。后台 worker 线程采用 daemon 生命周期；服务 close 超时后必须将活动任务标记为未完成并阻止它在恢复执行时提交最终文件，Job 进程退出后不允许后台任务继续存活。被强制终止的任务不发布成功或 artifact.created；可能留下的临时文件必须由后台保存实现清理，正式目标文件只能在完整写入后原子发布。
+现有 Supervisor 的 graceful stop 默认 5000ms；用户主动 graceful stop 超时后仍由 Supervisor 按现有规则终止整个 Job 进程，不延长该时间。JobProcessSpec 增加内部 `backgroundTaskDrainTimeoutMs`（默认 30000ms），用于正常结束或工作流失败时有限等待后台任务。close 超时后服务停止接收、取消未开始任务、标记活动任务 abandoned，并通过 TaskControl 发布门禁阻止迟到提交；后台 worker 线程采用 daemon 生命周期，Job 进程退出后不允许后台任务继续存活。正常 Job 完成但 drain 超时，必须以 `E_BACKGROUND_TASK_DRAIN_TIMEOUT` 失败，不能发 job.completed；已有工作流错误仍为主错误，用户取消仍保持 ABORTED。被终止任务不发布成功或 artifact.created；可能留下的临时文件必须清理，正式目标文件只能在完整写入后原子发布。
 
 ## 7. 算子接入与现有文件链路
 
@@ -142,7 +143,7 @@ manifest 是能力声明的唯一来源。首版支持值：
 - 为避免不同 Job、循环周期或同一工作流的异步任务覆盖同一路径，首版后台模式要求 `namingMode=unique`；选择固定命名时明确返回参数错误，不静默改变用户路径。同步模式仍完整支持固定/唯一命名。
 - 后台模式先确定唯一目标路径，再复制图像并提交编码/写入任务；返回 `accepted=true`、`saved=false`、`state=SUBMITTED`、`path` 和 `taskId`。
 - 后台模式不能返回 `saved=true`，也不能把入队成功报告成文件保存成功。
-- 工作线程先写入目标目录内的任务专属临时文件，完整写入并关闭后才原子发布到唯一最终路径；异常/取消时清理临时文件。不能直接逐步写入最终路径，避免进程被强制终止后留下看似正式的半张图片。
+- 工作线程先写入目标目录内的任务专属临时文件，完整写入并关闭后才通过 `TaskControl.publish()` 原子发布到唯一最终路径；异常/取消/服务放弃时清理临时文件。不能直接逐步写入最终路径，避免进程被强制终止后留下看似正式的半张图片。
 - 任务成功结果包含真实写入完成的路径；失败保留原始异常。ImageSaver 不在工作线程中写 RuntimeContext、日志对象或工作流变量。
 
 ### Artifact 与预览

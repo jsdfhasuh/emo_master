@@ -40,3 +40,6 @@
 
 
 7. **连续运行的空闲窗口也必须检查失败。** 源码中的 continuous cycle 间隔和 Dispatch consumer 的 IDLE 等待发生在 `WorkflowRunner.run()` 外；只在节点边界和 workflow 完成前 poll 仍会漏掉任务在空闲窗口内失败的情况。已要求这两个等待循环也定期调用 Runner 的统一完成/失败轮询入口。
+
+
+8. **close 超时后必须防止迟到文件提交。** 仅把 worker 线程设为 daemon 仍不够：close 超时到 Job 进程真正退出之间，任务可能刚好恢复并写入最终文件。已增加 Runtime 注入的 TaskControl 和原子发布门禁；服务 abandoned 后，迟到的最终发布必须被拒绝。正常 Job drain 另设内部 30 秒上限，超时转为 E_BACKGROUND_TASK_DRAIN_TIMEOUT；用户主动 Stop 仍由原 5000ms Supervisor 宽限控制。

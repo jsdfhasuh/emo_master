@@ -39,6 +39,7 @@
 | C6 预览 writer 顺序 | 后台任务完成和 artifact capture 发生在 AsyncPreviewSnapshotWriter 关闭之前 | 用可控任务记录 close/capture 顺序 |
 | C7 失败及时发现 | 未 wait 的后台失败在下一个节点边界、下一次 workflow run 开始或 workflow 完成前被发现，不等待连续 Job 终止 | 连续 Job 中注入失败任务，验证下一轮开始前 Job 已失败 |
 | C8 空闲阶段失败发现 | 连续 Job 的 cycle 间隔和 Dispatch consumer IDLE 阶段仍轮询后台完成记录 | 在两种空闲状态下注入失败任务，验证无需等待下一次外部触发即可失败 |
+| C9 close 超时不迟到提交 | close 超时后 TaskControl.publish 拒绝最终发布；正常 Job 不能误发 job.completed | 用阻塞任务越过 drain deadline，释放任务后验证最终文件不存在且 Job 为 E_BACKGROUND_TASK_DRAIN_TIMEOUT |
 
 ## D. ImageSaver、产物与 SQLite 文件引用
 

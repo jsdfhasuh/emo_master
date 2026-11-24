@@ -12,7 +12,8 @@
 - [ ] 2.1 新增 Job-scoped BackgroundTaskService、节点级 BackgroundTaskClient 和任务引用；首版一条 FIFO 工作线程、有界队列。
 - [ ] 2.2 实现 submit、wait、status、任务结果、完成/失败记录和提交时运行身份冻结；不复用已关闭的 OperatorLogger。
 - [ ] 2.3 队列按任务数量和估算字节数双重限额；队列满时实施可取消背压，超大单任务明确报错；终态记录有界保留，淘汰后 wait 返回 E_BACKGROUND_TASK_EXPIRED，pending artifact/binding 依赖未释放前固定保留任务记录；保留独立的未观察失败摘要。
-- [ ] 2.4 实现正常 drain、取消待执行任务、等待当前任务收尾和幂等 close；Runner 在节点边界、workflow run 开始和 workflow 完成前检查未观察失败；原始工作流错误优先；任务函数禁止递归 submit/wait。
+- [ ] 2.4 实现 TaskControl 注入、取消检查和原子发布门禁；实现正常 drain、取消待执行任务、限时等待和幂等 close；Runner 在节点边界、workflow run 开始和 workflow 完成前检查未观察失败；原始工作流错误优先；任务函数禁止递归 submit/wait。
+- [ ] 2.5 在 JobProcessSpec 增加内部后台 drain 超时（默认 30000ms）；正常完成 drain 超时返回 E_BACKGROUND_TASK_DRAIN_TIMEOUT，不发布 job.completed；取消沿用现有 5000ms Supervisor 终止策略。
 
 ## 3. Runtime 与 Runner 接入
 
@@ -37,7 +38,7 @@
 
 - [ ] 5.1 覆盖 manifest 缺省、声明、重复值、未知值、非字符串值和 descriptor 能力保留；未声明算子不得获得客户端。
 - [ ] 5.2 覆盖任务提交/返回、FIFO、等待结果、异常传播、任务数量/字节双重背压、超大任务拒绝、记录淘汰与依赖固定、取消、正常 drain、Job 隔离和任务事件身份。
-- [ ] 5.3 覆盖 Runner 完成记录 drain、ArtifactStore 延迟登记、预览 writer 关闭顺序、Job terminal 顺序、连续间隔/Dispatch IDLE 失败轮询和 graceful stop 超时边界。
+- [ ] 5.3 覆盖 Runner 完成记录 drain、ArtifactStore 延迟登记、预览 writer 关闭顺序、Job terminal 顺序、连续间隔/Dispatch IDLE 失败轮询、后台 drain 超时终态和 graceful stop 超时边界。
 - [ ] 5.4 覆盖 ImageSaver 同步回归、后台 unique 命名约束、源图快照、临时文件原子发布、失败/取消不暴露半成品、artifact 延迟登记，以及 SQLite FILE_REFERENCE 的成功等待和失败路径。
 - [ ] 5.5 覆盖正式 Job、单算子调试、工作流调试、纯预览和 clone-safe trial 的能力边界。
 - [ ] 5.6 运行受影响的现有测试和 OpenSpec strict validation；记录固定源码 SHA、实际测试结果、未执行项。不得把静态审查或单测通过表述为真实设备验收。

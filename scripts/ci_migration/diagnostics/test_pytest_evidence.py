@@ -60,3 +60,25 @@ def test_active_phase_and_stack_are_retained_when_process_is_killed(tmp_path):
     phases = journal(tmp_path, "pytest-phases.jsonl")
     assert phases[-1]["event"] == "phase_start" and phases[-1]["phase"] == "call"
     assert phases[-1]["nodeid"].endswith("::test_blocked")
+
+
+def test_external_evidence_directory_does_not_displace_pytest_config(tmp_path):
+    product = tmp_path / "fixture product"
+    source = product / "src"
+    tests = product / "tests"
+    evidence = tmp_path / "outside evidence"
+    for folder in (source, tests, evidence):
+        folder.mkdir(parents=True)
+    (product / "pytest.ini").write_text("[pytest]\npythonpath = src\n", encoding="utf-8")
+    (source / "layout_probe.py").write_text("VALUE = 3\n", encoding="utf-8")
+    (tests / "conftest.py").write_text("import layout_probe\n", encoding="utf-8")
+    (tests / "test_probe.py").write_text(
+        "from layout_probe import VALUE\ndef test_probe(): assert VALUE == 3\n", encoding="utf-8")
+    env = {**os.environ, "PYTHONPATH": str(Path(__file__).parent), "PYTEST_DISABLE_PLUGIN_AUTOLOAD": "1"}
+    child = subprocess.run([sys.executable, "-m", "pytest", "-p", "pytest_evidence",
+                            f"--emo-pytest-evidence-dir={evidence}", "-q"], cwd=product, env=env,
+                           capture_output=True, timeout=20)
+    assert child.returncode == 0, child.stdout + child.stderr
+    phases = journal(evidence, "pytest-phases.jsonl")
+    assert any(r.get("nodeid", "").endswith("::test_probe") and r.get("phase") == "call"
+               and r.get("outcome") == "passed" for r in phases)

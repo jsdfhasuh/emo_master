@@ -1,3 +1,0 @@
-# Preserve authoritative handoff bytes on Windows and POSIX; manifest hashes are byte-based.
-contracts/** -text whitespace=cr-at-eol
-backend/emo_web_panel/contract_data/** -text whitespace=cr-at-eol

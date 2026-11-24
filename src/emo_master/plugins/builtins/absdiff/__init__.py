@@ -1,1 +1,0 @@
-"""Absolute difference builtin operator."""

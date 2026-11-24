@@ -1,1 +1,0 @@
-"""CLAHE builtin operator."""

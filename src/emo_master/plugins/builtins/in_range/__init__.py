@@ -1,1 +1,0 @@
-"""Color-range segmentation builtin."""

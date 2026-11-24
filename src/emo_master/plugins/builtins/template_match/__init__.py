@@ -1,1 +1,0 @@
-"""Template matching builtin operator."""

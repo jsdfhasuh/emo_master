@@ -1,1 +1,0 @@
-PASS: non-Qt fallback keeps legacy sorting, search and recent semantics

@@ -1,6 +1,0 @@
-/* 颜色来自常用外观与原状态映射；此规则只改变边框细节和字重。 */
-QFrame[emoPart="root"] {
-    border-left-width: 4px;
-    border-left-style: solid;
-}
-QLabel[emoPart="value"] { font-weight: bold; }

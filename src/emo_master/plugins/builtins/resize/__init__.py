@@ -1,1 +1,0 @@
-"""Resize and letterbox builtin."""

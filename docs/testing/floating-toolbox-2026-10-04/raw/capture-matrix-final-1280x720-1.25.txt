@@ -1,1 +1,0 @@
-{"actual": [1022, 512], "dpr": 1.25, "checks": {"stationaryCanvas": true, "dragClamped": true, "allControlsReachable": true, "escapeCollapse": true, "jobCreated": false}}

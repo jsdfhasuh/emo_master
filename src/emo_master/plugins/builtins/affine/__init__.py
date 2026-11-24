@@ -1,1 +1,0 @@
-"""Affine transform builtin operator."""

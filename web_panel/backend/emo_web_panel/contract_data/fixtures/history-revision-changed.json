@@ -1,7 +1,0 @@
-{
-  "runtimeInstanceId": "demo-runtime-1",
-  "projectId": "panel-contract-demo",
-  "event": "error",
-  "code": "E_HISTORY_REVISION",
-  "message": "History declaration changed; refresh the matching published configuration"
-}

@@ -1,1 +1,0 @@
-"""Apply mask builtin operator."""

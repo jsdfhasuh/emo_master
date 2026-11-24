@@ -1,6 +1,0 @@
-..                                                                       [100%]
-=================================== PASSES ====================================
-=========================== short test summary info ===========================
-PASSED tests/designer/test_device_usability_publication.py::testPublicationReturnPreservesDeviceListViewport[0]
-PASSED tests/designer/test_device_usability_publication.py::testPublicationReturnPreservesDeviceListViewport[1]
-2 passed in 2.39s

@@ -1,1 +1,0 @@
-"""Mitsubishi SLMP write builtin."""

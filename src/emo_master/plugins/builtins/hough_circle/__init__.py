@@ -1,1 +1,0 @@
-"""Hough circle builtin operator."""

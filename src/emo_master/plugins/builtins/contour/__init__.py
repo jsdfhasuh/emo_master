@@ -1,1 +1,0 @@
-"""Contour extraction builtin operator."""

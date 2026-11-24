@@ -1,6 +1,0 @@
-{
-  "secondCompletedWhileFirstPending": true,
-  "firstStillPending": true,
-  "firstState": "PUBLISHED",
-  "secondState": "PUBLISHED"
-}

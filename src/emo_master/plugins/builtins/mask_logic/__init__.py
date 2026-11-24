@@ -1,1 +1,0 @@
-"""Binary mask logic builtin."""

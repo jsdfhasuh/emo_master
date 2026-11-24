@@ -1,1 +1,0 @@
-"""Histogram equalization builtin operator."""

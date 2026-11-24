@@ -1,1 +1,0 @@
-"""Hough line builtin operator."""

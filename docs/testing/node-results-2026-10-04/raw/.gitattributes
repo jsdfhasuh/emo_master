@@ -1,2 +1,0 @@
-# Keep tool stdout/stderr byte-for-byte; do not normalize failed-test traces.
-*.txt -text -diff

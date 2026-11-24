@@ -1,0 +1,28 @@
+name: P0 unprivileged same-repository PR event witness
+on:
+  pull_request:
+    branches: [dot/p0-proof-base-20261124]
+    types: [opened, synchronize, reopened]
+permissions: {}
+jobs:
+  event:
+    if: github.repository_id == '1343796337' && github.event.pull_request.head.repo.id == github.event.repository.id
+    name: Validate ordinary PR event without credentials
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Confirm separate head and merged commit
+        shell: python
+        run: |
+          import json, os, re
+          from pathlib import Path
+          payload = json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text())
+          pr = payload["pull_request"]
+          head, base = pr["head"], pr["base"]
+          digest = re.compile(r"[0-9a-f]{40}")
+          assert payload["number"] == 24 and base["ref"] == "dot/p0-proof-base-20261124"
+          assert base["sha"] == "698b4cce24840f16ca1fcdcbb0c56f6d43494944" and head["ref"] == "dot/p0-proof-head-20261124"
+          assert head["repo"]["id"] == base["repo"]["id"] == 1343796337
+          assert digest.fullmatch(head["sha"]) and pr["merge_commit_sha"] == os.environ["GITHUB_SHA"]
+          assert os.environ["GITHUB_EVENT_NAME"] == "pull_request" and os.environ["GITHUB_SHA"] != head["sha"]
+          print(json.dumps({"pr": 24, "head_sha": head["sha"], "base_sha": base["sha"], "execution_sha": os.environ["GITHUB_SHA"]}), flush=True)

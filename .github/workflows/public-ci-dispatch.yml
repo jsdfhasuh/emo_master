@@ -1,0 +1,120 @@
+name: Public CI dispatcher (opt-in)
+
+on:
+  push:
+    branches: [main]
+  pull_request_target:
+    branches: [main]
+    types: [opened, reopened, synchronize, ready_for_review]
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: Original nonrelease workflow ID
+        required: true
+        default: ci
+        type: string
+      source_ref:
+        description: Optional main or exact triggering commit
+        required: false
+        type: string
+      packager_ref:
+        description: Optional exact approved packager SHA
+        required: false
+        type: string
+
+permissions: {}
+
+jobs:
+  envelope:
+    if: >-
+      vars.EMO_CI_DISPATCH_ENABLED == 'true' &&
+      github.repository_id == '1343796337' && github.ref == 'refs/heads/main' &&
+      (github.event_name != 'pull_request_target' ||
+      github.event.pull_request.head.repo.id == github.event.repository.id)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      request_artifact_id: ${{ steps.upload.outputs.artifact-id }}
+      request_artifact_digest: ${{ steps.upload.outputs.artifact-digest }}
+      request_id: ${{ steps.request.outputs.request_id }}
+      check_sha: ${{ steps.request.outputs.check_sha }}
+      source_event: ${{ steps.request.outputs.source_event_name }}
+    steps:
+      - name: Validate approved control commit
+        env:
+          CONTROL_SHA: ${{ vars.EMO_CI_PRODUCT_DISPATCHER_SHA }}
+        run: |
+          [[ "$CONTROL_SHA" =~ ^[a-f0-9]{40}$ && "$CONTROL_SHA" != 0000000000000000000000000000000000000000 ]]
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ vars.EMO_CI_PRODUCT_DISPATCHER_SHA }}
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Prepare metadata parser only
+        run: |
+          python3 -m venv "$RUNNER_TEMP/ci-control"
+          "$RUNNER_TEMP/ci-control/bin/python" -m pip install --quiet --no-deps --only-binary=:all: PyYAML==6.0.3
+      - name: Bind product event metadata
+        id: request
+        env:
+          EMO_CI_GITHUB_READER: ${{ github.token }}
+          EMO_CI_PUBLIC_WORKER_SHA: ${{ vars.EMO_CI_PUBLIC_WORKER_SHA }}
+          EMO_CI_PACKAGER_SHA: ${{ vars.EMO_CI_PACKAGER_SHA }}
+        run: |
+          "$RUNNER_TEMP/ci-control/bin/python" -m scripts.ci_dispatch_envelope "$RUNNER_TEMP/request.json"
+      - name: Retain request on product Actions
+        id: upload
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: ci-request-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/request.json
+          if-no-files-found: error
+          retention-days: 7
+
+  kickoff:
+    # Product envelope supports all three. The control-plane opt-in remains
+    # independently gated per event until matching public ingress is approved.
+    if: >-
+      needs.envelope.result == 'success' &&
+      (github.event_name == 'push' ||
+      (github.event_name == 'pull_request_target' && vars.EMO_CI_DISPATCH_ALLOW_PR == 'true') ||
+      (github.event_name == 'workflow_dispatch' && vars.EMO_CI_DISPATCH_ALLOW_MANUAL == 'true'))
+    needs: envelope
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ vars.EMO_CI_PRODUCT_DISPATCHER_SHA }}
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Prepare metadata parser only
+        run: |
+          python3 -m venv "$RUNNER_TEMP/ci-control"
+          "$RUNNER_TEMP/ci-control/bin/python" -m pip install --quiet --no-deps --only-binary=:all: PyYAML==6.0.3
+      - name: Dispatch one approved worker and bind exact receipt
+        env:
+          EMO_CI_TOKEN: ${{ secrets.EMO_CI_TOKEN }}
+          EMO_CI_PRODUCT_DISPATCHER_SHA: ${{ vars.EMO_CI_PRODUCT_DISPATCHER_SHA }}
+          EMO_CI_PUBLIC_WORKER_ID: ${{ vars.EMO_CI_PUBLIC_WORKER_ID }}
+          EMO_CI_PUBLIC_WORKER_SHA: ${{ vars.EMO_CI_PUBLIC_WORKER_SHA }}
+          EMO_CI_PUBLIC_WORKER_TAG: ${{ vars.EMO_CI_PUBLIC_WORKER_TAG }}
+          SOURCE_EVENT: ${{ needs.envelope.outputs.source_event }}
+          REQUEST_ID: ${{ needs.envelope.outputs.request_id }}
+          CHECK_SHA: ${{ needs.envelope.outputs.check_sha }}
+          REQUEST_ARTIFACT_ID: ${{ needs.envelope.outputs.request_artifact_id }}
+          REQUEST_ARTIFACT_DIGEST: ${{ needs.envelope.outputs.request_artifact_digest }}
+        run: |
+          "$RUNNER_TEMP/ci-control/bin/python" -m scripts.ci_dispatch_product "$RUNNER_TEMP/dispatch-receipt.json"
+      - name: Retain exact dispatch receipt on product Actions
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: ci-dispatch-receipt-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/dispatch-receipt.json
+          if-no-files-found: error
+          retention-days: 7

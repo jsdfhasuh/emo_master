@@ -76,3 +76,46 @@ P0 完成后才确定 resultSchema、端口说明和必要的生效参数记录�
 ## 8. 非目标
 
 历史项目/日志迁移、旧版本兼容层、日志回填、第二套日志存储、全量 outputs 持久化、逐算子自定义 UI、所有算子强制增加 metrics 或主动 logger、Web 日志 UI、工作流调度和设备管理重构，以及没有实际场景支持的防御性框架和重复测试。
+
+
+## 9. 与 PR19 并行实施的文件边界
+
+PR19（Runtime 后台任务服务，PR #19）与本 Change（算子运行信息完整化，PR #20）计划同时推进。两者都可能修改 PluginManifest、Manifest Validator、OperatorExecutor、WorkflowRunner 和部分算子 Manifest，不能让两个执行分支同时独立改写同一公共文件。
+
+### 9.1 职责归属
+
+PR19 独占负责：
+- runtimeCapabilities 的声明、解析和校验。
+- BackgroundTaskService、TaskControl、后台任务客户端及注入。
+- Job 生命周期 drain、任务完成轮询、后台产物处理。
+- ImageSaver 的后台保存实现及其专属 Manifest 声明。
+- PR19 计划中约定的 SQLite FILE_REFERENCE 延迟绑定。
+
+PR20 独占负责：
+- 82 个算子的字段语义审查及审查清单。
+- 全部算子的中文参数、输入端口和输出端口说明。
+- resultSchema（或 P0 审查后确定的最终结构）及其展示语义。
+- 算子运行身份、必要的生效参数摘要和日志详情展示。
+- Designer RuntimeClient、LogRecordDetail 与单算子调试统一展示。
+
+### 9.2 并行推进方式
+
+两条工作线可以并行，但按以下顺序交接：
+
+1. PR20 的 P0：82 算子逐字段审查可以与 PR19 全程并行；审查只读源码，不改 PR19 所有权范围内的 Runtime 核心文件。
+2. PR19 实施期间，PR20 可以独立准备字段审查结果、Designer 详情布局和不依赖新 Runtime 元数据的 UI 部分；不得在自己的分支复制实现 PR19 的 PluginManifest / validator / Runner 改动。
+3. PR19 的公共 Runtime 基础合入 main 后，PR20 从最新 main 更新工作分支，再实施 PluginManifest、Validator、OperatorInfo、WorkflowRunner、日志投影等共享链路改动。
+4. 若 PR19 尚未合并但确需联调，使用 PR19 分支作为临时集成基线或在本地集成工作区验证；不要把 PR19 的提交复制进 PR20 的独立产品提交，也不要让 PR20 反向修改 PR19 分支。
+5. PR20 最终 PR 只包含本 Change 的差异；PR19 已合入的能力通过依赖当前 main 使用。
+
+### 9.3 共享文件修改规则
+
+- PluginManifest / validator：PR19 先落地 runtimeCapabilities；PR20 在其合并后增补语义元数据，保留 PR19 字段和校验。
+- OperatorExecutor / WorkflowRunner：PR19 负责后台任务注入、drain 和完成事件；PR20 只增加必要的算子身份与参数信息，不重写后台任务生命周期。
+- ImageSaver Manifest：PR19 负责 runtimeCapabilities；PR20 的中文端口和参数说明应在 PR19 分支完成后合并式补充，不能覆盖该能力声明。
+- Runtime 事件：两个功能各自添加必要字段，合并前核对字段命名和投影路径；不得建立两套事件身份或重复事件。
+- PR20 不得因接入后台任务能力而改变 ImageSaver 的同步/异步语义；PR19 不负责 PR20 的结果语义 UI。
+
+### 9.4 Codex 执行约束
+
+PR20 的执行者为 **Codex 6.2 Astra**。启动时必须先读取 PR19 当前状态、实际 head SHA 和已合入文件差异；不能假定 PR19 仍停留在计划状态。每次修改共享文件前先对照最新 main 和 PR19 已合入内容。不得将 PR19 的后台任务实现混入 PR20，也不得为避免冲突而删掉 PR19 已有能力。

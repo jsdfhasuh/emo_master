@@ -62,7 +62,13 @@ def testOneHealthDeadlineClearsShownImageThenReusesSameResult(qtApp, tmp_path, m
             qtKey = image.image.cacheKey()
             assert initial.connection == 'CONNECTED' and scope.result.identity.resultOrdinal == 1
             assert window.displayed['root'].result == scope.result and pixels.shape == (120, 160, 3)
-            assert not session.errors
+            # Preserve the invariant; report only fixed startup error categories.
+            with session.lock:
+                startupErrors = tuple(session.errors)
+            safeCodes = {status.name for status in grpc.StatusCode} | {'INVALID_RESULT', 'OBSERVER_FAILED'}
+            startupCodes = tuple(code if type(code) is str and code in safeCodes else 'OTHER'
+                                 for code, _detail in startupErrors)
+            assert not startupErrors, 'startup error categories: ' + ','.join(startupCodes)
             counts = backend.calls['ReadAsset'], session.stats['decoded'], hub.conversions
             lifecycleCalls = tuple(backend.calls[name] for name in ('StartJob', 'Start', 'StopJob', 'Subscribe'))
             selected['identity'] = initial.runtimeInstanceId, initial.jobId

@@ -162,7 +162,7 @@ def testSqliteParameterLabelsUseSchemaAndKeepKeys(editor):
     for name, control in (
         ('databasePath', controller.path), ('table', controller.table),
         ('debugDatabasePath', controller.testPath), ('failurePolicy', controller.failure),
-        ('fileReferencePathMode', controller.fileReferenceMode),
+        ('fileReferencePathMode', controller.fileReferenceMode), ('writeMode', controller.writeMode),
     ):
         title = controller.context.paramSchema['properties'][name]['title']
         assert f'参数键：{name}' in control.toolTip()
@@ -182,6 +182,34 @@ def testFileReferenceModeSurvivesEditorLoadAndApply(editor):
     controller.fileReferenceMode.setCurrentIndex(controller.fileReferenceMode.findData('absolute'))
     assert window.applyChanges()
     assert applied[-1].get('fileReferencePathMode', 'absolute') == 'absolute'
+
+
+def testWriteModeAppliesAndReopensWithOlderCachedSchema(editor):
+    from PySide2.QtWidgets import QLabel
+
+    window, controller, applied, _draft, manager = editor
+    params = config(rows=[{'column': 'result', 'storageType': 'INTEGER', 'missing': 'error',
+                           'source': {'kind': 'constant', 'value': 3}}])
+    controller.loadParams(params)
+    assert controller.writeMode.currentData() == 'sync'
+    assert controller.collectParams() == params
+    controller.writeMode.setCurrentIndex(controller.writeMode.findData('background'))
+    assert window.applyChanges() and applied[-1] == {**params, 'writeMode': 'background'}
+    assert window.close()
+
+    manifest = json.loads(Path('src/emo_master/plugins/builtins/sqlite_writer/manifest.json').read_text(encoding='utf-8'))
+    schema = manifest['paramSchema']
+    del schema['properties']['writeMode']
+    reopened = manager.open(projectId='sqlite-test', workflowId='main', nodeId='writer',
+        operatorId=manifest['operatorId'], displayName=manifest['displayName'], schema=schema, values=applied[-1],
+        operatorDefinition={'version': manifest['version'], 'editorSpec': manifest['editor']})
+    assert reopened is not window
+    mode = reopened._controller.writeMode
+    assert mode.currentData() == 'background'
+    assert any(label.text() == '写入方式' for label in reopened.findChildren(QLabel))
+    assert not reopened.isDirty()
+    mode.setCurrentIndex(mode.findData('sync'))
+    assert reopened.applyChanges() and applied[-1] == {**params, 'writeMode': 'sync'}
 
 
 def testRowAddDeleteOrderFalsyConstantsTypesAndApplication(editor):

@@ -64,7 +64,8 @@ def runWorkflowDebug(specJson, commands, events, cancellation, stop, heartbeat, 
         send(dict(kind="log", executionId=context.nodeRunId, event=dict(
             type=event["eventType"], identity=asdict(context), level=event.get("level", "INFO"),
             code=event.get("code", ""), message=str(event.get("message", ""))[:2048],
-            status=payload.get("status", ""), payload=payload if event["eventType"] == "node.log" else {})))
+            status=payload.get("status", ""), payload=payload if event["eventType"] == "node.log"
+            or (event["eventType"] == "sqlite.write.finished" and payload.get("background")) else {})))
 
     controller = WorkflowDebugController(token, variables, publish)
     context = RunContext.root("debug:" + uuid4().hex, spec["workflowId"], spec["workspacePath"], spec["projectId"])
@@ -83,6 +84,7 @@ def runWorkflowDebug(specJson, commands, events, cancellation, stop, heartbeat, 
         except BaseException as error:
             primary = error
             backgroundTasks.close(drain=False, waitForActive=token.is_cancelled())
+            runner.operatorExecutor.sqliteReceipts.poll(backgroundTasks, raiseOnError=False)
             identity = asdict(controller.failureContext or context)
             source = getattr(error, "diagnostics", {}).get("backgroundTask", {})
             if isinstance(source, dict) and "nodeRunId" in source:

@@ -95,7 +95,17 @@ BEGIN IMMEDIATE 单条事务，在同一事务内再次读取真实 schema，按
 列名、映射去重、保留列和建表列按 SQLite 的 ASCII 大小写规则匹配；不使用 Unicode
 casefold 合并不同列。例如 Straße/STRASSE 可分别声明 TEXT/INTEGER，必须逐列验证。
 启用 foreign_keys，保留 CHECK/UNIQUE、已有触发器和外键语义。普通运行没有 DDL、UPSERT、
-异步写入队列、自动重试、断线补发或重复 INSERT。
+自动重试、断线补发或重复 INSERT。
+
+写入方式默认为同步（`writeMode=sync`，也可省略）。需要确认数据库已提交才执行下一节点时使用同步。
+选择后台（`writeMode=background`）时，算子在原节点中确定字段值、执行身份、时间及 writeId，
+再交给当前 Job 的后台队列。队列受理后节点输出 `QUEUED` 回执，影响行数与主键待定。
+即使数据库稍后提交，下游当时收到的仍是排队凭据。运行日志中相同节点执行和 writeId 的
+`sqlite.write.finished` 记录给出实际结果、耗时和错误，节点结果面板同步更新对应的写入状态。
+后台回执的耗时从节点开始执行算起，包含排队时间；节点完成记录的耗时可用来查看主流程等了多久。
+当队列已满时沿用 Job 的容量等待。自然运行结束会等待后台写入；手动停止时可能取消未完成的写入。
+已确认取消且未提交显示 `CANCELLED`，提交情况无法确认显示 `UNKNOWN`。后台失败沿用该节点的
+失败策略，选择“继续”时记录错误并继续，选择“停止”时在执行线程收到失败结果后停止。
 
 receipt 包含 writeId、status、rowsAffected、可取得的自动整数主键、执行身份、elapsedMs、error。
 COMMITTED 只在 INSERT 实际影响恰好一行且 commit 返回成功后报告；

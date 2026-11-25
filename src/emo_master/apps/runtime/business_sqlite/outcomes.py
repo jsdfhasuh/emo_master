@@ -12,25 +12,33 @@ class SqliteOutcomes:
         # Called under EventStore's existing append lock, no second mutable pool.
         if event.eventType not in {"sqlite.write.started", "sqlite.write.finished"}:
             return
-        receipt = json.loads(event.payloadJson).get("receipt", {})
+        payload = json.loads(event.payloadJson)
+        receipt = payload.get("receipt", {})
         key = (event.jobId, receipt.get("writeId"))
         if event.eventType == "sqlite.write.started":
-            self.pending[key] = (event, receipt)
+            self.pending[key] = (event, receipt, payload.get("background") is True)
         else:
             self.pending.pop(key, None)
 
     def beforeTerminal(self, jobId):
-        for key, (origin, receipt) in tuple(self.pending.items()):
+        for key, (origin, receipt, background) in tuple(self.pending.items()):
             if key[0] != jobId:
                 continue
             del self.pending[key]
             unknown = deepcopy(receipt)
             unknown.update(status="UNKNOWN", rowsAffected=None, error={"code": "E_SQLITE_UNKNOWN",
                 "message": "工作进程退出，未收到写入回执；提交结果未知，不自动重复 INSERT"})
-            self.events.append(jobId, "node.failed", unknown["error"]["message"], level="ERROR",
+            message = unknown["error"]["message"]
+            if background:
+                eventType = "sqlite.write.finished"
+                payload = {"background": True, "receipt": unknown}
+            else:
+                eventType = "node.failed"
+                payload = {"status": "FAILED", "code": "E_SQLITE_UNKNOWN", "message": message,
+                           "diagnostics": {"sqliteReceipt": unknown}}
+            self.events.append(jobId, eventType, message, level="ERROR",
                 code="E_SQLITE_UNKNOWN", nodeId=origin.nodeId, projectId=origin.projectId,
                 workflowId=origin.workflowId, workflowRunId=origin.workflowRunId,
                 parentWorkflowRunId=origin.parentWorkflowRunId, nodeRunId=origin.nodeRunId,
                 iterationPath=tuple(json.loads(origin.iterationPathJson)),
-                payload={"status": "FAILED", "code": "E_SQLITE_UNKNOWN", "message": unknown["error"]["message"],
-                         "diagnostics": {"sqliteReceipt": unknown}})
+                payload=payload)

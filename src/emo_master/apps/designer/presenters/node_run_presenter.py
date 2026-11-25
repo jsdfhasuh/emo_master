@@ -121,12 +121,16 @@ def inspectionText(record: dict | None, jobId: str | None, selected: bool = True
 
 
 def sqliteReceiptText(receipt):
-    labels = {'COMMITTED': '事务提交成功', 'SKIPPED': '明确禁用，未写入',
+    labels = {'QUEUED': '已加入后台队列，等待写入结果', 'CANCELLED': '写入已取消',
+              'COMMITTED': '事务提交成功', 'SKIPPED': '明确禁用，未写入',
               'FAILED': '数据库写入失败', 'UNKNOWN': '提交结果不确定，不自动重试'}
     elapsed = '不可取得' if receipt['elapsedMs'] is None else f"{receipt['elapsedMs']:.3f} ms"
     lines = ['receipt · 数据库写入：' + receipt['status'] + ' · ' + labels[receipt['status']],
-             'writeId：' + receipt['writeId'], '影响记录数：' + str(receipt['rowsAffected']),
-             '记录主键：' + str(receipt['primaryKey']), '写入耗时：' + elapsed]
+             'writeId：' + receipt['writeId']]
+    if receipt['status'] == 'QUEUED':
+        return '\n'.join(lines)
+    lines.extend(['影响记录数：' + str(receipt['rowsAffected']),
+                  '记录主键：' + str(receipt['primaryKey']), '写入耗时：' + elapsed])
     if receipt['error']:
         lines.append('错误：' + receipt['error']['code'] + ' · ' + receipt['error']['message'])
     if receipt.get('cleanupError'):

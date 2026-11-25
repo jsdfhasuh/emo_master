@@ -361,10 +361,12 @@ class WorkflowRunner:
                 self._backgroundOutputs.releaseBindings(values)
 
     def pollBackgroundTasks(self):
+        self.operatorExecutor.sqliteReceipts.poll(self.operatorExecutor.backgroundTasks)
         self._backgroundOutputs.poll()
 
     def waitForBackgroundTasks(self):
         self._backgroundOutputs.waitForIdle()
+        self.operatorExecutor.sqliteReceipts.poll(self.operatorExecutor.backgroundTasks)
 
     def prepareDispatchValue(self, value):
         return self._backgroundOutputs.forTransfer(value)

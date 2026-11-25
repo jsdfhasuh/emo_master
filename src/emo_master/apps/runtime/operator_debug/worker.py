@@ -145,6 +145,9 @@ def runOperatorDebug(specJson, commands, events, cancellation, stop, heartbeat):
                 outputs, metrics, diagnostics = executor.execute(node, values, executionContext, token, mapped)
                 if backgroundTasks is not None:
                     backgroundTasks.close()
+                    receipts = executor.sqliteReceipts.poll(backgroundTasks)
+                    if receipts:
+                        diagnostics = dict(diagnostics, sqliteReceipt=receipts[0])
                     backgroundTasks.raiseUnobservedFailure()
                 diagnostics = {**diagnostics, **notes}
                 inline, references = freezeOutputs(outputs, outputAssets,
@@ -162,6 +165,9 @@ def runOperatorDebug(specJson, commands, events, cancellation, stop, heartbeat):
             finally:
                 if backgroundTasks is not None:
                     backgroundTasks.close(drain=False, waitForActive=token.is_cancelled())
+                    receipts = executor.sqliteReceipts.poll(backgroundTasks, raiseOnError=False)
+                    if receipts:
+                        result["diagnostics"]["sqliteReceipt"] = receipts[0]
                     executor.backgroundTasks = None
             result.update(kind="result", executionId=command["executionId"], elapsedMs=(time.monotonic()-started)*1000,
                           finishedAtMs=monotonicMs(), variables=variables.values)

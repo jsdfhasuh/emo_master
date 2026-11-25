@@ -44,6 +44,7 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue, communicationPi
     def publishTerminal(event):
         completed = event["eventType"] == "job.completed"
         if backgroundTasks is not None:
+            cleanupError = None
             try:
                 if completed:
                     backgroundTasks.close()
@@ -52,14 +53,23 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue, communicationPi
                     # entire deadline, other errors allow cooperative cleanup.
                     backgroundTasks.close(drain=False,
                         waitForActive=event.get("code") != "E_BACKGROUND_TASK_DRAIN_TIMEOUT")
-                if runner is not None:
-                    runner.pollBackgroundTasks()
             except Exception as error:
                 if completed:
                     raise
+                cleanupError = error
+            # Closing can time out on active I/O after cancelling queued work.
+            # Publish every settled outcome before the terminal event.
+            if runner is not None:
+                try:
+                    runner.pollBackgroundTasks()
+                except Exception as error:
+                    if completed:
+                        raise
+                    cleanupError = cleanupError or error
+            if cleanupError is not None:
                 event["payload"] = dict(event.get("payload", {}), backgroundTaskCleanup={
-                    "code": getattr(error, "code", "E_EXEC_FAILED"), "message": str(error),
-                    **errorDetails(error),
+                    "code": getattr(cleanupError, "code", "E_EXEC_FAILED"), "message": str(cleanupError),
+                    **errorDetails(cleanupError),
                 })
         if previewWriter is not None:
             # Finish final captures before promotion/retirement; cancellation

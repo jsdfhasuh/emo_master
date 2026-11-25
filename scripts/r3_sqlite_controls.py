@@ -376,6 +376,8 @@ class ControlConnection(sqlite3.Connection):
         self.owner_thread = threading.get_ident()
         self.owner_native_thread = threading.get_native_id()
         self.retired = False
+        self.defer_close_scope = False
+        self.deferred_closes = 0
         self.settings = None
         self.role = getattr(recorder.local, "label", "setup")
         with recorder.lock:
@@ -401,6 +403,9 @@ class ControlConnection(sqlite3.Connection):
     def close(self):
         if threading.get_ident() != self.owner_thread:
             raise RuntimeError("control connection must close on its owner thread")
+        if self.defer_close_scope:
+            self.deferred_closes += 1
+            return
         if not self.retired:
             self.recorder.call("close", super().close)
             self.retired = True
@@ -509,6 +514,7 @@ def run_worker(repo, directory, case):
     holders = []
     cleanup_errors = []
     store = None
+    reused = None
     try:
         sys.path[:0] = [str(repo), str(repo / "src")]
         from emo_master.apps.runtime.context.sqlite_store import SqliteStore, _configureConnection
@@ -524,7 +530,6 @@ def run_worker(repo, directory, case):
         sqlite3.connect = connect
         store = SqliteStore(db)
         source_connect = store._connect
-        reused = None
 
         def checked_connect():
             nonlocal reused
@@ -532,8 +537,11 @@ def run_worker(repo, directory, case):
             if case == CASES[4] and label in ("large_event", "reused_event"):
                 if reused is None:
                     reused = source_connect()
+                elif reused.retired:
+                    raise AssertionError("threshold diagnostic reused connection retired early")
                 else:
                     _configureConnection(reused)
+                reused.defer_close_scope = True
                 connection = reused
             else:
                 connection = source_connect()
@@ -554,9 +562,17 @@ def run_worker(repo, directory, case):
 
         def append(label, payload="{}"):
             nonlocal completed
-            with recorder.scope(label):
-                sequence = recorder.call("append_event", store.appendJobEvent,
-                    "control-job", "node", "node.completed", "INFO", "", "control", payload)
+            scoped_reuse = case == CASES[4] and label in ("large_event", "reused_event")
+            previous_deferrals = reused.deferred_closes if scoped_reuse and reused is not None else 0
+            try:
+                with recorder.scope(label):
+                    sequence = recorder.call("append_event", store.appendJobEvent,
+                        "control-job", "node", "node.completed", "INFO", "", "control", payload)
+            finally:
+                if scoped_reuse and reused is not None:
+                    reused.defer_close_scope = False
+            if scoped_reuse and (reused is None or reused.retired or reused.deferred_closes != previous_deferrals + 1):
+                raise AssertionError("threshold append did not use the single diagnostic-owned connection")
             completed += 1
             if sequence != completed:
                 raise AssertionError("event sequence is not contiguous")
@@ -645,6 +661,8 @@ def run_worker(repo, directory, case):
                 store.releaseIdleConnection()
             except Exception as error:
                 cleanup_errors.append(type(error).__name__)
+        if reused is not None:
+            reused.defer_close_scope = False
         cleanup_errors.extend(recorder.close_owned())
         sqlite3.connect = native_connect
         report["cleanup"] = {"holders": holder_cleanup, "timer_joined": timer_joined,
@@ -694,3 +712,4 @@ def main(argv=None):
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

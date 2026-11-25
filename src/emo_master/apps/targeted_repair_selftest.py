@@ -21,7 +21,8 @@ def _project(root):
     import numpy as np
     from emo_master.core.project.models import ProjectDocument
     image = cv2.imencode('.png', np.full((8, 8, 3), 71, dtype=np.uint8))[1].tobytes()
-    (root / 'input.png').write_bytes(image)
+    imageName = 'input.png'
+    (root / imageName).write_bytes(image)
     ports = dict(image='image', count='number')
     def flow(name, inputs, outputs, nodes, edges):
         return dict(name=name, inputs=inputs, outputs=outputs,
@@ -31,7 +32,7 @@ def _project(root):
         'main': flow('Source', {}, {}, [
             dict(nodeId='capture', operatorId='vision.io.simulated_camera', deviceBindings=dict(camera=dict(deviceId='camera'))),
             dict(nodeId='zero', operatorId='vision.value.number', params=dict(value=0)),
-            dict(nodeId='file', operatorId='vision.io.image_loader', params=dict(imagePath=str(root / 'input.png'))),
+            dict(nodeId='file', operatorId='vision.io.image_loader', params=dict(imagePath=imageName)),
             dict(nodeId='dispatch', kind='dispatch', inputPorts=ports, params=dict(targets=[
                 dict(targetSlotId='consumer', workflowId='consumer', inputs=dict(image='image', count='count'))])),
             dict(nodeId='join', kind='join', params=dict(dispatchNodeId='dispatch'))],
@@ -49,8 +50,8 @@ def _project(root):
         devices=dict(schemaVersion='1.0', definitions=dict(camera=dict(
             name='Simulated', deviceTypeId='device.simulated.camera', driverVersion='1.0.0',
             connection=dict(serial='TARGETED-SELFTEST'), defaults=dict(width=8, height=8, exposureUs=8000, gain=0)))),
-        resources=dict(items=dict(image=dict(path='input.png', size=len(image), sha256=hashlib.sha256(image).hexdigest(), purpose='input_image')),
-                       parameterBindings=[dict(resourceId='image', target=dict(workflowId='main', nodeId='file', parameterPath=['imagePath']))]))
+        resources=dict(items=dict(image=dict(path=imageName, size=len(image),
+            sha256=hashlib.sha256(image).hexdigest(), purpose='input_image'))))
     return ProjectDocument.model_validate(payload).model_dump(mode='json'), image
 
 

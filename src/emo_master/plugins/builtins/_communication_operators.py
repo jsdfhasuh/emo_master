@@ -18,6 +18,7 @@ from emo_master.core.contracts.communication import (
     plcWordsPerValue,
 )
 from emo_master.core.contracts.operator_logging import getOperatorLogger
+from emo_master.plugins.builtins._device_settings import deviceSettings
 from emo_master.plugins.builtins._slmp import (
     MAX_WORDS_PER_REQUEST,
     Slmp3EClient,
@@ -49,18 +50,26 @@ class OperatorMeta:
 
 
 _PLC_COMMON_PROPERTIES: dict[str, object] = {
-    "frameEncoding": {"title": "通信格式", "type": "string", "enum": ["binary", "ascii"],
+    "frameEncoding": {"description": "MC 3E 二进制或 ASCII 帧编码。", "title": "通信格式", "type": "string", "enum": ["binary", "ascii"],
                       "default": "binary", "xOptionLabels": {"binary": "MC 3E · 二进制（Binary）", "ascii": "MC 3E · ASCII"}},
-    "host": {"title": "主机地址", "type": "string", "default": "127.0.0.1"},
+    "host": {
+        "description": "直接执行路径的 SLMP 目标地址。托管执行时使用绑定设备的连接配置。",
+        "title": "主机地址", "type": "string", "default": "127.0.0.1"
+    },
     "port": {
+        "description": "直接执行路径的 SLMP 目标端口。托管执行时使用绑定设备的连接配置。",
         "title": "端口",
         "type": "integer",
         "minimum": 1,
         "maximum": 65535,
         "default": 10001,
     },
-    "device": {"title": "PLC 软元件", "type": "string", "enum": ["D", "M", "d", "m"], "default": "D"},
+    "device": {
+        "description": "读写软元件D/M；标准化为大写。",
+        "title": "PLC 软元件", "type": "string", "enum": ["D", "M", "d", "m"], "default": "D"
+    },
     "startAddress": {
+        "description": "起始软元件地址，受编码和地址跨度校验。",
         "title": "起始地址",
         "type": "integer",
         "minimum": 0,
@@ -68,6 +77,7 @@ _PLC_COMMON_PROPERTIES: dict[str, object] = {
         "default": 0,
     },
     "connectTimeoutMs": {
+        "description": "连接阶段超时，转换为秒传递给 SLMP 客户端。",
         "title": "连接超时（毫秒）",
         "type": "integer",
         "minimum": 1,
@@ -75,6 +85,7 @@ _PLC_COMMON_PROPERTIES: dict[str, object] = {
         "default": 2000,
     },
     "responseTimeoutMs": {
+        "description": "协议响应超时，转换为秒传递。",
         "title": "响应超时（毫秒）",
         "type": "integer",
         "minimum": 1,
@@ -82,6 +93,7 @@ _PLC_COMMON_PROPERTIES: dict[str, object] = {
         "default": 2000,
     },
     "retryCount": {
+        "description": "直接路径通信异常重试上限；托管路径不使用该节点值。",
         "title": "异常重试次数",
         "type": "integer",
         "minimum": 0,
@@ -89,6 +101,7 @@ _PLC_COMMON_PROPERTIES: dict[str, object] = {
         "default": 1,
     },
     "retryDelayMs": {
+        "description": "直接路径重试间隔毫秒；托管路径不使用该节点值。",
         "title": "重试间隔（毫秒）",
         "type": "integer",
         "minimum": 0,
@@ -96,6 +109,7 @@ _PLC_COMMON_PROPERTIES: dict[str, object] = {
         "default": 0,
     },
     "networkNo": {
+        "description": "SLMP请求网络号。",
         "title": "网络编号",
         "type": "integer",
         "minimum": 0,
@@ -103,6 +117,7 @@ _PLC_COMMON_PROPERTIES: dict[str, object] = {
         "default": 0,
     },
     "pcNo": {
+        "description": "SLMP请求PC号。",
         "title": "PC 编号",
         "type": "integer",
         "minimum": 0,
@@ -110,6 +125,7 @@ _PLC_COMMON_PROPERTIES: dict[str, object] = {
         "default": 255,
     },
     "moduleIoNo": {
+        "description": "SLMP请求模块I/O号。",
         "title": "模块 I/O 编号",
         "type": "integer",
         "minimum": 0,
@@ -117,6 +133,7 @@ _PLC_COMMON_PROPERTIES: dict[str, object] = {
         "default": 1023,
     },
     "moduleStationNo": {
+        "description": "SLMP请求模块站号。",
         "title": "模块站号",
         "type": "integer",
         "minimum": 0,
@@ -124,6 +141,7 @@ _PLC_COMMON_PROPERTIES: dict[str, object] = {
         "default": 0,
     },
     "monitoringTimer": {
+        "description": "SLMP监视定时器，单位250毫秒。",
         "title": "监视定时器（250 毫秒单位）",
         "type": "integer",
         "minimum": 0,
@@ -138,12 +156,14 @@ PLC_READ_PARAM_SCHEMA: dict[str, object] = {
     "properties": {
         **_PLC_COMMON_PROPERTIES,
         "dataType": {
+            "description": "PLC编码类型，16位值占1个word、32位整数/float32占2个word并按低字在前组合；32位仅D区。bit仅M区count=1，以读回word最低位转bool。",
             "title": "数据类型",
             "type": "string",
             "enum": ["uint16", "int16", "uint32", "int32", "float32", "bit"],
             "default": "uint16",
         },
         "count": {
+            "description": "读取的逻辑值数量；16位值时wordCount相同，32位值时wordCount为2倍；bit只允许count=1。",
             "title": "数量",
             "type": "integer",
             "minimum": 1,
@@ -151,6 +171,7 @@ PLC_READ_PARAM_SCHEMA: dict[str, object] = {
             "default": 1,
         },
         "outputIndex": {
+            "description": "从已解码值数组选择单值输出的零基索引。",
             "title": "输出值索引",
             "type": "integer",
             "minimum": 0,
@@ -166,6 +187,7 @@ PLC_WRITE_PARAM_SCHEMA: dict[str, object] = {
     "properties": {
         **_PLC_COMMON_PROPERTIES,
         "retryCount": {
+            "description": "直接路径通信异常重试上限；托管路径不使用该节点值。",
             "title": "异常重试次数",
             "type": "integer",
             "minimum": 0,
@@ -173,15 +195,21 @@ PLC_WRITE_PARAM_SCHEMA: dict[str, object] = {
             "default": 0,
         },
         "dataType": {
+            "description": "PLC编码类型，16位值占1个word、32位整数/float32占2个word并按低字在前组合；32位仅D区。本写算子不支持bit类型。",
             "title": "数据类型",
             "type": "string",
             "enum": ["uint16", "int16", "uint32", "int32", "float32"],
             "default": "uint16",
         },
         "values": {
+            "description": "固定写入值数组，与 data/value/values 输入互斥。",
             "title": "写入值",
             "type": "array",
-            "items": {"type": "number"},
+            "items": {
+                "title": "单个写入值",
+                "description": "按数组顺序编码到 PLC。取值范围取决于选择的数据类型。",
+                "type": "number",
+            },
             "default": [],
         },
     },
@@ -636,13 +664,14 @@ def _executeManagedPlc(operator, action, inputs, params, context):
             device = params["device"].upper()
             address, dataType = params["startAddress"], params["dataType"]
             count = params["count"] * plcWordsPerValue(dataType)
+            outputIndex = params["outputIndex"]
             outcome = "UNKNOWN"
             reply = context["executeDevice"]("plc", "read", dict(device=device, startAddress=address, count=count))
             outcome = reply["outcome"]
             values = decodePlcWords(reply["words"], dataType)
             outputs = {"values": PlcValueCollection(device=device, startAddress=address, dataType=dataType,
                         values=values, wordCount=count).toPayload(),
-                       "booleanValue" if dataType == "bit" else "numberValue": values[params["outputIndex"]]}
+                       "booleanValue" if dataType == "bit" else "numberValue": values[outputIndex]}
         else:
             device, address, dataType, values = _plcWriteSource(inputs, params)
             words = encodePlcValues(values, dataType)
@@ -652,11 +681,19 @@ def _executeManagedPlc(operator, action, inputs, params, context):
             outcome = reply["outcome"]
             outputs = {"receipt": PlcWriteReceipt(device=device, startAddress=address, dataType=dataType,
                         valueCount=len(values), wordCount=count, attempts=1).toPayload()}
+        operation = {
+            "action": action, "outcome": reply["outcome"], "connectionGeneration": reply["connectionGeneration"],
+            "device": device, "startAddress": address, "dataType": dataType,
+        }
+        schema = context.get("deviceParameterSchemas", {}).get("plc")
+        if schema:
+            operation.update(slot="plc", **schema)
+        if action == "read":
+            operation["outputIndex"] = outputIndex
         return dict(status="ok", outputs=outputs,
                     metrics=dict(attempts=1, wordCount=count, valueCount=len(values),
                                  latencyMs=round((perf_counter() - started) * 1000, 3)),
-                    diagnostics={"deviceOperation": {"action": action, "outcome": reply["outcome"],
-                                 "connectionGeneration": reply["connectionGeneration"]}})
+                    diagnostics={"deviceOperation": operation})
     except Exception as error:
         return dict(status="error", error=dict(code=getattr(error, "code", "E_PARAM_INVALID"), message=str(error)),
                     diagnostics={"deviceOperation": {"action": action, "outcome": getattr(error, "outcome", outcome)}})
@@ -664,7 +701,13 @@ def _executeManagedPlc(operator, action, inputs, params, context):
 
 TCP_CLIENT_INPUT_PORTS: dict[str, object] = {'message': {'type': 'tcpMessage', 'required': False, 'nullable': False, 'schemaVersion': '1.x'}, 'text': {'type': 'string', 'required': False, 'nullable': False}}
 TCP_CLIENT_OUTPUT_PORTS: dict[str, object] = {'response': {'type': 'tcpMessage', 'required': False, 'nullable': False, 'schemaVersion': '1.x'}, 'sentBytes': {'type': 'integer', 'required': True, 'nullable': False}, 'responseText': {'type': 'string', 'required': False, 'nullable': False}}
-TCP_CLIENT_NODE_SCHEMA = {'type': 'object', 'properties': {'operation': {'title': '操作类型', 'type': 'string', 'enum': ['send', 'exchange'], 'default': 'send'}, 'text': {'title': '发送文本', 'type': 'string', 'default': ''}}, 'additionalProperties': False, 'required': [], 'xDeviceActionFields': ['operation', 'text']}
+TCP_CLIENT_NODE_SCHEMA = {'type': 'object', 'properties': {'operation': {
+    "description": "send只发送，exchange发送后接收一条完整响应。",
+    'title': '操作类型', 'type': 'string', 'enum': ['send', 'exchange'], 'default': 'send'
+}, 'text': {
+    "description": "固定发送文本；非空时算一个发送来源，不能同时接message/text输入。",
+    'title': '发送文本', 'type': 'string', 'default': ''
+}}, 'additionalProperties': False, 'required': [], 'xDeviceActionFields': ['operation', 'text']}
 TCP_RECEIVE_OUTPUT_PORTS: dict[str, object] = {'message': {'type': 'tcpMessage', 'required': True, 'nullable': False, 'schemaVersion': '1.x'}, 'peerHost': {'type': 'string', 'required': True, 'nullable': False}, 'peerPort': {'type': 'integer', 'required': True, 'nullable': False}, 'text': {'type': 'string', 'required': False, 'nullable': False}}
 TCP_RECEIVE_NODE_SCHEMA = {'type': 'object', 'properties': {}, 'additionalProperties': False, 'required': [], 'xDeviceActionFields': []}
 
@@ -711,7 +754,8 @@ class TcpClientOperator:
             data = _tcpClientSource(inputs, dict(params, textEncoding=work['textEncoding']))
             if work['appendNewline']:
                 data += b'\n'
-            result = execute('tcp', params.get('operation', 'send'),
+            operation = params.get('operation', 'send')
+            result = execute('tcp', operation,
                              {'dataBase64': base64.b64encode(data).decode('ascii')})
             if 'tcpTransaction' in result:
                 diagnostics['tcpTransaction'] = dict(result['tcpTransaction'])
@@ -722,6 +766,14 @@ class TcpClientOperator:
                     peerHost=result['peerHost'], peerPort=result['peerPort']).toPayload()
                 if work['responseTextEncoding'] != 'none':
                     outputs['responseText'] = _decodeTcpText(raw, work['responseTextEncoding'])
+            fields = ["appendNewline", "connectTimeoutMs", "responseTimeoutMs"]
+            if "message" not in inputs:
+                fields.append("textEncoding")
+            if operation == "exchange":
+                fields.extend(("responseFraming", "responseEncoding", "responseTextEncoding"))
+                if work.get("responseFraming") == "fixedLength":
+                    fields.append("expectedBytes")
+            diagnostics.update(deviceSettings(runtimeContext, "tcp", fields))
             return dict(status='ok', outputs=outputs, diagnostics=diagnostics)
         except Exception as error:
             return _tcpFailure(error, runtimeContext, diagnostics)
@@ -750,6 +802,10 @@ class TcpReceiveOnceOperator:
                 peerHost=result['peerHost'], peerPort=result['peerPort'])
             if work['messageTextEncoding'] != 'none':
                 outputs['text'] = _decodeTcpText(raw, work['messageTextEncoding'])
+            fields = ["acceptTimeoutMs", "readTimeoutMs", "framing", "messageEncoding", "messageTextEncoding"]
+            if work.get("framing") == "fixedLength":
+                fields.append("expectedBytes")
+            diagnostics.update(deviceSettings(runtimeContext, "tcp", fields))
             return dict(status='ok', outputs=outputs, diagnostics=diagnostics)
         except Exception as error:
             return _tcpFailure(error, runtimeContext, diagnostics)

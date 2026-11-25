@@ -33,10 +33,29 @@
           "vertical": "垂直翻转",
           "both": "水平和垂直翻转"
         },
-        "description": "水平翻转交换左右，垂直翻转交换上下。"
+        "description": "horizontal交换左右、vertical交换上下、both同时翻转，mask随图像一起翻。"
       }
     }
   },
   "minCoreVersion": "0.3.0",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "image": {"title": "图像", "description": "待变换uint8灰度/BGR图像。"},
+      "frame": {"title": "坐标框", "description": "有效内容矩形与回源坐标，缺失为全图；先据此生成有效mask。"},
+      "validMask": {"title": "有效掩膜", "description": "可选同尺寸uint8非零有效区，与frame矩形取交集；全部无效时报错。"}
+    },
+    "outputs": {
+      "image": {"title": "图像", "description": "几何变换后的图像，画布大小由当前变换参数确定。"},
+      "frame": {"title": "坐标框", "description": "变换后有效mask的轴对齐外接矩形，带output→input→source复合坐标；矩形本身不代表所有内点都有效。"},
+      "validMask": {"title": "有效掩膜", "description": "使用最近邻变换的0/255有效区；精确有效像素应使用此mask。"}
+    },
+    "metrics": {
+      "latencyMs": {"title": "算子内部耗时", "description": "内部几何变换耗时；从参数校验后计时，包括_transformInputs。", "unit": "ms", "group": "duration"},
+      "mode": {"title": "模式", "description": "本次mode名称；实际翻转mode。", "group": "parameter"}
+    },
+    "diagnostics": {
+      "text": {"title": "摘要", "description": "Geometric transform completed 完成摘要。"}
+    }
+  }
 }

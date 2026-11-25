@@ -66,6 +66,28 @@ def testAssetAndCatalogRoundtrip(remote):
         check(RuntimeClient(service))
 
 
+@pytest.mark.parametrize("remote", [False, True])
+def testResultSchemaCatalogRoundtrip(remote):
+    service = iconService()
+    descriptor = service.pluginScanResult.activeOperators["test.icon"]
+    schema = {"metrics": {"elapsed": {"title": "运行耗时", "description": "算子返回耗时", "unit": "ms"}}}
+    service.pluginScanResult.activeOperators["test.icon"] = replace(
+        descriptor, manifest=replace(descriptor.manifest, resultSchema=schema),
+    )
+
+    def check(client):
+        definition = client.listOperators()[0]
+        assert (definition.operatorId, definition.version) == ("test.icon", "1.0.0")
+        assert definition.resultSchema == schema
+        assert definition.paramSchema == {}
+
+    if remote:
+        with network(service) as client:
+            check(client)
+    else:
+        check(RuntimeClient(service))
+
+
 @pytest.mark.parametrize("fields,code", [
     ({"operator_id": ""}, "E_ICON_REQUEST_INVALID"),
     ({"expected_sha256": "bad"}, "E_ICON_REQUEST_INVALID"),
@@ -88,7 +110,9 @@ def testNoResourceAndOldMetadataCompatibility():
     reply = client.getOperatorIconAsset("test.icon", "1.0.0", "0" * 64)
     assert reply.code == "E_ICON_ASSET_UNAVAILABLE"
     old = SimpleNamespace(ListOperators=lambda request, context: pb.ListOperatorsReply(operators=[pb.OperatorInfo(operator_id="old")]))
-    assert RuntimeClient(old).listOperators()[0].icon["status"] == "none"
+    definition = RuntimeClient(old).listOperators()[0]
+    assert definition.icon["status"] == "none"
+    assert definition.resultSchema == {}
     with pytest.raises(RuntimeClientError, match="no icon"):
         RuntimeClient(old).getOperatorIconAsset("old", "1", "0" * 64)
 

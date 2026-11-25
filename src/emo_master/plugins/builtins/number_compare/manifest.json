@@ -18,14 +18,45 @@
     "type": "object",
     "properties": {
       "operator": {
+        "description": "比较关系：等于、不等于、小于、小于等于、大于、大于等于；精确float比较，不带容差。",
         "title": "比较运算符",
         "type": "string",
-        "enum": ["eq", "ne", "lt", "lte", "gt", "gte"],
+        "enum": [
+          "eq",
+          "ne",
+          "lt",
+          "lte",
+          "gt",
+          "gte"
+        ],
         "default": "gte"
       },
-      "rightValue": {"title": "右侧比较值", "type": "number", "default": 0.0}
+      "rightValue": {
+        "description": "右侧输入未提供时的备用阈值。",
+        "title": "右侧比较值",
+        "type": "number",
+        "default": 0.0
+      }
     }
   },
   "minCoreVersion": "0.2.0",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "left": {"title": "左操作数", "description": "必需的有限数值，执行时转换为float。"},
+      "right": {"title": "右操作数", "description": "可选有限数值，执行时转换为float并覆盖rightValue。"}
+    },
+    "outputs": {
+      "result": {"title": "结果", "description": "按eq/ne/lt/lte/gt/gte比较两侧实际float得到的布尔；false是合法业务结果，不能当作节点失败。", "group": "result"}
+    },
+    "metrics": {
+      "latencyMs": {"title": "算子内部耗时", "description": "算子内部校验和比较耗时。", "unit": "ms", "group": "duration"},
+      "left": {"title": "左操作数", "description": "实际转换float后的左操作数，属于计算输入而非性能指标。", "group": "parameter"},
+      "right": {"title": "右操作数", "description": "实际转换float后的右操作数，已反映input覆盖。", "group": "parameter"}
+    },
+    "diagnostics": {
+      "text": {"title": "摘要", "description": "包含实际两侧数值、比较符和布尔结果的文字摘要。"}
+    },
+    "captureParams": [["operator"], ["rightValue"]]
+  }
 }

@@ -42,6 +42,8 @@ def testQueuedNodeSnapshotsConfirmationBeforeActualCommit(tmp_path):
     try:
         result = SqliteWriterOperator().executeNode({}, params, context)
         queued = result["outputs"]["receipt"]
+        assert result["diagnostics"]["mappingSources"] == {"context": 1}
+        assert result["diagnostics"]["sqliteReceipt"] == queued
         assert entered.wait(2) and queued["status"] == "QUEUED" and queued["rowsAffected"] is None
         assert receiptSummary(queued, queued["execution"])["status"] == "QUEUED"
         (taskId, registered, policy), = admissions

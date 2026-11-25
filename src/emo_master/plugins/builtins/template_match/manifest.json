@@ -19,16 +19,126 @@
   "paramSchema": {
     "type": "object",
     "properties": {
-      "method": {"title": "匹配方法", "type": "string", "enum": ["sqdiff", "sqdiffNormed", "ccorr", "ccorrNormed", "ccoeff", "ccoeffNormed"], "default": "ccoeffNormed"},
-      "colorMode": {"title": "颜色模式", "type": "string", "enum": ["gray", "native"], "default": "gray"},
-      "thresholdMode": {"title": "阈值模式", "type": "string", "enum": ["quality", "raw"], "default": "quality"},
-      "threshold": {"title": "阈值", "type": "number", "default": 0.8},
-      "peakKernelSize": {"title": "峰值搜索核大小", "type": "integer", "minimum": 1, "maximum": 31, "default": 3},
-      "nmsIouThreshold": {"title": "非极大值抑制 IoU 阈值", "type": "number", "minimum": 0.0, "maximum": 1.0, "default": 0.3},
-      "maxMatches": {"title": "最大匹配数量", "type": "integer", "minimum": 1, "maximum": 10000, "default": 100},
-      "label": {"title": "匹配标签", "type": "string", "default": "template"}
+      "method": {
+        "description": "sqdiff/sqdiffNormed差异；ccorr/ccorrNormed相关；ccoeff/ccoeffNormed相关系数。",
+        "title": "匹配方法",
+        "type": "string",
+        "enum": [
+          "sqdiff",
+          "sqdiffNormed",
+          "ccorr",
+          "ccorrNormed",
+          "ccoeff",
+          "ccoeffNormed"
+        ],
+        "default": "ccoeffNormed"
+      },
+      "colorMode": {
+        "description": "gray统一转灰度；native保持像素通道且要求两图一致。",
+        "title": "颜色模式",
+        "type": "string",
+        "enum": [
+          "gray",
+          "native"
+        ],
+        "default": "gray"
+      },
+      "thresholdMode": {
+        "description": "quality对统一高分优选值筛选；raw直接比较原分，sqdiff类越小越好。",
+        "title": "阈值模式",
+        "type": "string",
+        "enum": [
+          "quality",
+          "raw"
+        ],
+        "default": "quality"
+      },
+      "threshold": {
+        "description": "quality要求0..1且>=；raw要求有限，sqdiff类<=，其余>=。",
+        "title": "阈值",
+        "type": "number",
+        "default": 0.8
+      },
+      "peakKernelSize": {
+        "description": "局部峰值搜索窗口，奇数1..31；在quality上膨胀求局部最大。",
+        "title": "峰值搜索核大小",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 31,
+        "default": 3
+      },
+      "nmsIouThreshold": {
+        "description": "候选与已选框IoU不得大于此值，0..1。",
+        "title": "非极大值抑制 IoU 阈值",
+        "type": "number",
+        "minimum": 0.0,
+        "maximum": 1.0,
+        "default": 0.3
+      },
+      "maxMatches": {
+        "description": "NMS后最多保留数，1..10000。",
+        "title": "最大匹配数量",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 10000,
+        "default": 100
+      },
+      "label": {
+        "description": "写入整个模板匹配集合的标签。",
+        "title": "匹配标签",
+        "type": "string",
+        "default": "template"
+      }
     }
   },
   "minCoreVersion": "0.3.0",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "image": {"title": "图像", "description": "搜索图，uint8灰度或BGR。"},
+      "template": {"title": "模板图像", "description": "模板图，宽高不得大于搜索图；native模式通道结构必须相同。"},
+      "frame": {"title": "坐标框", "description": "搜索图有效内容；只保留整个模板窗口都在有效区的位置。"},
+      "roi": {"title": "感兴趣区域", "description": "可选geometry2d，同frame空间并与frame选区相交；整模板必须落在交区。"}
+    },
+    "outputs": {
+      "matches": {
+        "title": "模板匹配",
+        "description": "按quality降序、y/x排序并经局部峰值/NMS/maxMatches筛选的匹配集合。",
+        "fields": {
+          "method": {"title": "方法", "description": "实际OpenCV匹配方法。"},
+          "label": {"title": "标签", "description": "配置的集合标签。"},
+          "templateWidth": {"title": "模板宽度", "description": "模板图宽。", "unit": "像素"},
+          "templateHeight": {"title": "模板高度", "description": "模板图高。", "unit": "像素"},
+          "items": {
+            "title": "集合条目",
+            "description": "集合条目的有序列表。",
+            "items": {
+              "title": "集合条目",
+              "description": "记录标识、包围框、原始得分、匹配质量。",
+              "fields": {
+                "id": {"title": "标识", "description": "最终排序后的match-N。"},
+                "bbox": {"title": "包围框", "description": "模板窗口左上角及模板宽高，带搜索frame空间。", "unit": "当前坐标单位"},
+                "rawScore": {"title": "原始得分", "description": "cv2.matchTemplate原响应值；sqdiff越小越好，其余越大越好。", "unit": "方法相关原值"},
+                "quality": {
+                  "title": "匹配质量",
+                  "description": "sqdiffNormed=1-clip(raw)；ccorrNormed=clip(raw)；ccoeffNormed=clip((raw+1)/2)；非normed基于有效位置min/max归一，sqdiff再反转；恒定响应为0。",
+                  "unit": "0..1，非概率"
+                }
+              }
+            }
+          }
+        }
+      },
+      "frame": {"title": "坐标框", "description": "输入frame透传。"}
+    },
+    "metrics": {
+      "latencyMs": {"title": "算子内部耗时", "description": "入口至模板匹配、过滤与输出payload构建的内部耗时。", "unit": "ms", "group": "duration"},
+      "matchCount": {"title": "模板匹配数量", "description": "最终保留匹配项数量。", "unit": "个", "group": "business"},
+      "method": {"title": "方法", "description": "实际匹配方法名称。", "group": "parameter"}
+    },
+    "diagnostics": {
+      "text": {"title": "摘要", "description": "最终匹配数量摘要。"}
+    },
+    "captureParams": [["thresholdMode"], ["threshold"], ["maxMatches"]]
+  }
 }

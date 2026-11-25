@@ -62,7 +62,8 @@
     "type": "object",
     "properties": {
       "modelPath": {
-        "title": "\u5206\u7c7b\u6a21\u578b\u8def\u5f84",
+        "description": "Runtime 本地分类 .onnx 文件路径；相对路径依 workspacePath；模型必须声明 task=classify、合法连续且唯一类别名、固定 H/W。",
+        "title": "分类模型路径",
         "type": "string",
         "default": "",
         "xWidget": "file",
@@ -70,24 +71,24 @@
         "xFilter": "YOLO Classification (*.onnx)"
       },
       "confidence": {
-        "title": "\u5206\u7c7b\u7f6e\u4fe1\u5ea6\u9608\u503c",
+        "title": "分类置信度阈值",
         "type": "number",
         "minimum": 0,
         "maximum": 1,
         "default": 0.8,
-        "description": "\u4f4e\u4e8e\u9608\u503c\u4ecd\u4fdd\u7559 Top-1\uff0caccepted=false\uff0cacceptedLabel \u4e3a\u7a7a\u5b57\u7b26\u4e32\u3002"
+        "description": "业务接受阈值 [0,1]；只决定 accepted/acceptedLabel，不删除 Top-1/完整概率。"
       },
       "preprocess": {
-        "title": "\u9884\u5904\u7406\u534f\u8bae",
+        "title": "预处理协议",
         "type": "string",
         "enum": [
           "resize_full_frame_v1"
         ],
         "default": "resize_full_frame_v1",
         "xOptionLabels": {
-          "resize_full_frame_v1": "\u8bad\u7ec3\u5e73\u53f0\u6574\u56fe\u7f29\u653e"
+          "resize_full_frame_v1": "训练平台整图缩放"
         },
-        "description": "PIL \u53cc\u7ebf\u6027\u6574\u56fe\u7f29\u653e\uff0cRGB / 255\u3002\u4e0d\u652f\u6301\u4e2d\u5fc3\u88c1\u526a\u8bad\u7ec3\u7684\u6a21\u578b\u3002"
+        "description": "唯一支持 resize_full_frame_v1：PIL 双线性整图拉伸、RGB/255；无中心裁剪，不用检测 letterbox。"
       }
     },
     "required": [
@@ -100,5 +101,53 @@
   "iconKey": "yolo",
   "summary": "YOLO ONNX \u6574\u56fe\u5206\u7c7b\uff1a\u4fdd\u7559 Top-1 \u548c\u7f6e\u4fe1\u5ea6\uff0c\u4f4e\u7f6e\u4fe1\u5ea6 acceptedLabel \u4e3a\u7a7a\uff0c\u4f9b\u4e0b\u6e38\u8fdb\u5165\u5f85\u786e\u8ba4\u5206\u652f\u3002",
   "minCoreVersion": "0.6.1",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "image": {"title": "图像", "description": "非空 uint8 灰度/BGR；整图转 RGB、PIL 双线性拉伸至模型固定 H/W，除以255；不根据 frame 内容框裁切。"},
+      "frame": {"title": "坐标框", "description": "图像内容/回源坐标，解析后直通；不是推理 ROI。"}
+    },
+    "outputs": {
+      "classId": {"title": "类别编号", "description": "Top-1 概率的 0 起始类别下标；相同最大值 np.argmax 取首个。"},
+      "label": {"title": "标签", "description": "模型 names 中 Top-1 类别名，低于阈值仍保留。"},
+      "confidence": {"title": "置信度", "description": "Top-1 模型输出概率 [0,1]；后端验证归一化，不再次 softmax。"},
+      "accepted": {"title": "已接受", "description": "Top-1 confidence>=配置阈值。"},
+      "acceptedLabel": {"title": "通过阈值的标签", "description": "accepted 时为 label，低于阈值为空字符串。"},
+      "result": {
+        "title": "结果",
+        "description": "Top-1、阈值、是否接受以及所有类别概率的 JSON 汇总。",
+        "fields": {
+          "classId": {"title": "类别编号", "description": "Top-1 类别索引。", "unit": "0起始索引"},
+          "label": {"title": "标签", "description": "Top-1 类别名称。"},
+          "confidence": {"title": "置信度", "description": "Top-1 模型概率。", "unit": "0–1"},
+          "threshold": {"title": "阈值", "description": "本次从配置读取的接受阈值。", "unit": "0–1"},
+          "accepted": {"title": "已接受", "description": "最高分类置信度达到或超过接受阈值时为 true。"},
+          "probabilities": {"title": "各类别概率", "description": "动态 key 为模型类别名称，值为该类别原生概率。", "unit": "0–1"}
+        }
+      },
+      "image": {"title": "图像", "description": "原输入图像直接输出，无绘制或复制。"},
+      "frame": {"title": "坐标框", "description": "原图解析后的 frame。"}
+    },
+    "metrics": {
+      "latencyMs": {
+        "title": "算子内部耗时",
+        "description": "函数入口至结果整理的本地总耗时，包含首次会话加载、PIL 预处理、模型和后处理，非纯推理耗时。",
+        "unit": "ms",
+        "group": "duration"
+      }
+    },
+    "diagnostics": {
+      "text": {"title": "摘要", "description": "Top-1 label、4 位小数概率和 accepted 摘要。"},
+      "backend": {"title": "推理后端", "description": "固定 onnxruntime。"},
+      "provider": {"title": "执行提供程序", "description": "请求的 CPUExecutionProvider。"},
+      "preprocess": {"title": "预处理方式", "description": "固定实际预处理协议 resize_full_frame_v1。", "group": "parameter"},
+      "modelPath": {
+        "title": "模型路径",
+        "description": "经过 expanduser/workspacePath 的路径字符串；缓存键会 resolve，但该诊断直接 str(path) 未强制替换为 resolve 结果。",
+        "group": "parameter"
+      },
+      "inputShape": {"title": "模型输入形状", "description": "从已加载模型提取的 [1,3,H,W]，不是原图 shape。", "group": "parameter"}
+    },
+    "captureParams": [["confidence"]]
+  }
 }

@@ -71,6 +71,7 @@ class OperatorDefinition:
     icon: dict[str, object] = field(default_factory=dict)
     iconIssues: tuple[dict[str, object], ...] = ()
     deviceRequirements: dict[str, object] = field(default_factory=dict)
+    resultSchema: dict[str, object] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -445,6 +446,9 @@ class RuntimeClient:
                     ),
                     paramSchema=self._parseSchema(
                         getattr(operatorInfo, "param_schema_json", "{}")
+                    ),
+                    resultSchema=self._parseSchema(
+                        getattr(operatorInfo, "result_schema_json", "")
                     ),
                     editorSpec=self._parseSchema(
                         getattr(operatorInfo, "editor_spec_json", "{}")

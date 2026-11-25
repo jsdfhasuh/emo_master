@@ -47,6 +47,7 @@
           "stringValue"
         ],
         "default": "",
+        "description": "选择唯一的处理对象。留空时由本次唯一提供的业务输入确定。",
         "xOptionLabels": {
           "": "请选择处理对象",
           "detections": "检测结果",
@@ -65,6 +66,7 @@
         }
       },
       "format": {
+        "description": "json完整结构、jsonl逐条记录、csv表格；影响扩展名与recordCount语义。",
         "title": "输出格式",
         "type": "string",
         "enum": [
@@ -75,11 +77,13 @@
         "default": "json"
       },
       "relativePath": {
+        "description": "Job workspace内相对文件路径，禁止绝对和..；无扩展名按格式补齐。",
         "title": "相对输出路径",
         "type": "string",
         "default": "results/result"
       },
       "overwrite": {
+        "description": "false目标存在报E_OUTPUT_EXISTS；true允许原子替换。",
         "title": "覆盖已有文件",
         "type": "boolean",
         "default": false
@@ -88,5 +92,51 @@
     "xModeOperator": "vision.io.result_writer"
   },
   "minCoreVersion": "0.3.0",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "blobs": {"title": "连通域", "description": "连通域集合，按blob条目序列化；所有输入恰好选择一个。"},
+      "detections": {"title": "检测结果", "description": "检测集合，按检测条目序列化；所有输入恰好选择一个。"},
+      "contours": {"title": "轮廓", "description": "轮廓集合，保留层级与polygon；所有输入恰好选择一个。"},
+      "measurements": {"title": "形状测量", "description": "形状测量集合；所有输入恰好选择一个。"},
+      "histogram": {"title": "直方图", "description": "直方图对象；CSV按每通道每bin一行；所有输入恰好选择一个。"},
+      "lines": {"title": "线段", "description": "直线集合；所有输入恰好选择一个。"},
+      "circles": {"title": "圆", "description": "圆集合；所有输入恰好选择一个。"},
+      "matches": {"title": "模板匹配", "description": "模板匹配集合；所有输入恰好选择一个。"},
+      "statistics": {"title": "统计结果", "description": "颜色统计对象；所有输入恰好选择一个。"},
+      "geometry": {"title": "几何对象", "description": "单个二维几何对象；所有输入恰好选择一个。"},
+      "numberValue": {"title": "数值", "description": "有限数值标量；所有输入恰好选择一个。"},
+      "booleanValue": {"title": "布尔值", "description": "布尔标量；所有输入恰好选择一个。"},
+      "stringValue": {"title": "文本值", "description": "文本标量；所有输入恰好选择一个。"}
+    },
+    "outputs": {
+      "result": {
+        "title": "结果",
+        "description": "已原子写入回执{saved:true,path,format,recordCount}，path在Job workspace内。",
+        "fields": {
+          "saved": {"title": "保存完成", "description": "成功写入且原子替换后固定true。"},
+          "path": {"title": "路径", "description": "实际输出文件绝对路径，基于Job工作区与relativePath并补足格式后缀。"},
+          "format": {"title": "格式", "description": "实际序列化格式json/jsonl/csv。"},
+          "recordCount": {
+            "title": "写入记录数",
+            "description": "本次格式对应记录数；CSV为数据行数不含表头，JSON集合为items数，JSON标量/Histogram为1。",
+            "unit": "record"
+          }
+        }
+      }
+    },
+    "metrics": {
+      "latencyMs": {"title": "算子内部耗时", "description": "从算子开始到序列化/fsync/原子写完成的耗时。", "unit": "ms", "group": "duration"},
+      "recordCount": {
+        "title": "写入记录数",
+        "description": "JSON集合为items数否则1；JSONL为实际行数；CSV为数据行数(不含表头)，直方图为通道×bin数。",
+        "unit": "条",
+        "group": "business"
+      },
+      "format": {"title": "格式", "description": "实际输出json/jsonl/csv格式；分类元数据，不是性能数值。", "group": "parameter"}
+    },
+    "diagnostics": {
+      "text": {"title": "摘要", "description": "实际写入recordCount与文件名的英文摘要。"}
+    }
+  }
 }

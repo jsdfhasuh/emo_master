@@ -81,10 +81,10 @@
       "sigmaX": {
         "title": "水平方向标准差",
         "type": "number",
-        "minimum": 0,
-        "default": 0,
+        "minimum": 0.0,
+        "default": 0.0,
         "xUnit": "像素",
-        "xExample": 0,
+        "xExample": 0.0,
         "description": "高斯水平方向标准差，0 表示由卷积核大小自动计算。",
         "xVisibleWhen": {
           "mode": [
@@ -100,10 +100,10 @@
       "sigmaY": {
         "title": "垂直方向标准差",
         "type": "number",
-        "minimum": 0,
-        "default": 0,
+        "minimum": 0.0,
+        "default": 0.0,
         "xUnit": "像素",
-        "xExample": 0,
+        "xExample": 0.0,
         "description": "高斯垂直方向标准差，0 表示与水平方向相同。",
         "xVisibleWhen": {
           "mode": [
@@ -138,10 +138,10 @@
       "sigmaColor": {
         "title": "颜色空间标准差",
         "type": "number",
-        "exclusiveMinimum": 0,
-        "default": 75,
+        "exclusiveMinimum": 0.0,
+        "default": 75.0,
         "xUnit": "颜色值",
-        "xExample": 75,
+        "xExample": 75.0,
         "description": "双边滤波的颜色差异标准差，必须为正数。",
         "xVisibleWhen": {
           "mode": [
@@ -157,10 +157,10 @@
       "sigmaSpace": {
         "title": "坐标空间标准差",
         "type": "number",
-        "exclusiveMinimum": 0,
-        "default": 75,
+        "exclusiveMinimum": 0.0,
+        "default": 75.0,
         "xUnit": "像素",
-        "xExample": 75,
+        "xExample": 75.0,
         "description": "双边滤波的空间距离标准差，必须为正数。",
         "xVisibleWhen": {
           "mode": [
@@ -177,5 +177,23 @@
     "xModeOperator": "vision.preprocess.blur"
   },
   "minCoreVersion": "0.2.0",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "image": {"title": "图像", "description": "非空uint8灰度/BGR图像。"},
+      "frame": {"title": "坐标框", "description": "有效矩形/坐标，缺失默认全图。"}
+    },
+    "outputs": {
+      "image": {"title": "图像", "description": "按所选模式平滑后的同尺寸图像。"},
+      "frame": {"title": "坐标框", "description": "输入frame规范化后透传。"}
+    },
+    "metrics": {
+      "latencyMs": {"title": "算子内部耗时", "description": "包含输入、参数校验和滤波的内部耗时。", "unit": "ms", "group": "duration"},
+      "mode": {"title": "模式", "description": "实际执行滤波模式。", "group": "parameter"}
+    },
+    "diagnostics": {
+      "text": {"title": "摘要", "description": "实际模式的完成摘要。"}
+    },
+    "captureParams": [["kernelSize"], ["sigmaX"], ["sigmaY"], ["diameter"], ["sigmaColor"], ["sigmaSpace"]]
+  }
 }

@@ -1,0 +1,103 @@
+{
+  "reviewedHead": "3d6448d3da18790c5f97bfdecb5fc845ebd67a1c",
+  "mainBaseline": "ed98a0212820efd0e6436029b69e82dc6e313fc7",
+  "reviewer": "ChatGPT Web",
+  "status": "Three confirmed issues pending repair; P3.5 not completed",
+  "R1": {
+    "debugRecordGeneratedBy": "actual OperatorDebugManager + spawned NumberCompare operator, using build_demo project",
+    "debugStatus": "SUCCEEDED",
+    "debugOutputs": {
+      "result": true
+    },
+    "sourceIdentity": {
+      "projectId": "c0c1bb5f-7256-42b7-b411-560d47299e28",
+      "workflowId": "main",
+      "nodeId": "compare",
+      "draftDigest": "41c43bddfc5981820c404c1fbcad15d8929ec4ac55feff77160cb5b6fda92d73",
+      "operatorId": "vision.compare.number",
+      "operatorVersion": "1.0.0",
+      "generation": 1
+    },
+    "hasTopLevelOperatorId": false,
+    "hasTopLevelOperatorVersion": false,
+    "lookupCalls": [],
+    "hasEffectiveParametersSection": false,
+    "hasOverview": false,
+    "rawJsonAndCopyPreserved": true
+  },
+  "R2": {
+    "head": "3d6448d3da18790c5f97bfdecb5fc845ebd67a1c",
+    "projectSchema": "2.10",
+    "status": "SUCCEEDED",
+    "visibleSessionVariables": {
+      "url": "rtsp://<redacted>@example.invalid/stream?token=<redacted>"
+    },
+    "visibleExecutionVariables": {
+      "url": "rtsp://<redacted>@example.invalid/stream?token=<redacted>"
+    },
+    "visibleExecutionOutputs": {
+      "value": "rtsp://review-user:review-pass@example.invalid/stream?token=review-token"
+    },
+    "rawReplyContainsFakePassword": true,
+    "rawReplyContainsFakeToken": true,
+    "credentialKind": "synthetic test values only",
+    "evidenceLevel": "Actual RuntimeService + spawned debug Worker + RPC handler reply; GUI/export continuation source-traced"
+  },
+  "R3": {
+    "source": "actual annotate Manifest.paramSchema.classStyles.additionalProperties",
+    "outerField": "类别显示名称与颜色（classStyles）",
+    "dynamicLabelField": "person",
+    "nestedNames": [
+      "displayLabel",
+      "color"
+    ],
+    "nestedTooltips": [
+      "displayLabel",
+      "color"
+    ],
+    "colorItemNames": [
+      "0",
+      "1",
+      "2"
+    ],
+    "expectedDisplayLabelTitle": "显示标签"
+  },
+  "independentStaticCoverage": {
+    "registered": 82,
+    "rejected": 0,
+    "inputs": 194,
+    "outputs": 235,
+    "parameters": 419,
+    "metrics": 130,
+    "diagnostics": 221,
+    "outputFields": 313,
+    "removedMetricPlaceholder": 1
+  },
+  "ci": {
+    "head": "3d6448d3da18790c5f97bfdecb5fc845ebd67a1c",
+    "source": {
+      "runId": 45538005304,
+      "attempt": 1,
+      "conclusion": "success",
+      "linux": {
+        "passed": 9882,
+        "skipped": 40
+      },
+      "windows": {
+        "passed": 9916,
+        "skipped": 6
+      }
+    },
+    "web": {
+      "runId": 45538005340,
+      "attempt": 2,
+      "conclusion": "success",
+      "successfulJobs": 3
+    }
+  },
+  "notCompleted": [
+    "R1-R3 product repairs and repair-commit verification",
+    "P3.5 independent native desktop acceptance",
+    "real camera/PLC acceptance"
+  ]
+}

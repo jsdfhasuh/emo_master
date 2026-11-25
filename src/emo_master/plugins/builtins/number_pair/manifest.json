@@ -31,5 +31,14 @@
   "iconKey": "calculator",
   "summary": "按 first、second 顺序组装数值列表，保持数值和整数类型，不自动转换。",
   "minCoreVersion": "0.6.1",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "first": {"title": "第一项", "description": "列表第一个有限数值，排除bool，保持原int/float类型。"},
+      "second": {"title": "第二项", "description": "列表第二个有限数值，排除bool，保持原int/float类型。"}
+    },
+    "outputs": {
+      "values": {"title": "值列表", "description": "严格按first、second顺序返回两项列表；不排序、不拼接成坐标，也不统一转float。"}
+    }
+  }
 }

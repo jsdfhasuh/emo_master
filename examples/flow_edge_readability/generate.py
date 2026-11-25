@@ -1,16 +1,42 @@
-"""Generate safe, deterministic number/boolean projects for desktop inspection."""
+"""Reproduce the legacy 2.1 number/boolean fixture for compatibility tests."""
 from copy import deepcopy
 import json
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
+LEGACY_PARAM_SCHEMAS = {
+    "vision.value.number": {
+        "type": "object",
+        "properties": {
+            "value": {
+                "title": "数值",
+                "type": "number",
+                "default": 0.0,
+                "xExample": 0.5,
+                "description": "填写有限数值，可使用整数、小数或科学计数法，例如 0.5 或 1e-6；不接受 NaN 或无穷大。",
+            },
+        },
+    },
+    "vision.compare.number": {
+        "type": "object",
+        "properties": {
+            "operator": {
+                "title": "比较运算符",
+                "type": "string",
+                "enum": ["eq", "ne", "lt", "lte", "gt", "gte"],
+                "default": "gte",
+            },
+            "rightValue": {"title": "右侧比较值", "type": "number", "default": 0.0},
+        },
+    },
+}
 
 
 def operator(nodeId, operatorId, title, **params):
     folder = "number_value" if operatorId == "vision.value.number" else "number_compare"
     manifest = json.loads((ROOT / f"src/emo_master/plugins/builtins/{folder}/manifest.json").read_text(encoding="utf-8"))
-    schema = manifest["paramSchema"]
+    schema = deepcopy(LEGACY_PARAM_SCHEMAS[operatorId])
     defaults = {key: spec["default"] for key, spec in schema["properties"].items() if "default" in spec}
     return dict(nodeId=nodeId, kind="operator", operatorId=operatorId, displayName=title,
                 params={**defaults, **params}, paramSchema=schema,

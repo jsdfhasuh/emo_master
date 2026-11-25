@@ -17,13 +17,78 @@
   "paramSchema": {
     "type": "object",
     "properties": {
-      "rho": {"title": "距离分辨率（像素）", "type": "number", "exclusiveMinimum": 0.0, "default": 1.0},
-      "thetaDegrees": {"title": "角度分辨率（度）", "type": "number", "exclusiveMinimum": 0.0, "maximum": 180.0, "default": 1.0},
-      "threshold": {"title": "阈值", "type": "integer", "minimum": 1, "default": 50},
-      "minLineLength": {"title": "最小线段长度（像素）", "type": "number", "minimum": 0.0, "default": 0.0},
-      "maxLineGap": {"title": "最大线段间隙（像素）", "type": "number", "minimum": 0.0, "default": 0.0}
+      "rho": {
+        "description": "Hough距离分辨率，正有限数，像素。",
+        "title": "距离分辨率（像素）",
+        "type": "number",
+        "exclusiveMinimum": 0.0,
+        "default": 1.0
+      },
+      "thetaDegrees": {
+        "description": "Hough角度分辨率，(0,180]度，执行时转弧度。",
+        "title": "角度分辨率（度）",
+        "type": "number",
+        "exclusiveMinimum": 0.0,
+        "maximum": 180.0,
+        "default": 1.0
+      },
+      "threshold": {
+        "description": "HoughLinesP累加阈值，整数>=1；不是灰度二值阈值。",
+        "title": "阈值",
+        "type": "integer",
+        "minimum": 1,
+        "default": 50
+      },
+      "minLineLength": {
+        "description": "保留线段的最小长度，>=0像素。",
+        "title": "最小线段长度（像素）",
+        "type": "number",
+        "minimum": 0.0,
+        "default": 0.0
+      },
+      "maxLineGap": {
+        "description": "可连接线段的最大间隙，>=0像素。",
+        "title": "最大线段间隙（像素）",
+        "type": "number",
+        "minimum": 0.0,
+        "default": 0.0
+      }
     }
   },
   "minCoreVersion": "0.3.0",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "edge": {"title": "边缘", "description": "uint8单通道边缘图，先与frame有效区按位与。"},
+      "frame": {"title": "坐标框", "description": "有效内容范围及回源坐标，缺失默认全图。"}
+    },
+    "outputs": {
+      "lines": {
+        "title": "线段",
+        "description": "非零长线段集合，端点按y/x稳定排列；长度降序再按端点排序。",
+        "fields": {
+          "items": {
+            "title": "集合条目",
+            "description": "集合条目的有序列表。",
+            "items": {
+              "title": "集合条目",
+              "description": "记录线段、标识。",
+              "fields": {
+                "line": {"title": "线段", "description": "线段端点/圆心半径在当前frame坐标中。", "unit": "当前坐标单位"},
+                "id": {"title": "标识", "description": "按已排序顺序生成line-N/circle-N。"}
+              }
+            }
+          }
+        }
+      },
+      "frame": {"title": "坐标框", "description": "输入frame透传。"}
+    },
+    "metrics": {
+      "latencyMs": {"title": "算子内部耗时", "description": "入口至集合payload构建和返回的内部耗时。", "unit": "ms", "group": "duration"},
+      "count": {"title": "数量", "description": "实际输出线段数，不是性能计数或业务合格数。", "unit": "个", "group": "business"}
+    },
+    "diagnostics": {
+      "text": {"title": "摘要", "description": "输出lines数量摘要。"}
+    }
+  }
 }

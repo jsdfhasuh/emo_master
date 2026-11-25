@@ -82,7 +82,7 @@ _ALL_KEYS = ["", *sorted(set().union(*_KEYS_BY_KIND.values()))]
 _PARAM_SCHEMA: dict[str, object] = {
     "type": "object",
     "properties": {
-        "key": {"title": "排序字段", "type": "string", "enum": _ALL_KEYS, "default": "",
+        "key": {"description": "按类型白名单读取字段；空字符串在执行时自动选择：blob/contour/measurement→area，detection→confidence，line→length，circle→radius，match→quality。", "title": "排序字段", "type": "string", "enum": _ALL_KEYS, "default": "",
                 "xOptionLabels": {"": "自动（按对象类型）"},
                 "xEnumBy": {"parameter": "collectionType", "options": {
                     port: ["", *sorted(_KEYS_BY_KIND[kind])] for port, kind in (
@@ -90,6 +90,7 @@ _PARAM_SCHEMA: dict[str, object] = {
                         ("measurements", "measurement"), ("lines", "line"),
                         ("circles", "circle"), ("matches", "match"))}}},
         "direction": {
+            "description": "ascending升序，descending降序；相同键保留输入次序，缺失值无论方向都放末尾。",
             "title": "排序方向",
             "type": "string",
             "enum": ["ascending", "descending"],
@@ -176,7 +177,8 @@ class CollectionSortOperator:
             collection = parseCollectionInputs(inputs)
         except CollectionInputError as err:
             return _error(err.code, str(err))
-        key = cast(str, params.get("key") or SORT_DEFAULTS[collection.kind])
+        configuredKey = params.get("key")
+        key = cast(str, configuredKey or SORT_DEFAULTS[collection.kind])
         allowed = _KEYS_BY_KIND[collection.kind]
         if key not in allowed:
             return _error(
@@ -200,7 +202,13 @@ class CollectionSortOperator:
                 "count": len(sortedItems),
                 "missingValues": len(missing),
             },
-            "diagnostics": {"text": f"Sorted {len(sortedItems)} items by {key}"},
+            "diagnostics": {
+                "text": f"Sorted {len(sortedItems)} items by {key}",
+                "effectiveParameters": [{
+                    "path": ["key"], "value": key,
+                    "source": "normalized" if configuredKey else "automatic",
+                }],
+            },
         }
 
 

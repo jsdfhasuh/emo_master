@@ -19,6 +19,8 @@ class Probe:
         mode = params.get("mode", "ok")
         self.disposeMode = mode
         runtime["logger"].info("invoked")
+        if "items" in inputs:
+            inputs["items"].clear()
         if mode == "crash":
             os._exit(17)
         if mode in {"wait", "ignore"}:
@@ -29,6 +31,11 @@ class Probe:
                 time.sleep(.01)
         if mode == "error":
             raise ValueError("test operator failed")
+        if mode == "sensitive_error":
+            raise ValueError("test endpoint failed: " + params["endpoint"])
+        if mode == "sensitive":
+            return {"status": "ok", "outputs": {"value": int(params["alias"] == "binding-value")},
+                    "diagnostics": {"endpoint": params["endpoint"]}}
         if mode == "large":
             return {"status": "ok", "outputs": {"value": self.count}, "diagnostics": {"data": "x"*70000}}
         return {"status": "ok", "outputs": {"value": self.count}}

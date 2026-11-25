@@ -40,7 +40,7 @@ _PARAM_SCHEMA: dict[str, object] = {
                 "not": "取反",
                 "subtract": "差集（A 减 B）",
             },
-            "description": "取反仅需 maskA；其他操作需两个尺寸相同的二值掩码。",
+            "description": "二值集合运算；not只需A，其余需要B。",
         }
     },
 }

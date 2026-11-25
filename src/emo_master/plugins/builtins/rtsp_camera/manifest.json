@@ -25,42 +25,52 @@
     "type": "object",
     "properties": {
       "rtspUrl": {
-        "title": "RTSP\u5730\u5740",
+        "description": "无内嵌凭据的rtsp/rtsps地址，可含查询；查询可能包含令牌。",
+        "title": "RTSP地址",
         "type": "string",
         "default": ""
       },
       "username": {
-        "title": "\u7528\u6237\u540d",
+        "description": "摄像头认证用户名。",
+        "xSensitive": true,
+        "title": "用户名",
         "type": "string",
         "default": "admin"
       },
       "password": {
-        "title": "\u5bc6\u7801",
+        "description": "摄像头认证密码，仅凭据环境变量未指定时使用。",
+        "xSensitive": true,
+        "title": "密码",
         "type": "string",
         "default": "",
         "xWidget": "password"
       },
       "passwordEnv": {
-        "title": "\u5bc6\u7801\u73af\u5883\u53d8\u91cf",
+        "description": "Runtime 进程的凭据环境变量名，非空时优先读取该变量。",
+        "xSensitive": true,
+        "title": "密码环境变量",
         "type": "string",
         "default": ""
       },
       "openTimeoutMs": {
-        "title": "\u8fde\u63a5\u8d85\u65f6\uff08\u6beb\u79d2\uff09",
+        "description": "传给FFmpeg OpenCV打开连接超时毫秒。",
+        "title": "连接超时（毫秒）",
         "type": "integer",
         "minimum": 100,
         "maximum": 60000,
         "default": 5000
       },
       "readTimeoutMs": {
-        "title": "\u53d6\u5e27\u8d85\u65f6\uff08\u6beb\u79d2\uff09",
+        "description": "传给FFmpeg OpenCV读取帧超时毫秒。",
+        "title": "取帧超时（毫秒）",
         "type": "integer",
         "minimum": 100,
         "maximum": 60000,
         "default": 5000
       },
       "colorMode": {
-        "title": "\u989c\u8272\u6a21\u5f0f",
+        "description": "color保留BGR；grayscale转换为单通道。",
+        "title": "颜色模式",
         "type": "string",
         "default": "color",
         "enum": [
@@ -68,8 +78,8 @@
           "grayscale"
         ],
         "xOptionLabels": {
-          "color": "\u5f69\u8272",
-          "grayscale": "\u7070\u5ea6"
+          "color": "彩色",
+          "grayscale": "灰度"
         }
       }
     },
@@ -82,5 +92,50 @@
   "iconKey": "source",
   "summary": "\u6bcf\u6b21\u8fde\u63a5 RTSP \u6d41\u8bfb\u53d6\u4e00\u5f20\u5f53\u524d\u753b\u9762\uff0c\u5b8c\u6210\u6216\u53d6\u6d88\u540e\u91ca\u653e\u8fde\u63a5\u3002",
   "minCoreVersion": "0.1.0",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "outputs": {
+      "image": {"title": "图像", "description": "新建RTSP连接读取的首张有效图像。"},
+      "frame": {
+        "title": "坐标框",
+        "description": "默认像素框；sourceId移除凭据/查询，存在查询则附SHA256前16位流标识。",
+        "fields": {
+          "type": {"title": "类型", "description": "固定bbox2d图像有效内容矩形类型。"},
+          "schemaVersion": {"title": "结构版本", "description": "坐标契约版本；这些图像来源构建仿射坐标系。"},
+          "x": {"title": "横坐标", "description": "有效内容矩形左上角x，来源图像为0。", "unit": "pixel"},
+          "y": {"title": "纵坐标", "description": "有效内容矩形左上角y，来源图像为0。", "unit": "pixel"},
+          "width": {"title": "宽度", "description": "本次真实图像宽度。", "unit": "pixel"},
+          "height": {"title": "高度", "description": "本次真实图像高度。", "unit": "pixel"},
+          "coordinateSpace": {
+            "title": "坐标空间",
+            "description": "记录原点、X 轴方向、Y 轴方向、单位、参考空间、来源标识、图像宽度、图像高度、回源变换矩阵。",
+            "fields": {
+              "origin": {"title": "原点", "description": "固定topLeft，坐标原点在左上角。"},
+              "xAxis": {"title": "X 轴方向", "description": "固定right，横轴向右。"},
+              "yAxis": {"title": "Y 轴方向", "description": "固定down，纵轴向下。"},
+              "unit": {"title": "单位", "description": "固定pixel，未进行物理单位标定。"},
+              "reference": {"title": "参考空间", "description": "本坐标系参考标签，具体来源见该算子frame输出说明。"},
+              "sourceId": {"title": "来源标识", "description": "去除凭据后的RTSP端点；query只保留摘要标识。"},
+              "imageWidth": {"title": "图像宽度", "description": "坐标空间图像宽度；声明未知时不输出。", "unit": "pixel"},
+              "imageHeight": {"title": "图像高度", "description": "坐标空间图像高度；声明未知时不输出。", "unit": "pixel"},
+              "transformToSource": {"title": "回源变换矩阵", "description": "仿射数组[a,b,c,d,e,f]，x′=a*x+c*y+e，y′=b*x+d*y+f。本算子创建单位变换。"}
+            }
+          }
+        }
+      },
+      "capturedAt": {"title": "采集时刻", "description": "capture.read返回后取得的Unix墙钟秒，不是摄像头硬件时间戳。", "unit": "s"}
+    },
+    "metrics": {
+      "latencyMs": {
+        "title": "算子内部耗时",
+        "description": "本次连接、取帧与颜色转换等耗时；返回前计算，finally释放连接不在该值内。",
+        "unit": "ms",
+        "group": "duration"
+      }
+    },
+    "diagnostics": {
+      "text": {"title": "摘要", "description": "固定RTSP frame captured。"}
+    },
+    "captureParams": [["rtspUrl"], ["openTimeoutMs"], ["readTimeoutMs"], ["colorMode"]]
+  }
 }

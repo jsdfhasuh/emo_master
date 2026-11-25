@@ -49,6 +49,7 @@
     "type": "object",
     "properties": {
       "threshold": {
+        "description": "内部阈值分支固定阈值；useOtsu时由OpenCV计算，外部mask时不参与分割但仍校验。",
         "title": "阈值",
         "type": "integer",
         "minimum": 0,
@@ -56,39 +57,49 @@
         "default": 127
       },
       "invert": {
+        "description": "仅内部阈值分支反转前景，外部mask不反转。",
         "title": "反转掩膜",
         "type": "boolean",
         "default": false
       },
       "useOtsu": {
+        "description": "仅内部阈值路径添加THRESH_OTSU。",
         "title": "使用大津法阈值",
         "type": "boolean",
         "default": false
       },
       "connectivity": {
+        "description": "连通域使用4或8邻接。",
         "title": "连通方式",
         "type": "integer",
-        "enum": [4, 8],
+        "enum": [
+          4,
+          8
+        ],
         "default": 8
       },
       "minArea": {
+        "description": "组件像素面积下限，>=1，包含边界。",
         "title": "最小面积",
         "type": "integer",
         "minimum": 1,
         "default": 1
       },
       "maxArea": {
+        "description": "组件像素面积上限，0为不设上限，正数>=minArea。",
         "title": "最大面积",
         "type": "integer",
         "minimum": 0,
         "default": 0
       },
       "includeContour": {
+        "description": "是否携带轮廓Polygon；仍计算周长/圆度，少于3点无法给出polygon。",
         "title": "包含轮廓",
         "type": "boolean",
         "default": true
       },
       "drawOverlay": {
+        "description": "是否生成叠加图。",
         "title": "绘制叠加图",
         "type": "boolean",
         "default": false
@@ -96,5 +107,57 @@
     }
   },
   "minCoreVersion": "0.2.0",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "image": {"title": "图像", "description": "必需uint8灰度/BGR图，即使有mask仍用其尺寸/叠加。"},
+      "mask": {"title": "掩膜", "description": "可选同尺寸二维uint8外部mask；非零归一化，覆盖内部阈值路径。"},
+      "frame": {"title": "坐标框", "description": "有效区，binaryMask与其矩形相交；决定输出几何坐标。"}
+    },
+    "outputs": {
+      "blobs": {
+        "title": "连通域",
+        "description": "面积筛选后的连通域集合：像素面积、质心、bbox、可选轮廓、周长/圆度属性。",
+        "fields": {
+          "items": {
+            "title": "集合条目",
+            "description": "集合条目的有序列表。",
+            "items": {
+              "title": "集合条目",
+              "description": "记录标识、标签、面积、质心、包围框、轮廓、扩展属性。",
+              "fields": {
+                "id": {"title": "标识", "description": "blob-连通标号，面积过滤后可能不连续。"},
+                "label": {"title": "标签", "description": "connectedComponentsWithStats组件标号。"},
+                "area": {"title": "面积", "description": "CC_STAT_AREA像素计数转float，非polygon几何面积。", "unit": "像素"},
+                "centroid": {"title": "质心", "description": "连通域像素质心。", "unit": "当前坐标单位"},
+                "bbox": {"title": "包围框", "description": "OpenCV组件left/top/width/height。", "unit": "像素"},
+                "contour": {"title": "轮廓", "description": "最大外轮廓；includeContour关闭或不足3点时为空。", "unit": "当前坐标单位"},
+                "attributes": {
+                  "title": "扩展属性",
+                  "description": "记录周长、圆度。",
+                  "fields": {
+                    "perimeter": {"title": "周长", "description": "最大外轮廓闭合周长，缺轮廓为0。", "unit": "当前坐标单位"},
+                    "circularity": {"title": "圆度", "description": "4π*像素面积/周长²；周长0则0，未像ShapeMeasurement限制到1。", "unit": "比例"}
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "mask": {"title": "掩膜", "description": "仅保留通过面积过滤组件的0/255mask，不是原始阈值mask。"},
+      "overlay": {"title": "叠加图", "description": "仅drawOverlay=true返回的BGR叠加图，画bbox/质心/外轮廓。"},
+      "frame": {"title": "坐标框", "description": "输入frame透传。"}
+    },
+    "metrics": {
+      "latencyMs": {"title": "算子内部耗时", "description": "入口至输出集合和可选叠加图构造的内部耗时。", "unit": "ms", "group": "duration"},
+      "blobCount": {"title": "连通域数量", "description": "通过面积筛选的组件数。", "unit": "个", "group": "business"},
+      "foregroundPixels": {"title": "前景像素数", "description": "过滤后mask非零像素数。", "unit": "像素", "group": "business"},
+      "threshold": {"title": "阈值", "description": "内部阈值的OpenCV实际值；外部mask时null。", "unit": "灰度级或null", "group": "result"},
+      "maskSource": {"title": "掩膜来源", "description": "external或image，实际分割来源。", "group": "result"}
+    },
+    "diagnostics": {
+      "text": {"title": "摘要", "description": "过滤后Blob数量摘要。"}
+    }
+  }
 }

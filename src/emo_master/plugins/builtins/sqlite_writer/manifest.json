@@ -9,20 +9,127 @@
   "summary": "通过字段映射将同次流程输出写入明确选择的本地 SQLite 业务表。",
   "inputPorts": {"enabled": {"type": "boolean", "required": false, "nullable": false}},
   "outputPorts": {"receipt": {"type": "json", "required": true, "nullable": false}},
-  "paramSchema": {"type": "object", "properties": {
-    "configVersion": {"title": "配置版本", "type": "integer", "default": 1},
-    "databasePath": {"title": "数据库文件", "type": "string", "default": ""},
-    "debugDatabasePath": {"title": "调试用文件（可选）", "type": "string"},
-    "table": {"title": "保存到哪张表", "type": "string", "default": "records"},
-    "mappings": {"title": "要保存的内容", "type": "array", "items": {"type": "object"}, "default": []},
-    "writeMode": {"title": "写入方式", "description": "后台写入在任务入队后继续流程，最终入库结果记录在本节点的运行日志中。",
-                  "type": "string", "enum": ["sync", "background"], "default": "sync",
-                  "xOptionLabels": {"sync": "同步写入", "background": "后台写入"}},
-    "fileReferencePathMode": {"title": "图片引用路径", "description": "工程相对路径仅保存工程目录内的已保存图片，随完整工程目录搬迁；默认保留绝对路径。",
-                              "type": "string", "enum": ["absolute", "project_relative"], "default": "absolute",
-                              "xOptionLabels": {"absolute": "绝对路径", "project_relative": "工程相对路径"}},
-    "failurePolicy": {"title": "处理方式", "type": "string", "enum": ["stop", "continue"], "default": "stop"}
-  }},
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "configVersion": {
+        "description": "仅支持1的显式映射配置版本。",
+        "title": "配置版本",
+        "type": "integer",
+        "default": 1
+      },
+      "databasePath": {
+        "description": "正式本地业务SQLite目标，准入前按原工程根解析冻结为绝对路径。",
+        "title": "数据库文件",
+        "type": "string",
+        "default": ""
+      },
+      "debugDatabasePath": {
+        "description": "可选调试库模板；调试复制/初始化隔离库，不写生产库或模板。",
+        "title": "调试用文件（可选）",
+        "type": "string"
+      },
+      "table": {
+        "description": "写入现有业务表名，经identifier校验并引用，不是任意SQL。",
+        "title": "保存到哪张表",
+        "type": "string",
+        "default": "records"
+      },
+      "mappings": {
+        "description": "1至64行列映射；按行对应runtime mappedOutputs，JSON schema只有object骨架，真正契约在parseConfig。",
+        "title": "要保存的内容",
+        "type": "array",
+        "items": {
+          "title": "列映射",
+          "description": "将一个数据来源转换为指定的存储类型，并写入一列。",
+          "type": "object",
+          "properties": {
+            "column": {
+              "title": "目标列",
+              "type": "string",
+              "description": "已存在的业务表列名，每列只能配置一次。write_id 仅允许映射执行上下文的 writeId，使用 TEXT 并在缺失时报错。"
+            },
+            "storageType": {
+              "title": "存储类型",
+              "type": "string",
+              "description": "支持 INTEGER、REAL、TEXT、BOOLEAN、JSON、UTC_TIME 或 FILE_REFERENCE。布尔值写为 0 或 1，时间转为 UTC，图片引用等待已确认的文件。"
+            },
+            "missing": {
+              "title": "来源缺失时",
+              "type": "string",
+              "description": "仅上游节点未产出时使用。error 报错，null 写入 SQL NULL，default 省略该列以采用数据库列默认值。未配置时按 error 处理。"
+            },
+            "source": {
+              "title": "数据来源",
+              "type": "object",
+              "description": "可选同次流程输出、常量或执行上下文，实际可用值取决于目标存储类型。",
+              "properties": {
+                "kind": {
+                  "title": "来源类型",
+                  "type": "string",
+                  "description": "node_output 读取同次流程输出，constant 使用配置常量，context 读取当前执行上下文。"
+                },
+                "nodeId": {
+                  "title": "来源节点",
+                  "type": "string",
+                  "description": "仅 node_output 使用，指定当前流程中的来源节点标识。"
+                },
+                "port": {
+                  "title": "来源端口",
+                  "type": "string",
+                  "description": "仅 node_output 使用，填写同一流程中来源节点的完整输出端口名。存储类型为 FILE_REFERENCE 时，只能选择图片保存算子（vision.io.image_saver）的 result 端口。"
+                },
+                "key": {
+                  "title": "执行上下文字段",
+                  "type": "string",
+                  "description": "仅 context 使用，例如本次写入标识 writeId 或 UTC 时间 timestampUtc。"
+                }
+              },
+              "xFieldDescriptions": {
+                "value": {
+                  "title": "常量值",
+                  "description": "仅 constant 使用，值由存储类型校验。JSON 类型可保存标量、空值、数组和对象。"
+                }
+              }
+            }
+          }
+        },
+        "default": []
+      },
+      "writeMode": {
+        "title": "写入方式",
+        "description": "sync 等待本次写入结果。background 在后台任务入队后继续流程，最终回执按同一 writeId 记录在节点的 sqlite.write.finished 日志中。",
+        "type": "string",
+        "enum": ["sync", "background"],
+        "default": "sync",
+        "xOptionLabels": {"sync": "同步写入", "background": "后台写入"}
+      },
+      "fileReferencePathMode": {
+        "title": "图片引用路径",
+        "description": "absolute保留实际持久路径；project_relative只保存原工程目录内的相对路径。",
+        "type": "string",
+        "enum": [
+          "absolute",
+          "project_relative"
+        ],
+        "default": "absolute",
+        "xOptionLabels": {
+          "absolute": "绝对路径",
+          "project_relative": "工程相对路径"
+        }
+      },
+      "failurePolicy": {
+        "description": "stop 在收到写入错误时停止，continue 记录错误后继续。后台错误按最终回执处理；节点已入队时仍需查看最终结果。",
+        "title": "处理方式",
+        "type": "string",
+        "enum": [
+          "stop",
+          "continue"
+        ],
+        "default": "stop"
+      }
+    }
+  },
   "minCoreVersion": "0.6.1",
   "maxCoreVersion": "1.x",
   "editor": {
@@ -30,5 +137,115 @@
     "uiResource": "ui/editor.ui",
     "controllerEntry": "emo_master.plugins.builtins.sqlite_writer.editor:SqliteWriterEditorController",
     "fallback": "schemaForm", "previewMode": "none"
+  },
+  "resultSchema": {
+    "inputs": {
+      "enabled": {"title": "启用状态", "description": "缺省true；false成功跳过，不执行INSERT，receipt.status=SKIPPED。"}
+    },
+    "outputs": {
+      "receipt": {
+        "title": "回执",
+        "description": "本次节点交给下游的回执。后台写入入队后返回 QUEUED，下游保留此值；用相同 writeId 对应的 sqlite.write.finished 核对最终结果。",
+        "fields": {
+          "writeId": {"title": "写入标识", "description": "本次UUID写入身份，数据库write_id与此一致。"},
+          "status": {"title": "数据库写入状态", "description": "QUEUED 表示后台已入队，COMMITTED 表示已确认提交，SKIPPED 表示按配置跳过，FAILED 表示已确认失败，CANCELLED 表示后台已取消且未提交，UNKNOWN 表示无法确认是否提交。"},
+          "rowsAffected": {"title": "影响行数", "description": "COMMITTED 为 1；SKIPPED、FAILED 或 CANCELLED 为 0；QUEUED 尚待结果，UNKNOWN 无法确认，两者均为 null。"},
+          "primaryKey": {"title": "主键", "description": "确认提交且目标表有可识别的自动整数主键时，返回 INSERT 的 lastrowid。排队中、未确认提交或没有该类主键时为 null。"},
+          "execution": {
+            "title": "执行身份",
+            "description": "原始本次执行身份对象。",
+            "fields": {
+              "jobId": {"title": "作业标识", "description": "本次Job ID。"},
+              "projectId": {"title": "工程标识", "description": "工程ID。"},
+              "workflowId": {"title": "工作流标识", "description": "流程ID。"},
+              "workflowRunId": {"title": "工作流调用标识", "description": "流程本次调用ID。"},
+              "nodeId": {"title": "节点标识", "description": "SQLite节点ID。"},
+              "nodeRunId": {"title": "节点执行标识", "description": "节点本次执行ID。"},
+              "iterationPath": {"title": "迭代路径", "description": "循环迭代路径整数列表。"}
+            }
+          },
+          "elapsedMs": {"title": "回执耗时", "description": "从节点开始执行计时。QUEUED 记录入队时耗时，后台最终回执还包含等待及执行时间；工作进程提前退出时，补录的 UNKNOWN 可能仅保留起始值。", "unit": "ms"},
+          "error": {
+            "title": "错误",
+            "description": "排队、跳过或正常提交时为 null。失败、后台取消或结果未知时记录错误码和说明，映射出错可附行号。",
+            "fields": {
+              "code": {"title": "状态或错误码", "description": "实际SQL/映射/运行错误码。"},
+              "message": {"title": "消息", "description": "错误说明。"},
+              "mappingRow": {"title": "映射行号", "description": "发生映射错误的零基行号，可为null；用户错误文本显示一基行号。"}
+            }
+          },
+          "cleanupError": {
+            "title": "清理错误",
+            "description": "可选：外部提交确认后或失败期间的资源清理错误对象。",
+            "fields": {
+              "code": {"title": "状态或错误码", "description": "清理错误码。"},
+              "message": {"title": "消息", "description": "清理异常说明。"}
+            }
+          }
+        }
+      }
+    },
+    "diagnostics": {
+      "sqliteReceipt": {
+        "title": "SQLite 写入回执",
+        "description": "节点的写入诊断。后台节点完成时可为 QUEUED，单算子调试排空后记录最终回执。正式运行的最终结果在相同节点执行和 writeId 的 sqlite.write.finished 事件中。",
+        "fields": {
+          "writeId": {"title": "写入标识", "description": "本次UUID写入身份，数据库write_id与此一致。"},
+          "status": {"title": "数据库写入状态", "description": "QUEUED 表示后台已入队，COMMITTED 表示已确认提交，SKIPPED 表示按配置跳过，FAILED 表示已确认失败，CANCELLED 表示后台已取消且未提交，UNKNOWN 表示无法确认是否提交。", "group": "result"},
+          "rowsAffected": {"title": "影响行数", "description": "COMMITTED 为 1；SKIPPED、FAILED 或 CANCELLED 为 0；QUEUED 尚待结果，UNKNOWN 无法确认，两者均为 null。", "group": "result"},
+          "primaryKey": {"title": "主键", "description": "确认提交且目标表有可识别的自动整数主键时，返回 INSERT 的 lastrowid。排队中、未确认提交或没有该类主键时为 null。"},
+          "execution": {
+            "title": "执行身份",
+            "description": "原始本次执行身份对象。",
+            "fields": {
+              "jobId": {"title": "作业标识", "description": "本次Job ID。"},
+              "projectId": {"title": "工程标识", "description": "工程ID。"},
+              "workflowId": {"title": "工作流标识", "description": "流程ID。"},
+              "workflowRunId": {"title": "工作流调用标识", "description": "流程本次调用ID。"},
+              "nodeId": {"title": "节点标识", "description": "SQLite节点ID。"},
+              "nodeRunId": {"title": "节点执行标识", "description": "节点本次执行ID。"},
+              "iterationPath": {"title": "迭代路径", "description": "循环迭代路径整数列表。"}
+            }
+          },
+          "elapsedMs": {"title": "回执耗时", "description": "从节点开始执行计时。QUEUED 记录入队时耗时，后台最终回执还包含等待及执行时间；工作进程提前退出时，补录的 UNKNOWN 可能仅保留起始值。", "unit": "ms"},
+          "error": {
+            "title": "错误",
+            "description": "排队、跳过或正常提交时为 null。失败、后台取消或结果未知时记录错误码和说明，映射出错可附行号。",
+            "fields": {
+              "code": {"title": "状态或错误码", "description": "实际SQL/映射/运行错误码。"},
+              "message": {"title": "消息", "description": "错误说明。"},
+              "mappingRow": {"title": "映射行号", "description": "发生映射错误的零基行号，可为null；用户错误文本显示一基行号。"}
+            }
+          },
+          "cleanupError": {
+            "title": "清理错误",
+            "description": "可选：外部提交确认后或失败期间的资源清理错误对象。",
+            "fields": {
+              "code": {"title": "状态或错误码", "description": "清理错误码。"},
+              "message": {"title": "消息", "description": "清理异常说明。"}
+            }
+          }
+        }
+      },
+      "sqliteCleanup": {
+        "title": "SQLite 清理信息",
+        "description": "记录状态或错误码、消息。",
+        "fields": {
+          "code": {"title": "状态或错误码", "description": "确认提交后的清理错误码，通常E_SQLITE_CLEANUP。"},
+          "message": {"title": "消息", "description": "确认提交后的资源清理异常说明。"}
+        }
+      },
+      "severity": {"title": "严重程度", "description": "continue失败/提交后清理失败为ERROR，即使节点status=ok。"},
+      "mappingSources": {
+        "title": "列映射来源",
+        "description": "配置中各来源类型的列数，用于排查配置；写入状态见 SQLite 回执。",
+        "fields": {
+          "node_output": {"title": "同次流程输出", "description": "从本次流程内上游端口取值的列数。", "unit": "列"},
+          "constant": {"title": "配置常量", "description": "使用配置常量的列数。", "unit": "列"},
+          "context": {"title": "执行上下文", "description": "使用本次执行上下文字段的列数。", "unit": "列"}
+        }
+      }
+    },
+    "captureParams": [["databasePath"], ["table"], ["writeMode"], ["failurePolicy"], ["fileReferencePathMode"]]
   }
 }

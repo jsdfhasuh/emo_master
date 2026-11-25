@@ -61,34 +61,109 @@ _GEOMETRY_TYPES = {"bbox2d", "rotatedBox2d", "polygon2d"}
 _PARAM_SCHEMA: dict[str, object] = {
     "type": "object",
     "properties": {
-        "minArea": {"title": "最小面积", "type": "number", "minimum": 0.0, "default": 0.0},
-        "maxArea": {"title": "最大面积", "type": "number", "minimum": 0.0, "default": 0.0},
+        "minArea": {
+            "description": "面积含下限，单位pixel²；Blob用已有area，轮廓用cv2.contourArea绝对值，measurement用已有area。",
+            "title": "最小面积", "type": "number", "minimum": 0.0, "default": 0.0
+        },
+        "maxArea": {
+            "description": "面积含上限，0表示无上限；来源同minArea。",
+            "title": "最大面积", "type": "number", "minimum": 0.0, "default": 0.0
+        },
         "minContourPoints": {
             "title": "最小轮廓点数", "type": "integer", "minimum": 0, "default": 0,
-            "description": "按轮廓近似后的顶点数筛选，包含下限；0 表示不限制。",
+            "description": "当前轮廓polygon.points数量含下限；针对上游近似后顶点数，0不限制。",
         },
-        "minPerimeter": {"title": "最小周长", "type": "number", "minimum": 0.0, "default": 0.0},
-        "maxPerimeter": {"title": "最大周长", "type": "number", "minimum": 0.0, "default": 0.0},
+        "minPerimeter": {
+            "description": "轮廓闭合周长或measurement.perimeter的含下限，单位pixel。",
+            "title": "最小周长", "type": "number", "minimum": 0.0, "default": 0.0
+        },
+        "maxPerimeter": {"description": "周长含上限，0表示无上限。", "title": "最大周长", "type": "number", "minimum": 0.0, "default": 0.0},
         "circularityEnabled": {"title": "启用圆度筛选", "type": "boolean", "default": False},
-        "minCircularity": {"title": "最小圆度", "type": "number", "minimum": 0.0, "maximum": 1.0, "default": 0.0},
-        "maxCircularity": {"title": "最大圆度", "type": "number", "minimum": 0.0, "maximum": 1.0, "default": 1.0},
-        "blobLabels": {"title": "连通域标签", "type": "array", "items": {"type": "integer", "minimum": 0}, "default": []},
-        "contourMode": {"title": "轮廓筛选模式", "type": "string", "enum": ["any", "present", "absent"], "default": "any"},
-        "minConfidence": {"title": "最低置信度", "type": "number", "minimum": 0.0, "maximum": 1.0, "default": 0.0},
-        "maxConfidence": {"title": "最高置信度", "type": "number", "minimum": 0.0, "maximum": 1.0, "default": 1.0},
-        "classIds": {"title": "类别编号", "type": "array", "items": {"type": "integer", "minimum": 0}, "default": []},
-        "detectionLabels": {"title": "检测标签", "type": "array", "items": {"type": "string"}, "default": []},
-        "geometryTypes": {"title": "几何类型", "type": "array", "items": {"type": "string", "enum": sorted(_GEOMETRY_TYPES)}, "default": []},
-        "holeMode": {"title": "孔洞筛选模式", "type": "string", "enum": ["any", "outer", "hole"], "default": "any"},
-        "sourceTypes": {"title": "来源类型", "type": "array", "items": {"type": "string", "enum": ["contour", "blob"]}, "default": []},
-        "minLength": {"title": "最小长度", "type": "number", "minimum": 0.0, "default": 0.0},
-        "maxLength": {"title": "最大长度", "type": "number", "minimum": 0.0, "default": 0.0},
-        "minRadius": {"title": "最小半径（像素）", "type": "number", "minimum": 0.0, "default": 0.0},
-        "maxRadius": {"title": "最大半径（像素）", "type": "number", "minimum": 0.0, "default": 0.0},
-        "minQuality": {"title": "最低质量", "type": "number", "minimum": 0.0, "maximum": 1.0, "default": 0.0},
-        "maxQuality": {"title": "最高质量", "type": "number", "minimum": 0.0, "maximum": 1.0, "default": 1.0},
-        "templateMethods": {"title": "模板匹配方法", "type": "array", "items": {"type": "string", "enum": _METHODS}, "default": []},
-        "spatialMode": {"title": "空间筛选模式", "type": "string", "enum": sorted(_SPATIAL_MODES), "default": "none"},
+        "minCircularity": {
+            "description": "圆度含下限；Blob取attributes.circularity且字段缺失不通过已启用筛选，measurement取本身circularity。",
+            "title": "最小圆度", "type": "number", "minimum": 0.0, "maximum": 1.0, "default": 0.0
+        },
+        "maxCircularity": {
+            "description": "圆度含上限，1是实际上限而非无限哨兵；与minCircularity共同约束[0,1]。",
+            "title": "最大圆度", "type": "number", "minimum": 0.0, "maximum": 1.0, "default": 1.0
+        },
+        "blobLabels": {
+            "description": "允许的连通域整数label列表；空列表不限制，按label而非blobId过滤。",
+            "title": "连通域标签", "type": "array", "items": {
+            "title": "列表项", "description": "列表单项：允许的连通域整数label列表；空列表不限制，按label而非blobId过滤。",
+            "type": "integer", "minimum": 0
+        }, "default": []
+        },
+        "contourMode": {
+            "description": "any不限制；present要求Blob.contour非None；absent要求None。",
+            "title": "轮廓筛选模式", "type": "string", "enum": ["any", "present", "absent"], "default": "any"
+        },
+        "minConfidence": {
+            "description": "Detection.confidence含下限，范围[0,1]；不是框架执行成功概率。",
+            "title": "最低置信度", "type": "number", "minimum": 0.0, "maximum": 1.0, "default": 0.0
+        },
+        "maxConfidence": {
+            "description": "Detection.confidence含上限，默认1。",
+            "title": "最高置信度", "type": "number", "minimum": 0.0, "maximum": 1.0, "default": 1.0
+        },
+        "classIds": {
+            "description": "允许的Detection.classId整数列表；空列表不限制。",
+            "title": "类别编号", "type": "array", "items": {
+            "title": "列表项", "description": "列表单项：允许的Detection.classId整数列表；空列表不限制。",
+            "type": "integer", "minimum": 0
+        }, "default": []
+        },
+        "detectionLabels": {
+            "description": "允许的Detection.label字符串列表；空列表不限制，精确匹配。",
+            "title": "检测标签", "type": "array", "items": {
+            "title": "列表项", "description": "列表单项：允许的Detection.label字符串列表；空列表不限制，精确匹配。",
+            "type": "string"
+        }, "default": []
+        },
+        "geometryTypes": {
+            "description": "允许的检测几何类型列表；优先item.geometry，无geometry时用bbox；空列表不限制。",
+            "title": "几何类型", "type": "array", "default": [],
+            "items": {"title": "允许的几何类型", "description": "矩形框、多边形或旋转矩形框。",
+                      "type": "string", "enum": sorted(_GEOMETRY_TYPES)},
+        },
+        "holeMode": {
+            "description": "any不限；outer要求isHole=false；hole要求isHole=true。",
+            "title": "孔洞筛选模式", "type": "string", "enum": ["any", "outer", "hole"], "default": "any"
+        },
+        "sourceTypes": {
+            "description": "允许的ShapeMeasurement.sourceType（contour/blob）列表；空列表不限制。",
+            "title": "来源类型", "type": "array", "default": [],
+            "items": {"title": "允许的来源类型", "description": "形状测量的来源，可为轮廓或连通域。",
+                      "type": "string", "enum": ["contour", "blob"]},
+        },
+        "minLength": {"description": "Line两端欧氏距离含下限，单位pixel。", "title": "最小长度", "type": "number", "minimum": 0.0, "default": 0.0},
+        "maxLength": {"description": "Line长度含上限，0无上限。", "title": "最大长度", "type": "number", "minimum": 0.0, "default": 0.0},
+        "minRadius": {
+            "description": "Circle.radius含下限，单位pixel。",
+            "title": "最小半径（像素）", "type": "number", "minimum": 0.0, "default": 0.0
+        },
+        "maxRadius": {
+            "description": "Circle半径含上限，0无上限。",
+            "title": "最大半径（像素）", "type": "number", "minimum": 0.0, "default": 0.0
+        },
+        "minQuality": {
+            "description": "TemplateMatch.quality含下限；使用已定义质量分值，不以rawScore直接代替。",
+            "title": "最低质量", "type": "number", "minimum": 0.0, "maximum": 1.0, "default": 0.0
+        },
+        "maxQuality": {
+            "description": "模板quality含上限，范围[0,1]。",
+            "title": "最高质量", "type": "number", "minimum": 0.0, "maximum": 1.0, "default": 1.0
+        },
+        "templateMethods": {
+            "description": "允许的TemplateMatchCollection.method列表；按集合原始方法精确筛选，空列表不限。",
+            "title": "模板匹配方法", "type": "array", "default": [],
+            "items": {"title": "允许的匹配方法", "description": "一个模板匹配算法名称，按集合的方法精确匹配。",
+                      "type": "string", "enum": _METHODS},
+        },
+        "spatialMode": {
+            "description": "none无空间筛选；centerInside按对象中心落在原ROI几何中；bboxIntersects/bboxContained使用对象及ROI的轴对齐包围框；边界相交计入。",
+            "title": "空间筛选模式", "type": "string", "enum": sorted(_SPATIAL_MODES), "default": "none"
+        },
     },
 }
 
@@ -112,6 +187,7 @@ def _groupedParamSchema() -> dict[str, object]:
     }
     properties: dict[str, object] = {
         "collectionType": {
+            "description": "筛选对象；为空时在执行阶段采用实际输入集合端口。",
             "title": "筛选对象", "type": "string", "default": "",
             "enum": ["", *COLLECTION_TYPES],
             "xOptionLabels": {"": "请选择筛选对象", **COLLECTION_TYPES},
@@ -122,6 +198,7 @@ def _groupedParamSchema() -> dict[str, object]:
         validateTypes = ["", *group["types"]]
         flagSchema: dict[str, object] = {
             "title": group["title"], "type": "boolean",
+            "description": f"开启后对{'、'.join(COLLECTION_TYPES[kind] for kind in visibleTypes)}应用此组条件。关闭时保留编辑值，执行时忽略此组条件。",
             "xVisibleWhen": {"collectionType": visibleTypes},
             "xValidateWhen": {"collectionType": validateTypes},
         }
@@ -317,8 +394,28 @@ class CollectionFilterOperator:
                 "keptCount": len(kept),
                 "rejectedCount": len(rejected),
             },
-            "diagnostics": {"text": f"Kept {len(kept)} of {len(collection.items)} items"},
+            "diagnostics": {
+                "text": f"Kept {len(kept)} of {len(collection.items)} items",
+                "effectiveParameters": _effectiveSummary(params, inputPort, selected == ""),
+            },
         }
+
+
+def _effectiveSummary(params: dict[str, object], inputPort: str, inferred: bool) -> list[dict[str, object]]:
+    fields = cast(dict[str, dict[str, object]], _PARAM_SCHEMA["properties"])
+    selected: dict[str, object] = {}
+    for flag, group in FILTER_GROUPS.items():
+        if inputPort not in group["types"]:
+            continue
+        enabled = params.get(flag, flag != "circularityEnabled")
+        selected[flag] = enabled
+        if enabled:
+            for name in group["fields"]:
+                selected[name] = params.get(name, fields[name]["default"])
+    return [
+        {"path": ["collectionType"], "value": inputPort, "source": "input" if inferred else "normalized"},
+        *({"path": [name], "value": value, "source": "normalized"} for name, value in selected.items()),
+    ]
 
 
 def _matchesItem(

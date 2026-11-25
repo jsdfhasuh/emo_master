@@ -22,7 +22,10 @@ class EmptyOperator:
     paramSchema={
       "type": "object",
       "properties": {
-        "enabled": {"title": "启用", "type": "boolean", "default": True}
+        "enabled": {
+            "description": "当前仅验证布尔类型；代码没有按该值分支，false仍执行并返回ok。",
+            "title": "启用", "type": "boolean", "default": True
+        }
       },
       "required": []
     }
@@ -58,9 +61,6 @@ class EmptyOperator:
       "status": "ok",
       "outputs": {
         "result": {"ok": True}
-      },
-      "metrics": {
-        "latencyMs": 0.0
       },
       "diagnostics": {
         "text": "Empty operator executed"

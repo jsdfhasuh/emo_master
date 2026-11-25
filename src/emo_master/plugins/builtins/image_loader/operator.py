@@ -39,6 +39,7 @@ class ImageLoaderOperator:
             "type": "object",
             "properties": {
                 "imagePath": {
+                    "description": "本次读取文件路径；实现直接Path检查/读取，不自行相对workspace拼接。",
                     "title": "图像路径",
                     "type": "string",
                     "default": "",
@@ -47,6 +48,7 @@ class ImageLoaderOperator:
                     "xFilter": "图片文件 (*.png *.jpg *.jpeg *.bmp *.tif *.tiff)",
                 },
                 "colorMode": {
+                    "description": "彩色模式输出 BGR 三通道，灰度模式输出单通道。",
                     "title": "颜色模式",
                     "type": "string",
                     "enum": ["color", "grayscale"],

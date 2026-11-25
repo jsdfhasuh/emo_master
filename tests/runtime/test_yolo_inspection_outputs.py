@@ -1,5 +1,6 @@
 """Real CPU inference and preview capture, not field-model accuracy acceptance."""
 import base64
+import json
 from queue import Queue
 import threading
 from types import SimpleNamespace
@@ -12,6 +13,8 @@ from emo_master.apps.designer.state.project_store import loadProjectDocument, sa
 from emo_master.apps.designer.state.run_result_history import RunResultHistory
 from emo_master.apps.designer.state.workflow_store import WorkflowStore
 from emo_master.apps.runtime.context.global_variables import ReadOnlyVariables
+from emo_master.apps.runtime.events.jsonl_writer import _projectEvent
+from emo_master.apps.runtime.events.models import RuntimeEvent
 from emo_master.apps.runtime.jobs.worker_main import _eventPublisher, _runContinuous
 from emo_master.apps.runtime.preview.store import PreviewSnapshotWriter
 from emo_master.apps.runtime.workflow.cancellation import CancellationRequested, CancellationToken
@@ -94,6 +97,17 @@ def testYoloInvocationPublishesOverlayOrExactOmissionReason(tmp_path, overlayPar
     assert record['status'] == 'COMPLETED'
     completed = next(event for event in events if event['eventType'] == 'node.completed'
                      and event['context'].callerNodeId == 'yolo')
+    historyPayload = _projectEvent(RuntimeEvent('job', 'node.completed', 'completed',
+        payloadJson=json.dumps(completed['payload'])))['payload']
+    assert 'outputs' not in historyPayload
+    details = historyPayload['diagnostics']
+    if expectedCount:
+        first = result.outputs['detections']['items'][0]
+        assert details['topDetectionLabel'] == first['label'] == 'screw'
+        assert details['topDetectionConfidence'] == first['confidence']
+        assert details['topDetectionConfidence'] != confidence
+    else:
+        assert 'topDetectionLabel' not in details and 'topDetectionConfidence' not in details
     assert record['imageOutputMessages'] == completed['payload']['diagnostics']['imageOutputMessages']
     entries = [entry for snapshot in snapshots for entry in snapshot['payload']['entries']
                if entry['nodeId'] == 'yolo']

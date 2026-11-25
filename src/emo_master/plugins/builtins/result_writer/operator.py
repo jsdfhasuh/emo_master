@@ -88,13 +88,20 @@ _PARAM_SCHEMA: dict[str, object] = {
     "type": "object",
     "properties": {
         "format": {
+            "description": "json完整结构、jsonl逐条记录、csv表格；影响扩展名与recordCount语义。",
             "title": "输出格式",
             "type": "string",
             "enum": ["json", "jsonl", "csv"],
             "default": "json",
         },
-        "relativePath": {"title": "相对输出路径", "type": "string", "default": "results/result"},
-        "overwrite": {"title": "覆盖已有文件", "type": "boolean", "default": False},
+        "relativePath": {
+            "description": "Job workspace内相对文件路径，禁止绝对和..；无扩展名按格式补齐。",
+            "title": "相对输出路径", "type": "string", "default": "results/result"
+        },
+        "overwrite": {
+            "description": "false目标存在报E_OUTPUT_EXISTS；true允许原子替换。",
+            "title": "覆盖已有文件", "type": "boolean", "default": False
+        },
     },
 }
 

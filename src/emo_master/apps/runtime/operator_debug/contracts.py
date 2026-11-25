@@ -160,10 +160,19 @@ def trustedEntries(registry):
                 and manifest.outputPorts == operator.meta.outputPorts
                 and manifest.paramSchema == operator.meta.paramSchema
                 and resource is not None and resource.resolve() == root / folder):
+            resultSchema = manifest.resultSchema
+            inspectionSchema = {
+                "captureParams": resultSchema.get("captureParams", []),
+                "diagnostics": {
+                    key: field for key, field in resultSchema.get("diagnostics", {}).items()
+                    if key == "effectiveParameters"
+                },
+            }
             admitted[operatorId] = {
                 "entry": entry, "version": manifest.version,
                 "inputPorts": manifest.inputPorts, "outputPorts": manifest.outputPorts,
                 "paramSchema": manifest.paramSchema, "displayName": manifest.displayName,
+                "inspectionSchema": inspectionSchema,
                 "runtimeCapabilities": list(manifest.runtimeCapabilities),
                 "stateful": folder in {"global_counter", "variable_read", "variable_write", "image_batch_loader", "video_loader", "coordinate_reader", "patchcore_inference", "yolo_classification", "elapsed_time"},
                 "singleNodeOnly": folder in SINGLE_NODE_FOLDERS,

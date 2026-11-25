@@ -25,38 +25,171 @@
     "type": "object",
     "properties": {
       "modelPath": {
-        "title": "模型部署目录", "type": "string", "default": "",
-        "xWidget": "file", "xFileMode": "directory",
-        "description": "Runtime 所在电脑上的完整 DINO ONNX 部署目录，或包含 transfer.json 和 payload 的导出目录；不会自动上传。"
+        "title": "模型部署目录",
+        "type": "string",
+        "default": "",
+        "xWidget": "file",
+        "xFileMode": "directory",
+        "description": "Runtime 可访问的完整 DINO ONNX 部署目录或 transfer.json+payload 导出目录；相对路径基于 workspacePath，不能用单个 .onnx。"
       },
       "drawHeatmap": {
-        "title": "输出彩色热图", "type": "boolean", "default": true,
-        "description": "每张图相对响应的彩色显示，不是像素缺陷判定。"
+        "title": "输出彩色热图",
+        "type": "boolean",
+        "default": true,
+        "description": "是否生成 heatmap 端口；关闭提供 imageOutputMessages.heatmap。"
       },
-      "drawOverlay": {"title": "输出叠加图", "type": "boolean", "default": true},
+      "drawOverlay": {
+        "description": "是否生成 overlay；关闭时不校验/使用显示模式及高亮阈值。",
+        "title": "输出叠加图",
+        "type": "boolean",
+        "default": true
+      },
       "overlayMode": {
-        "title": "叠加显示", "type": "string", "default": "heatmap",
-        "enum": ["heatmap", "highlight"],
-        "xOptionLabels": {"heatmap": "整图热图", "highlight": "疑似缺陷高亮"},
-        "description": "高亮模式仅标出 NG 图中的相对高响应位置；OK 图保留原图。不是像素级缺陷判定。",
-        "xVisibleWhen": {"drawOverlay": [true]},
-        "xValidateWhen": {"drawOverlay": [true]}
+        "title": "叠加显示",
+        "type": "string",
+        "default": "heatmap",
+        "enum": [
+          "heatmap",
+          "highlight"
+        ],
+        "xOptionLabels": {
+          "heatmap": "整图热图",
+          "highlight": "疑似缺陷高亮"
+        },
+        "description": "heatmap 为整图热色混合；highlight 仅对 NG 显示相对高响应，不改变模型判定。",
+        "xVisibleWhen": {
+          "drawOverlay": [
+            true
+          ]
+        },
+        "xValidateWhen": {
+          "drawOverlay": [
+            true
+          ]
+        }
       },
       "highlightThreshold": {
-        "title": "高亮相对阈值", "type": "number", "default": 0.7,
-        "exclusiveMinimum": 0, "maximum": 1,
-        "description": "仅用于显示，范围 (0, 1]；数值越大，高亮范围越小。不修改模型判定阈值。",
-        "xVisibleWhen": {"drawOverlay": [true], "overlayMode": ["highlight"]},
-        "xValidateWhen": {"drawOverlay": [true], "overlayMode": ["highlight"]}
+        "title": "高亮相对阈值",
+        "type": "number",
+        "default": 0.7,
+        "exclusiveMinimum": 0,
+        "maximum": 1,
+        "description": "highlight 模式的每图相对响应阈值 (0,1]；不是模型 threshold。",
+        "xVisibleWhen": {
+          "drawOverlay": [
+            true
+          ],
+          "overlayMode": [
+            "highlight"
+          ]
+        },
+        "xValidateWhen": {
+          "drawOverlay": [
+            true
+          ],
+          "overlayMode": [
+            "highlight"
+          ]
+        }
       },
       "outputAnomalyMap": {
-        "title": "输出原始异常数值", "type": "boolean", "default": false,
-        "description": "输出原始 256×256 float32 数值和几何还原信息；不进行色彩归一化。"
+        "title": "输出原始异常数值",
+        "type": "boolean",
+        "default": false,
+        "description": "是否把原始异常图数值与还原几何作为对象输出；不影响 score/判定。"
       }
     },
-    "required": ["modelPath"],
+    "required": [
+      "modelPath"
+    ],
     "xModeOperator": "vision.inference.patchcore"
   },
   "minCoreVersion": "0.2.0",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "image": {"title": "图像", "description": "非空 uint8 灰度/BGR，最多 4000 万像素；内部转 RGB 后对整图推理。frame 内容框未用于裁切模型输入。"},
+      "frame": {"title": "坐标框", "description": "结果原图坐标空间/有效内容标识；缺失按图生成。"}
+    },
+    "outputs": {
+      "score": {"title": "得分", "description": "模型 pred_score[0] 原始 PatchCore DINOv2 L2 最近邻最大异常分数，未转概率。", "group": "result"},
+      "threshold": {"title": "阈值", "description": "部署包绑定的图像判定阈值；与 score 同量纲，不来自 highlightThreshold。", "group": "parameter"},
+      "isAnomaly": {"title": "异常判定", "description": "score>=部署 threshold 为 true，含相等边界。", "group": "result"},
+      "label": {"title": "标签", "description": "异常为 NG，非异常为 OK。", "group": "result"},
+      "heatmap": {"title": "热力图", "description": "drawHeatmap 开启时：去 padding 并还原至原图大小，每图 min-max 归一化后 JET 彩色显示；非像素级缺陷判定。"},
+      "overlay": {
+        "title": "叠加图",
+        "description": "drawOverlay 开启时生成原图大小 BGR；heatmap 用 0.6 原图+0.4 色图，highlight 仅 NG 相对高响应位置高亮，OK 原图副本。"
+      },
+      "anomalyMap": {
+        "title": "异常响应图",
+        "description": "outputAnomalyMap=true 时输出原始 256×256 float32 数值列表与几何还原数据；未做显示归一化。",
+        "fields": {
+          "shape": {"title": "形状", "description": "固定 [256,256]。", "unit": "px"},
+          "dtype": {"title": "数据类型", "description": "固定 float32；数值以 JSON 列表提供。"},
+          "values": {
+            "title": "值列表",
+            "description": "值列表的有序列表。",
+            "items": {
+              "title": "值列表",
+              "description": "值列表条目的有序列表。",
+              "items": {"title": "值列表条目", "description": "原始 anomaly_map[0,0] 256×256 模型输出，不经过每图 min-max。", "unit": "模型原始异常响应"}
+            }
+          },
+          "geometry": {
+            "title": "几何对象",
+            "description": "记录原始尺寸、缩放后尺寸、填充像素。",
+            "fields": {
+              "original_size": {"title": "原始尺寸", "description": "原始输入尺寸 [height,width]。", "unit": "px"},
+              "resized_size": {"title": "缩放后尺寸", "description": "等比缩放后尺寸 [height,width]，python round，最少1。", "unit": "px"},
+              "padding": {
+                "title": "填充像素",
+                "description": "固定 256 画布填充 [left,right,top,bottom]，余数在右/下；顺序不同于某些图像算子的 L/T/R/B。",
+                "unit": "px"
+              }
+            }
+          }
+        }
+      },
+      "frame": {"title": "坐标框", "description": "原输入解析后的 frame。"}
+    },
+    "metrics": {
+      "latencyMs": {
+        "title": "算子内部耗时",
+        "description": "整个本地 executeNode 耗时：校验、首次部署加载/哈希检查、预处理、模型、可选可视化/数值序列化均可能包含；非纯推理时间。",
+        "unit": "ms",
+        "group": "duration"
+      }
+    },
+    "diagnostics": {
+      "text": {"title": "摘要", "description": "PatchCore OK/NG、原始分数与部署阈值摘要（8 位有效数字）。"},
+      "backend": {"title": "推理后端", "description": "固定 onnxruntime。"},
+      "provider": {"title": "执行提供程序", "description": "固定且会话校验的 CPUExecutionProvider。"},
+      "optimization": {"title": "优化方式", "description": "固定 BASIC，对应实际 ORT_ENABLE_BASIC。"},
+      "modelPath": {"title": "模型路径", "description": "已加载部署根目录；transfer 包为 payload 目录；保留真实运行路径用于模型定位与排障。", "group": "parameter"},
+      "manifestSha256": {"title": "部署清单 SHA-256", "description": "实际 deployment.json 文件内容的 SHA-256，关联部署身份；不是 operator/version。"},
+      "profile": {"title": "部署规约", "description": "经白名单校验的部署数值 profile。"},
+      "scoreKind": {"title": "分数类型", "description": "固定 patchcore_dinov2_l2_nnmax_raw_v1，说明分数协议。"},
+      "thresholdSource": {"title": "阈值来源", "description": "固定 deployment，表示模型判定阈值来自部署。"},
+      "imageOutputMessages": {
+        "title": "图像输出说明",
+        "description": "按被关闭的图像输出端口提供原因；没有关闭项时为空对象。",
+        "fields": {
+          "heatmap": {"title": "热力图", "description": "drawHeatmap=false 时缺省输出说明。"},
+          "overlay": {"title": "叠加图", "description": "drawOverlay=false 时缺省输出说明。"}
+        }
+      },
+      "overlayMode": {"title": "叠加显示模式", "description": "仅开启 overlay 时记实际显示模式。", "group": "parameter"},
+      "localization": {
+        "title": "定位信息",
+        "description": "仅 highlight 叠加模式提供相对位置显示诊断，不是像素校准结果。",
+        "fields": {
+          "method": {"title": "方法", "description": "固定 per_image_relative_response。"},
+          "relativeThreshold": {"title": "相对响应阈值", "description": "本次显示使用的高亮相对阈值。"},
+          "status": {"title": "状态", "description": "highlighted：NG 且有相对响应跨度；uniform_response：NG 近均匀不标位置；not_anomalous：OK 保留原图。"},
+          "message": {"title": "消息", "description": "与定位显示状态对应的中文解释，含非像素级校准提示。"}
+        }
+      }
+    }
+  }
 }

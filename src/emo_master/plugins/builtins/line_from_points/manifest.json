@@ -17,5 +17,16 @@
   },
   "paramSchema": {"type": "object", "properties": {}, "additionalProperties": false},
   "minCoreVersion": "0.6.1",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "startPoints": {"title": "起点", "description": "已选起点列表，允许0或1个点；超过1报错，非空点须与frame坐标空间相同。"},
+      "endPoints": {"title": "终点", "description": "已选终点列表，允许0或1个点；超过1报错，非空点须与frame坐标空间相同。"},
+      "frame": {"title": "坐标框", "description": "确定输出集合坐标空间，包括空结果；不把bbox边缘自动当作端点。"}
+    },
+    "outputs": {
+      "lines": {"title": "线段", "description": "两端均存在时返回ID=segment的一条线段；任一端为空则返回同frame空间的空集合。"},
+      "lineCount": {"title": "线段数量", "description": "输出线段数量，为0或1。", "unit": "条"}
+    }
+  }
 }

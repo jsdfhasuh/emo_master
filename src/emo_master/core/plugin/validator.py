@@ -16,6 +16,7 @@ from emo_master.core.plugin.models import (
     PluginManifest,
     ValidationIssue,
 )
+from emo_master.core.plugin.result_schema import validateResultSchema
 
 
 _VERSION_PART = r"(?:0|[1-9]\d*)"
@@ -249,6 +250,13 @@ def validateManifestFields(
                 or spec.get("xWidget") == "file" or spec.get("xResourcePurpose")):
             issues.append(ValidationIssue("R01", "E_MANIFEST_UPDATE_CONTRACT", "cycle-safe field must be a scalar, non-resource parameter: " + path))
 
+    resultSchema: dict[str, object] = {}
+    if "resultSchema" in manifestData and inputPorts is not None and outputPorts is not None and paramSchema is not None:
+        try:
+            resultSchema = validateResultSchema(manifestData["resultSchema"], inputPorts, outputPorts, paramSchema)
+        except ValueError as error:
+            issues.append(ValidationIssue("R01", "E_MANIFEST_RESULT_SCHEMA", str(error)))
+
     if issues:
         return None, issues
     if inputPorts is None or outputPorts is None or paramSchema is None:
@@ -281,6 +289,7 @@ def validateManifestFields(
         deviceRequirements=requirements,
         nextCycleParameterPaths=tuple(nextCycle),
         runtimeCapabilities=tuple(capabilities),
+        resultSchema=resultSchema,
     )
     return manifest, []
 

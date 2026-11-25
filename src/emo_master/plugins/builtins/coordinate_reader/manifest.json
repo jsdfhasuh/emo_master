@@ -54,9 +54,10 @@
           "perInvocation": "每次调用读取（兼容默认）",
           "session": "运行准入冻结内容"
         },
-        "description": "会话模式在根流程开始前冻结所有可达坐标文件和解析参数。同一路径修改不会混入当前运行；停止并重新准入后更新。"
+        "description": "perInvocation每次读文件；session使用运行准入冻结文件内容和解析参数。"
       },
       "filePath": {
+        "description": "TXT/CSV文件路径；绝对路径直接resolve，relative优先workspacePath，否则进程路径。",
         "title": "坐标文件路径",
         "type": "string",
         "default": "",
@@ -65,6 +66,7 @@
         "xFilter": "Coordinate files (*.txt *.csv)"
       },
       "fileFormat": {
+        "description": "auto按扩展名决定csv/txt，影响分隔符探测失败时默认选择。",
         "title": "文件格式",
         "type": "string",
         "enum": [
@@ -75,6 +77,7 @@
         "default": "auto"
       },
       "encoding": {
+        "description": "原始字节的文本解码编码。",
         "title": "文本编码",
         "type": "string",
         "enum": [
@@ -86,6 +89,7 @@
         "default": "utf-8"
       },
       "delimiter": {
+        "description": "显式comma/tab/semicolon/空白；auto对前20条非注释数据行Sniffer探测。",
         "title": "分隔符",
         "type": "string",
         "enum": [
@@ -98,6 +102,7 @@
         "default": "auto"
       },
       "headerMode": {
+        "description": "present总跳过首行；auto只在首行解析失败时视为表头；absent无表头。",
         "title": "表头模式",
         "type": "string",
         "enum": [
@@ -108,6 +113,7 @@
         "default": "auto"
       },
       "xColumn": {
+        "description": "X数值所在零基列索引。",
         "title": "X 坐标列索引",
         "type": "integer",
         "minimum": 0,
@@ -115,6 +121,7 @@
         "default": 0
       },
       "yColumn": {
+        "description": "Y数值所在零基列索引，必须不同于X。",
         "title": "Y 坐标列索引",
         "type": "integer",
         "minimum": 0,
@@ -122,11 +129,13 @@
         "default": 1
       },
       "commentPrefix": {
+        "description": "lstrip后以此开头的行不解析，空串禁用注释过滤。",
         "title": "注释前缀",
         "type": "string",
         "default": "#"
       },
       "onInvalidRow": {
+        "description": "error报错；skip跳过无效数据行并计数，不计表头/空行/注释。",
         "title": "无效行处理",
         "type": "string",
         "enum": [
@@ -136,6 +145,7 @@
         "default": "error"
       },
       "maxPoints": {
+        "description": "有效坐标数上限，超过即失败，不截断。",
         "title": "最大坐标点数",
         "type": "integer",
         "minimum": 1,
@@ -143,6 +153,7 @@
         "default": 10000
       },
       "maxFileBytes": {
+        "description": "原文件字节大小上限，超限失败。",
         "title": "最大文件大小（字节）",
         "type": "integer",
         "minimum": 1,
@@ -150,16 +161,19 @@
         "default": 4194304
       },
       "asPolygon": {
+        "description": "true额外生成非零面积polygon；移除重复末尾闭合点，至少3点。",
         "title": "输出为多边形",
         "type": "boolean",
         "default": false
       },
       "sourceId": {
+        "description": "无frame时的坐标源ID；空串回退实际坐标文件路径。",
         "title": "来源标识",
         "type": "string",
         "default": ""
       },
       "imageWidth": {
+        "description": "无frame时坐标空间图像宽度，0代表未提供。",
         "title": "图像宽度（像素）",
         "type": "integer",
         "minimum": 0,
@@ -167,6 +181,7 @@
         "default": 0
       },
       "imageHeight": {
+        "description": "无frame时坐标空间图像高度，须与宽度同为0或正值。",
         "title": "图像高度（像素）",
         "type": "integer",
         "minimum": 0,
@@ -174,9 +189,12 @@
         "default": 0
       },
       "transformToSource": {
+        "description": "无frame时声明的6元素仿射坐标映射；元数据，不在此处变换读出的x/y；顺序[a,b,c,d,e,f]对应x′=a*x+c*y+e、y′=b*x+d*y+f，仅声明坐标映射，不改读入点值。",
         "title": "到源坐标系的变换矩阵",
         "type": "array",
         "items": {
+          "title": "列表项",
+          "description": "6个有限数值的仿射变换系数，按CoordinateSpace2D约定顺序。",
           "type": "number"
         },
         "minItems": 6,
@@ -196,5 +214,92 @@
     ]
   },
   "minCoreVersion": "0.3.0",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "frame": {"title": "坐标框", "description": "可选BBox2D；存在时完全采用其coordinateSpace，覆盖sourceId/尺寸/transformToSource声明。"}
+    },
+    "outputs": {
+      "points": {
+        "title": "点集",
+        "description": "按文件行顺序读取的Point2D列表；x/y不经几何变换，仅绑定坐标空间。",
+        "items": {
+          "title": "点集",
+          "description": "记录类型、结构版本、横坐标、纵坐标、坐标空间。",
+          "fields": {
+            "type": {"title": "类型", "description": "固定point2d类型。"},
+            "schemaVersion": {"title": "结构版本", "description": "从coordinateSpace选择契约版本。"},
+            "x": {"title": "横坐标", "description": "从选定xColumn解析的有限数值；没有应用transformToSource改变此值。", "unit": "pixel"},
+            "y": {"title": "纵坐标", "description": "从选定yColumn解析的有限数值；没有应用transformToSource改变此值。", "unit": "pixel"},
+            "coordinateSpace": {
+              "title": "坐标空间",
+              "description": "记录原点、X 轴方向、Y 轴方向、单位、参考空间、来源标识、图像宽度、图像高度、回源变换矩阵、回源单应矩阵。",
+              "fields": {
+                "origin": {"title": "原点", "description": "固定topLeft，坐标原点在左上角。"},
+                "xAxis": {"title": "X 轴方向", "description": "固定right，横轴向右。"},
+                "yAxis": {"title": "Y 轴方向", "description": "固定down，纵轴向下。"},
+                "unit": {"title": "单位", "description": "固定pixel，未进行物理单位标定。"},
+                "reference": {"title": "参考空间", "description": "本坐标系参考标签，具体来源见该算子frame输出说明。"},
+                "sourceId": {"title": "来源标识", "description": "有frame取其coordinateSpace.sourceId；否则取sourceId参数，空值回退实际坐标文件路径。"},
+                "imageWidth": {"title": "图像宽度", "description": "坐标空间图像宽度；声明未知时不输出。", "unit": "pixel"},
+                "imageHeight": {"title": "图像高度", "description": "坐标空间图像高度；声明未知时不输出。", "unit": "pixel"},
+                "transformToSource": {"title": "回源变换矩阵", "description": "仿射数组[a,b,c,d,e,f]，x′=a*x+c*y+e，y′=b*x+d*y+f。与homographyToSource互斥。"},
+                "homographyToSource": {"title": "回源单应矩阵", "description": "仅从输入frame继承投影坐标系时存在的9元素矩阵；与仿射字段互斥并使外层schemaVersion为1.2。"}
+              }
+            }
+          }
+        }
+      },
+      "pointCount": {"title": "点数量", "description": "有效点数量，包含原文件重复闭合末点。"},
+      "contentHash": {"title": "内容哈希", "description": "实际已读/冻结原始字节的SHA256，不是路径或参数哈希。"},
+      "polygon": {
+        "title": "多边形",
+        "description": "仅asPolygon=true输出，去除重复闭合末点后构造的有效非零面积多边形。",
+        "fields": {
+          "type": {"title": "类型", "description": "固定polygon2d；仅asPolygon=true输出。"},
+          "schemaVersion": {"title": "结构版本", "description": "从所用坐标系选择版本。"},
+          "points": {
+            "title": "点集",
+            "description": "点集的有序列表。",
+            "items": {
+              "title": "点集",
+              "description": "记录横坐标、纵坐标。",
+              "fields": {
+                "x": {"title": "横坐标", "description": "文件点序列的横坐标；末点与首点重复时删除末点用于多边形。"},
+                "y": {"title": "纵坐标", "description": "文件点序列的纵坐标；需至少3点且非退化。"}
+              }
+            }
+          },
+          "coordinateSpace": {
+            "title": "坐标空间",
+            "description": "记录原点、X 轴方向、Y 轴方向、单位、参考空间、来源标识、图像宽度、图像高度、回源变换矩阵、回源单应矩阵。",
+            "fields": {
+              "origin": {"title": "原点", "description": "固定topLeft，坐标原点在左上角。"},
+              "xAxis": {"title": "X 轴方向", "description": "固定right，横轴向右。"},
+              "yAxis": {"title": "Y 轴方向", "description": "固定down，纵轴向下。"},
+              "unit": {"title": "单位", "description": "固定pixel，未进行物理单位标定。"},
+              "reference": {"title": "参考空间", "description": "本坐标系参考标签，具体来源见该算子frame输出说明。"},
+              "sourceId": {"title": "来源标识", "description": "与points使用同一实际输入或声明坐标系。"},
+              "imageWidth": {"title": "图像宽度", "description": "坐标空间图像宽度；声明未知时不输出。", "unit": "pixel"},
+              "imageHeight": {"title": "图像高度", "description": "坐标空间图像高度；声明未知时不输出。", "unit": "pixel"},
+              "transformToSource": {"title": "回源变换矩阵", "description": "仿射数组[a,b,c,d,e,f]，x′=a*x+c*y+e，y′=b*x+d*y+f。与homographyToSource互斥。"},
+              "homographyToSource": {"title": "回源单应矩阵", "description": "仅从输入frame继承投影坐标系时存在的9元素矩阵；与仿射字段互斥并使外层schemaVersion为1.2。"}
+            }
+          }
+        }
+      }
+    },
+    "metrics": {
+      "latencyMs": {"title": "算子内部耗时", "description": "本次校验/取内容/构建几何耗时；session不包括准入时文件读取成本。", "unit": "ms", "group": "duration"},
+      "fileBytes": {"title": "文件字节数", "description": "内容原始字节数；session为冻结文件大小。", "unit": "byte", "group": "business"},
+      "pointCount": {"title": "点数量", "description": "成功解析点数。", "unit": "个", "group": "result"},
+      "skippedRows": {"title": "跳过行数", "description": "onInvalidRow=skip跳过的无效数据行；不含空行注释表头。", "unit": "行", "group": "business"}
+    },
+    "diagnostics": {
+      "text": {"title": "摘要", "description": "点数与实际路径摘要。"},
+      "contentHash": {"title": "内容哈希", "description": "与输出相同的原文件SHA256。"},
+      "readMode": {"title": "读取模式", "description": "实际perInvocation/session模式。"}
+    },
+    "captureParams": [["filePath"], ["fileFormat"], ["delimiter"]]
+  }
 }

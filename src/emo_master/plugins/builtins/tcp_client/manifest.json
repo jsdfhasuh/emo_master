@@ -41,6 +41,7 @@
     "type": "object",
     "properties": {
       "operation": {
+        "description": "send只发送，exchange发送后接收一条完整响应。",
         "title": "操作类型",
         "type": "string",
         "enum": [
@@ -50,6 +51,7 @@
         "default": "send"
       },
       "text": {
+        "description": "固定发送文本；非空时算一个发送来源，不能同时接message/text输入。",
         "title": "发送文本",
         "type": "string",
         "default": ""
@@ -71,6 +73,72 @@
         "send",
         "exchange"
       ]
+    }
+  },
+  "resultSchema": {
+    "inputs": {
+      "message": {"title": "消息", "description": "Typed TcpMessage；直接取内部字节，与text/非空params.text互斥。"},
+      "text": {"title": "摘要", "description": "待编码请求文本；与其他请求来源互斥。"}
+    },
+    "outputs": {
+      "sentBytes": {"title": "发送字节数", "description": "成功写出请求字节数，含配置追加的LF。"},
+      "response": {
+        "title": "响应",
+        "description": "仅exchange返回的分帧响应TcpMessage，含编码与对端host/port。",
+        "fields": {
+          "type": {"title": "类型", "description": "固定tcpMessage类型标识。"},
+          "schemaVersion": {"title": "结构版本", "description": "固定1.0通信报文契约版本。"},
+          "data": {"title": "数据", "description": "原始字节经encoding可逆表示的内容；可能包含业务敏感数据，不在通用参数快照中复制。"},
+          "encoding": {"title": "编码", "description": "来自当前设备生效工作参数responseEncoding；只在exchange成功时输出response。"},
+          "byteLength": {"title": "字节长度", "description": "还原后的字节长度，不是data字符数。", "unit": "byte"},
+          "peerHost": {
+            "title": "对端地址",
+            "description": "驱动将definition.connection.host原值写入response.peerHost；可能是配置主机名，不是额外getpeername解析结果。"
+          },
+          "peerPort": {"title": "对端端口", "description": "驱动将definition.connection.port写入response.peerPort。"}
+        }
+      },
+      "responseText": {"title": "响应文本", "description": "仅exchange且responseTextEncoding非none时存在的解码文本。"}
+    },
+    "diagnostics": {
+      "tcpTransaction": {
+        "title": "TCP 事务",
+        "description": "记录动作、结果状态、发送字节数、接收字节数、自动重试、状态或错误码、消息、阶段。",
+        "fields": {
+          "action": {"title": "动作", "description": "实际send/exchange/receive动作，成功路径存在。"},
+          "outcome": {"title": "结果状态", "description": "成功COMPLETED；异常发送边界前NOT_SENT，开始发送后OUTCOME_UNKNOWN；不是对端业务确认。"},
+          "bytesSent": {"title": "发送字节数", "description": "socket实际接受的字节数，receive时可包含ACK字节。"},
+          "bytesReceived": {"title": "接收字节数", "description": "成功路径完成分帧后的应用数据长度；newline终止符已剥除，不是网卡累计收包字节数。"},
+          "automaticRetry": {"title": "自动重试", "description": "恒false：不自动重发事务。"},
+          "code": {"title": "状态或错误码", "description": "错误分支异常码。"},
+          "message": {"title": "消息", "description": "错误分支说明。"},
+          "phase": {"title": "阶段", "description": "算子侧解析/解码失败时补decode，不是驱动普遍发布的阶段字段。"}
+        }
+      },
+      "deviceSettings": {
+        "title": "设备工作参数",
+        "description": "来源为本次实际绑定和解析的设备工作参数，其中会显示当前动作使用的字段。",
+        "group": "parameter",
+        "fields": {
+          "slot": {"title": "设备槽", "description": "本次动作绑定的设备槽。"},
+          "deviceTypeId": {"title": "设备类型", "description": "已绑定并完成准入的设备类型标识。"},
+          "schemaVersion": {"title": "设备定义版本", "description": "本次解析使用的设备定义结构版本。"},
+          "values": {
+            "title": "生效值",
+            "description": "依绑定设备定义解析后的选定工作值。",
+            "fields": {
+              "textEncoding": {"title": "文本编码", "description": "将节点的发送文本转换成字节时使用的设备编码。"},
+              "appendNewline": {"title": "追加换行", "description": "文本或报文字节后是否追加 LF。"},
+              "connectTimeoutMs": {"title": "连接超时", "description": "本次使用的设备 TCP 建连等待上限。", "unit": "ms"},
+              "responseTimeoutMs": {"title": "发送与应答超时", "description": "设备的发送与响应阶段使用的等待上限。", "unit": "ms"},
+              "responseFraming": {"title": "响应分帧", "description": "仅交换操作使用，决定响应结束条件。"},
+              "responseEncoding": {"title": "响应消息编码", "description": "响应对象登记的编码。"},
+              "responseTextEncoding": {"title": "响应文本编码", "description": "为可选响应文本解码的编码，none 时不输出文本。"},
+              "expectedBytes": {"title": "固定帧长度", "description": "固定长度分帧时要求读取的实际字节数。", "unit": "byte"}
+            }
+          }
+        }
+      }
     }
   }
 }

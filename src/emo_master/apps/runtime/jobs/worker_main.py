@@ -22,6 +22,7 @@ from emo_master.core.plugin.registry import PluginRegistry
 from emo_master.core.project.models import ProjectDocument
 from emo_master.core.workflow.compiler import WorkflowCompiler
 from emo_master.core.contracts.legacy_snapshots import normalizeLegacySnapshotPolicy
+from emo_master.core.contracts.log_safety import redactLogText, redactLogValue
 from emo_master.apps.runtime.jobs.models import JobProcessSpec
 from emo_master.apps.runtime.jobs.heartbeat import HeartbeatCell
 
@@ -92,6 +93,10 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue, communicationPi
         if captureErrors:
             event["payload"] = dict(event.get("payload", {}), captureErrors=captureErrors,
                                     captureDiagnostics=list(getattr(runner, "captureDiagnostics", ())))
+        if "message" in event:
+            event["message"] = redactLogText(event["message"])
+        if "payload" in event:
+            event["payload"] = redactLogValue(event["payload"])
         _put(eventQueue, event)
 
     def errorDetails(error):

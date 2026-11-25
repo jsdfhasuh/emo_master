@@ -34,19 +34,26 @@ _PARAM_SCHEMA: dict[str, object] = {
     "type": "object",
     "properties": {
         "threshold": {
+            "description": "内部阈值分支固定阈值；useOtsu时由OpenCV计算，外部mask时不参与分割但仍校验。",
             "title": "阈值",
             "type": "integer",
             "minimum": 0,
             "maximum": 255,
             "default": 127,
         },
-        "invert": {"title": "反转掩膜", "type": "boolean", "default": False},
-        "useOtsu": {"title": "使用大津法阈值", "type": "boolean", "default": False},
-        "connectivity": {"title": "连通方式", "type": "integer", "enum": [4, 8], "default": 8},
-        "minArea": {"title": "最小面积", "type": "integer", "minimum": 1, "default": 1},
-        "maxArea": {"title": "最大面积", "type": "integer", "minimum": 0, "default": 0},
-        "includeContour": {"title": "包含轮廓", "type": "boolean", "default": True},
-        "drawOverlay": {"title": "绘制叠加图", "type": "boolean", "default": False},
+        "invert": {"description": "仅内部阈值分支反转前景，外部mask不反转。", "title": "反转掩膜", "type": "boolean", "default": False},
+        "useOtsu": {"description": "仅内部阈值路径添加THRESH_OTSU。", "title": "使用大津法阈值", "type": "boolean", "default": False},
+        "connectivity": {"description": "连通域使用4或8邻接。", "title": "连通方式", "type": "integer", "enum": [4, 8], "default": 8},
+        "minArea": {"description": "组件像素面积下限，>=1，包含边界。", "title": "最小面积", "type": "integer", "minimum": 1, "default": 1},
+        "maxArea": {
+            "description": "组件像素面积上限，0为不设上限，正数>=minArea。",
+            "title": "最大面积", "type": "integer", "minimum": 0, "default": 0
+        },
+        "includeContour": {
+            "description": "是否携带轮廓Polygon；仍计算周长/圆度，少于3点无法给出polygon。",
+            "title": "包含轮廓", "type": "boolean", "default": True
+        },
+        "drawOverlay": {"description": "是否生成叠加图。", "title": "绘制叠加图", "type": "boolean", "default": False},
     },
 }
 

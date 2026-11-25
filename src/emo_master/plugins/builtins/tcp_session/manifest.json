@@ -44,5 +44,47 @@
         "additionalProperties": false
       }
     }
+  },
+  "resultSchema": {
+    "outputs": {
+      "session": {
+        "title": "本轮 TCP 会话引用",
+        "description": "可撤销的本轮会话引用，不是socket；含deviceId/runtimeInstanceId/projectId/projectLoadGeneration/serviceId/serviceGeneration/configRevision/channelId/connectionGeneration/leaseId/jobId及类型版本。",
+        "fields": {
+          "schemaVersion": {"title": "结构版本", "description": "固定1.1契约版本。"},
+          "type": {"title": "类型", "description": "固定tcpSessionRef类型标识。"},
+          "deviceId": {"title": "设备标识", "description": "绑定的工程设备ID。"},
+          "runtimeInstanceId": {"title": "Runtime 实例标识", "description": "签发会话的Runtime进程实例ID。"},
+          "projectId": {"title": "工程标识", "description": "签发会话的工程ID。"},
+          "projectLoadGeneration": {"title": "工程加载代次", "description": "本次工程加载代号，阻止跨重载使用。"},
+          "serviceId": {"title": "服务标识", "description": "服务标识（托管适配固定tcp-server）。"},
+          "serviceGeneration": {"title": "服务代次", "description": "服务启动代号，服务重启后旧引用失效。"},
+          "configRevision": {"title": "配置修订", "description": "签发时有效通信配置的摘要版本。"},
+          "channelId": {"title": "通道标识", "description": "实际选中的客户端通道ID。"},
+          "connectionGeneration": {"title": "连接代次", "description": "签发时该通道连接代号，断线新连接不能复用旧会话。"},
+          "leaseId": {"title": "会话租约标识", "description": "Runtime签发且可撤销的能力引用，非socket；普通摘要不复制完整值。"},
+          "jobId": {"title": "作业标识", "description": "签发时所属Job，禁止另一Job借用。"}
+        }
+      }
+    },
+    "diagnostics": {
+      "deviceSettings": {
+        "title": "设备工作参数",
+        "description": "来源为本次实际绑定和解析的设备工作参数，其中会显示当前动作使用的字段。",
+        "group": "parameter",
+        "fields": {
+          "slot": {"title": "设备槽", "description": "本次动作绑定的设备槽。"},
+          "deviceTypeId": {"title": "设备类型", "description": "已绑定并完成准入的设备类型标识。"},
+          "schemaVersion": {"title": "设备定义版本", "description": "本次解析使用的设备定义结构版本。"},
+          "values": {
+            "title": "生效值",
+            "description": "依绑定设备定义解析后的选定工作值。",
+            "fields": {
+              "timeoutMs": {"title": "会话等待超时", "description": "等待已选通道中对端会话的上限。", "unit": "ms"}
+            }
+          }
+        }
+      }
+    }
   }
 }

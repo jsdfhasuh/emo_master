@@ -16,6 +16,7 @@ from emo_master.apps.designer.presenters.node_run_presenter import executionStat
 from emo_master.apps.runtime.operator_debug.assets import VALUE_BYTES
 from emo_master.apps.runtime.operator_debug.contracts import digest, parse
 from emo_master.apps.runtime.operator_debug.data import companionPort
+from emo_master.core.contracts.log_safety import displayOutputUrls
 from emo_master.core.contracts.port_types import normalizePortType
 from emo_master.core.project.global_variables import definitions, variablePorts
 from .debug_values import InputRow, ValueTree, tool, imagePortTitle
@@ -34,7 +35,7 @@ class Completion(QObject):
 class OperatorDebugWindow(QDialog):
     cleanupFailed = Signal()
 
-    def __init__(self, editor, valid=lambda: True):
+    def __init__(self, editor, valid=lambda: True, *, operatorLookup=None):
         super().__init__(editor)
         self.editor, self.valid = editor, valid
         self.isPlc = editor.context.operatorId in {"communication.plc.slmp_read", "communication.plc.slmp_write"}
@@ -123,7 +124,7 @@ class OperatorDebugWindow(QDialog):
         resultLayout.addWidget(self.resultLabel)
         self.resultTabs = QTabWidget()
         self.resultTabs.setDocumentMode(True)
-        self.resultDetail = LogRecordDetail(self.resultTabs)
+        self.resultDetail = LogRecordDetail(self.resultTabs, operatorLookup=operatorLookup)
         self.resultDetail.clear("尚未收到调试执行结果")
         self.resultTabs.addTab(self.resultDetail, "执行详情")
         self.resultPorts = QWidget()
@@ -135,6 +136,9 @@ class OperatorDebugWindow(QDialog):
         self.artifacts = DebugArtifactTools(self, lambda: dict(projectId=self.editor.key.projectId,
             workflowId=self.editor.key.workflowId, nodeId=self.editor.key.nodeId, operatorId=self.editor.context.operatorId),
             self.editor.collectParams, self.exportSelection)
+        self.artifacts.export.setText('导出脱敏结果包…')
+        self.artifacts.export.setToolTip('保存输出与调用身份，JSON 中已识别的 URL 认证信息会隐藏。')
+        self.artifacts.raw.setToolTip('保存原始附件或当前内联值。原始 JSON 附件可能包含 URL 认证信息。')
         # Static tools belong to the input page even before open finishes or
         # when the operator has no input ports. Dynamic rows never own them.
         inputLayout.insertWidget(0, self.artifacts.panel)
@@ -191,7 +195,7 @@ class OperatorDebugWindow(QDialog):
         self.logs.setAccessibleName("调试会话日志")
         self.logs.setTextElideMode(Qt.ElideRight)
         splitter.addWidget(self.logs)
-        self.logDetail = LogRecordDetail(splitter)
+        self.logDetail = LogRecordDetail(splitter, operatorLookup=operatorLookup)
         splitter.addWidget(self.logDetail)
         splitter.setStretchFactor(1, 1)
         splitter.setSizes([240, 600])
@@ -724,7 +728,7 @@ class OperatorDebugWindow(QDialog):
                     self.pixmap.loadFromData(value["content"], "PNG")
                     self.scaleImage()
                 else:
-                    self.outputTree.setValue(parse(value["content"].decode(), VALUE_BYTES))
+                    self.outputTree.setValue(displayOutputUrls(parse(value["content"].decode(), VALUE_BYTES)))
         elif name.startswith('artifact:'):
             try:
                 self.artifacts.completed(name, value)
@@ -827,6 +831,8 @@ class OperatorDebugWindow(QDialog):
                         status=record['status'], rawParams=record.get('rawParams'),
                         resolvedParams=record.get('resolvedParams'), selection='current' if index == 0 else 'history',
                         resultKind='operator-debug')
+        if 'parameterSummary' in record:
+            identity['parameterSummary'] = record['parameterSummary']
         mime = record.get('outputAssets', {}).get(port, {}).get('mime', 'application/json')
         return dict(port=port, wire=wire, identity=identity, mime=mime)
 

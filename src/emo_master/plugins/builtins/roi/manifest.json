@@ -63,6 +63,7 @@
     "type": "object",
     "properties": {
       "roiType": {
+        "description": "选择矩形、旋转矩形或多边形；顶层还可选择组合区域。",
         "title": "ROI 类型",
         "type": "string",
         "enum": [
@@ -80,6 +81,7 @@
         }
       },
       "x": {
+        "description": "矩形左上角在当前图像中的 X 坐标，单位为像素。",
         "title": "X 坐标",
         "type": "number",
         "default": 0.0,
@@ -95,6 +97,7 @@
         }
       },
       "y": {
+        "description": "矩形左上角在当前图像中的 Y 坐标，单位为像素。",
         "title": "Y 坐标",
         "type": "number",
         "default": 0.0,
@@ -110,6 +113,7 @@
         }
       },
       "width": {
+        "description": "矩形或旋转矩形的宽度，单位为像素；执行时必须大于 0。",
         "title": "宽度（像素）",
         "type": "number",
         "minimum": 0.0,
@@ -128,6 +132,7 @@
         }
       },
       "height": {
+        "description": "矩形或旋转矩形的高度，单位为像素；执行时必须大于 0。",
         "title": "高度（像素）",
         "type": "number",
         "minimum": 0.0,
@@ -146,6 +151,7 @@
         }
       },
       "centerX": {
+        "description": "旋转矩形中心的 X 坐标，单位为像素。",
         "title": "中心 X 坐标",
         "type": "number",
         "default": 0.0,
@@ -161,6 +167,7 @@
         }
       },
       "centerY": {
+        "description": "旋转矩形中心的 Y 坐标，单位为像素。",
         "title": "中心 Y 坐标",
         "type": "number",
         "default": 0.0,
@@ -176,6 +183,7 @@
         }
       },
       "angleDegrees": {
+        "description": "旋转矩形的角度，单位为度；范围为 −180（包含）至 180（不包含）。",
         "title": "旋转角度（度）",
         "type": "number",
         "minimum": -180.0,
@@ -193,16 +201,21 @@
         }
       },
       "points": {
+        "description": "按边界顺序填写至少三个互不重复的顶点，每点只含有限的像素坐标 x 和 y。多边形面积必须大于零，边不能自交。",
         "title": "多边形顶点",
         "type": "array",
         "items": {
+          "title": "多边形顶点",
+          "description": "多边形的一个顶点，X 和 Y 以当前图像像素为单位。",
           "type": "object",
           "properties": {
             "x": {
+              "description": "多边形顶点的 X 坐标，单位为像素。",
               "title": "X 坐标",
               "type": "number"
             },
             "y": {
+              "description": "多边形顶点的 Y 坐标，单位为像素。",
               "title": "Y 坐标",
               "type": "number"
             }
@@ -225,6 +238,7 @@
         }
       },
       "padValue": {
+        "description": "裁剪超界和选择掩膜外像素填充值；BGR 三通道同值。",
         "title": "填充值",
         "type": "integer",
         "minimum": 0,
@@ -232,6 +246,7 @@
         "default": 0
       },
       "interpolation": {
+        "description": "croppedImage 的仿射重采样；掩膜始终最近邻。",
         "title": "插值方式",
         "type": "string",
         "enum": [
@@ -242,13 +257,17 @@
         "default": "linear"
       },
       "regions": {
+        "description": "多区域配置数组：enabled keep 的并集减 enabled exclude；无 keep 则全图起始，最后与 frame 交集。",
         "title": "区域配置",
         "type": "array",
         "default": [],
         "items": {
+          "title": "区域条目",
+          "description": "一个非嵌套区域配置；校验遍历所有项，包括 disabled；roiType 在实现中必须显式给出。",
           "type": "object",
           "properties": {
             "roiType": {
+              "description": "选择矩形、旋转矩形或多边形；顶层还可选择组合区域。",
               "title": "ROI 类型",
               "type": "string",
               "enum": [
@@ -259,38 +278,45 @@
               "default": "bbox"
             },
             "x": {
+              "description": "矩形左上角在当前图像中的 X 坐标，单位为像素。",
               "title": "X 坐标",
               "type": "number",
               "default": 0.0
             },
             "y": {
+              "description": "矩形左上角在当前图像中的 Y 坐标，单位为像素。",
               "title": "Y 坐标",
               "type": "number",
               "default": 0.0
             },
             "width": {
+              "description": "矩形或旋转矩形的宽度，单位为像素；执行时必须大于 0。",
               "title": "宽度（像素）",
               "type": "number",
               "minimum": 0.0,
               "default": 1.0
             },
             "height": {
+              "description": "矩形或旋转矩形的高度，单位为像素；执行时必须大于 0。",
               "title": "高度（像素）",
               "type": "number",
               "minimum": 0.0,
               "default": 1.0
             },
             "centerX": {
+              "description": "旋转矩形中心的 X 坐标，单位为像素。",
               "title": "中心 X 坐标",
               "type": "number",
               "default": 0.0
             },
             "centerY": {
+              "description": "旋转矩形中心的 Y 坐标，单位为像素。",
               "title": "中心 Y 坐标",
               "type": "number",
               "default": 0.0
             },
             "angleDegrees": {
+              "description": "旋转矩形的角度，单位为度；范围为 −180（包含）至 180（不包含）。",
               "title": "旋转角度（度）",
               "type": "number",
               "minimum": -180.0,
@@ -298,16 +324,21 @@
               "default": 0.0
             },
             "points": {
+              "description": "按边界顺序填写至少三个互不重复的顶点，每点只含有限的像素坐标 x 和 y。多边形面积必须大于零，边不能自交。",
               "title": "多边形顶点",
               "type": "array",
               "items": {
+                "title": "多边形顶点",
+                "description": "多边形的一个顶点，X 和 Y 以当前图像像素为单位。",
                 "type": "object",
                 "properties": {
                   "x": {
+                    "description": "多边形顶点的 X 坐标，单位为像素。",
                     "title": "X 坐标",
                     "type": "number"
                   },
                   "y": {
+                    "description": "多边形顶点的 Y 坐标，单位为像素。",
                     "title": "Y 坐标",
                     "type": "number"
                   }
@@ -320,10 +351,12 @@
               "default": []
             },
             "name": {
+              "description": "区域显示名称；执行几何运算未使用该字段。",
               "title": "区域名称",
               "type": "string"
             },
             "purpose": {
+              "description": "keep 加入选区，exclude 从选区扣除。",
               "title": "区域用途",
               "type": "string",
               "enum": [
@@ -333,6 +366,7 @@
               "default": "keep"
             },
             "enabled": {
+              "description": "是否参与选择计算；false 不参与，但仍接受参数校验。",
               "title": "启用",
               "type": "boolean",
               "default": true
@@ -363,5 +397,41 @@
     "controllerEntry": "emo_master.plugins.builtins.roi.editor:RoiEditorController",
     "fallback": "schemaForm",
     "previewMode": "pure"
+  },
+  "resultSchema": {
+    "inputs": {
+      "image": {"title": "图像", "description": "非空 uint8 灰度或 BGR 原图。"},
+      "frame": {"title": "坐标框", "description": "输入有效内容及回源空间；实际选择 fullMask 最终与 frameMask 相交。"}
+    },
+    "outputs": {
+      "croppedImage": {"title": "裁剪图像", "description": "按几何外框裁剪、旋转矩形转正后的图像；掩膜外和超界用 padValue 填充。"},
+      "croppedMask": {"title": "裁剪掩膜", "description": "与 croppedImage 对齐的 uint8 0/255 有效选择掩膜，最近邻重采样。"},
+      "croppedFrame": {
+        "title": "裁剪图坐标框",
+        "description": "裁剪输出有效内容包围框及回源矩阵；不能代替带孔的 croppedMask。",
+        "fields": {
+          "coordinateSpace": {"title": "坐标空间", "description": "按 outputToInput 与输入 frame 复合的回源坐标空间。"}
+        }
+      },
+      "maskedImage": {"title": "掩膜作用后图像", "description": "保留原尺寸，将 fullMask 外像素填为 padValue 的原图副本。"},
+      "fullMask": {"title": "全图掩膜", "description": "原图尺寸的最终选择掩膜，含 keep/exclude 与 frame 相交结果。"},
+      "maskedFrame": {"title": "掩膜作用后坐标框", "description": "原输入 frame，不缩成掩膜的形状。"},
+      "roi": {"title": "感兴趣区域", "description": "用于确定裁剪画布的几何/包络，与精确 fullMask 含义不同。", "unit": "geometry2d"}
+    },
+    "metrics": {
+      "latencyMs": {"title": "算子内部耗时", "description": "函数入口至图像、掩膜和 frame 输出组装完成的耗时。", "unit": "ms", "group": "duration"},
+      "roiType": {"title": "区域类型", "description": "配置选择模式。", "group": "parameter"},
+      "outputWidth": {"title": "输出宽度", "description": "croppedImage 的实际宽度。", "unit": "px", "group": "result"},
+      "outputHeight": {"title": "输出高度", "description": "croppedImage 的实际高度。", "unit": "px", "group": "result"},
+      "selectedPixels": {
+        "title": "选区像素数",
+        "description": "原图 fullMask 的非零像素数，不是重采样 croppedMask 像素数。",
+        "unit": "px",
+        "group": "business"
+      }
+    },
+    "diagnostics": {
+      "text": {"title": "摘要", "description": "固定成功文字。"}
+    }
   }
 }

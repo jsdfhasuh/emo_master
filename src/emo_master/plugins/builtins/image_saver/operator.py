@@ -52,7 +52,7 @@ class ImageSaverOperator:
             "properties": {
                 "outputPath": {
                     "title": "输出路径",
-                    "description": "未连接 fileName 时使用完整路径；连接后使用此路径的所在目录，文件名由输入提供，未带扩展名时沿用此路径的扩展名。",
+                    "description": "基础输出路径；fileName输入可替换末段，唯一命名再追加UTC时间与uuid。",
                     "type": "string",
                     "default": "",
                     "xWidget": "file",
@@ -61,16 +61,16 @@ class ImageSaverOperator:
                 },
                 "namingMode": {
                     "title": "文件命名",
-                    "description": "固定名称沿用 outputPath 或 fileName 输入；自动唯一命名在该文件名主体后追加 UTC 时间和唯一标识，保留目录和扩展名，每次创建新文件，不覆盖已有文件。",
+                    "description": "fixed用原名；unique追加唯一后缀并强制overwrite=false。",
                     "type": "string", "enum": ["fixed", "unique"], "default": "fixed",
                     "xOptionLabels": {"fixed": "固定名称", "unique": "自动唯一命名"},
                 },
                 "saveMode": {
-                    "title": "保存方式", "description": "后台保存使用自动唯一命名，提交后工作流可继续执行。",
+                    "title": "保存方式", "description": "sync完成写入后返回；background只提交任务，要求unique与Runtime背景任务服务。",
                     "type": "string", "enum": ["sync", "background"], "default": "sync",
                     "xOptionLabels": {"sync": "同步保存", "background": "后台保存"},
                 },
-                "overwrite": {"title": "覆盖已有文件", "description": "仅固定名称模式使用；自动唯一命名始终创建新文件。",
+                "overwrite": {"title": "覆盖已有文件", "description": "仅fixed时使用；unique始终不覆盖，后台同样不覆盖。",
                               "type": "boolean", "default": True, "xEnabledWhen": {"namingMode": ["fixed"]}},
             },
             "required": ["outputPath"],

@@ -20,31 +20,44 @@
     "type": "object",
     "properties": {
       "case0Value": {
+        "description": "第0分支的字符串匹配值；参数缺失表示不参与匹配，显式空串参与匹配；多个相同值仅最前项命中。",
         "title": "分支 0 匹配值",
         "type": "string",
-        "default": "",
         "xOptionalPresence": true
       },
       "case1Value": {
+        "description": "第1分支的字符串匹配值；参数缺失表示不参与匹配，显式空串参与匹配；多个相同值仅最前项命中。",
         "title": "分支 1 匹配值",
         "type": "string",
-        "default": "",
         "xOptionalPresence": true
       },
       "case2Value": {
+        "description": "第2分支的字符串匹配值；参数缺失表示不参与匹配，显式空串参与匹配；多个相同值仅最前项命中。",
         "title": "分支 2 匹配值",
         "type": "string",
-        "default": "",
         "xOptionalPresence": true
       },
       "case3Value": {
+        "description": "第3分支的字符串匹配值；参数缺失表示不参与匹配，显式空串参与匹配；多个相同值仅最前项命中。",
         "title": "分支 3 匹配值",
         "type": "string",
-        "default": "",
         "xOptionalPresence": true
       }
     }
   },
   "minCoreVersion": "0.1.0",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "value": {"title": "值", "description": "将str(value)依次与已存在的case参数比较；命中后仍透传原始value。"}
+    },
+    "outputs": {
+      "case0": {"title": "分支 0", "description": "按case0到case3顺序第一个字符串匹配分支，透传原value；未命中端口缺失。"},
+      "case1": {"title": "分支 1", "description": "按case0到case3顺序第一个字符串匹配分支，透传原value；未命中端口缺失。"},
+      "case2": {"title": "分支 2", "description": "按case0到case3顺序第一个字符串匹配分支，透传原value；未命中端口缺失。"},
+      "case3": {"title": "分支 3", "description": "按case0到case3顺序第一个字符串匹配分支，透传原value；未命中端口缺失。"},
+      "default": {"title": "默认分支", "description": "四个已配置case都未命中时透传原value。"}
+    },
+    "captureParams": [["case0Value"], ["case1Value"], ["case2Value"], ["case3Value"]]
+  }
 }

@@ -509,6 +509,7 @@ message OperatorInfo {
   string next_cycle_parameter_paths_json = 18;
   string min_core_version = 19;
   string max_core_version = 20;
+  string result_schema_json = 21;
 }
 
 message OperatorIconInfo {

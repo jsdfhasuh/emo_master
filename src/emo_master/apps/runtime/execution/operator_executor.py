@@ -14,6 +14,7 @@ from emo_master.core.plugin.models import PluginDescriptor
 
 if TYPE_CHECKING:
     from emo_master.apps.runtime.execution.background_tasks import BackgroundTaskService
+    from emo_master.apps.runtime.execution.parameter_inspection import ParameterInspection
     from emo_master.apps.runtime.workflow.cancellation import CancellationToken
     from emo_master.apps.runtime.workflow.context import RunContext
     from emo_master.core.workflow.models import CompiledNode
@@ -61,12 +62,15 @@ class OperatorExecutor:
         context: RunContext,
         cancellation: CancellationToken,
         boundValues: Mapping[int, object] | None = None,
+        *,
+        parameterInspection: ParameterInspection | None = None,
     ) -> tuple[dict[str, object], dict[str, object], dict[str, object]]:
         """Execute an already-validated operator without scheduling a graph."""
         if node.kind != "operator":
             raise WorkflowExecutionError("E_NODE_KIND", "single-node execution requires an operator", node.nodeId)
         cancellation.raise_if_cancelled()
-        result = self.invoke(node, nodeInput, context, cancellation, boundValues)
+        result = self.invoke(node, nodeInput, context, cancellation, boundValues,
+                             parameterInspection=parameterInspection)
         try:
             self.validateOutputs(node, result[0])
             cancellation.raise_if_cancelled()
@@ -105,7 +109,7 @@ class OperatorExecutor:
             level=level, code=code, payload={} if payload is None else payload,
         )
 
-    def invoke(self, node, nodeInput, context, cancellation, boundValues=None):
+    def invoke(self, node, nodeInput, context, cancellation, boundValues=None, *, parameterInspection=None):
         """Invoke once; the owner validates outputs before publishing or routing."""
         if node.kind == "operator":
             missingInputs = missingRequiredKeys(
@@ -128,6 +132,7 @@ class OperatorExecutor:
                     node.nodeId,
                 )
         deviceParameters = {}
+        deviceParameterSchemas = {}
         if node.devicePlans:
             from emo_master.core.plugin.devices import DeviceType
             from emo_master.core.project.devices import DeviceDefinition
@@ -141,6 +146,9 @@ class OperatorExecutor:
                 definition = DeviceDefinition.model_validate(plan["definition"])
                 deviceParameters[slot] = declaration.resolveParameters(
                     definition, plan["overrides"], plan["bindings"], variables, nodeInput)
+                deviceParameterSchemas[slot] = {
+                    "deviceTypeId": declaration.deviceTypeId, "schemaVersion": declaration.schemaVersion,
+                }
         operator = self._operatorForNode(node, context, cancellation)
         if operator is None or not hasattr(operator, "executeNode"):
             raise WorkflowExecutionError("E_OPERATOR_UNAVAILABLE", f"operator not found: {node.operatorId}", node.nodeId)
@@ -186,6 +194,7 @@ class OperatorExecutor:
         }
         if node.devicePlans:
             runtimeContext['deviceParameters'] = deviceParameters
+            runtimeContext['deviceParameterSchemas'] = deviceParameterSchemas
             executionSource = {key: runtimeContext[key] for key in (
                 'workflowId', 'nodeId', 'nodeRunId', 'workflowRunId', 'parentWorkflowRunId', 'iterationPath')}
 
@@ -231,6 +240,8 @@ class OperatorExecutor:
                 runtimeContext["registerBackgroundSqlite"] = lambda taskId, receipt, policy: self.sqliteReceipts.register(
                     self.backgroundTasks, context, taskId, receipt, policy)
         try:
+            if parameterInspection is not None:
+                parameterInspection.captureCall(params, node.globalVariableBindings)
             result = operator.executeNode(nodeInput, params, runtimeContext)
         except Exception as err:
             loggingDiagnostics = logger.close()
@@ -238,17 +249,17 @@ class OperatorExecutor:
                 _attachOperatorLoggingDiagnostics(err, loggingDiagnostics)
             raise
         loggingDiagnostics = logger.close()
+        diagnostics = result.get("diagnostics") if isinstance(result, dict) else None
+        normalizedDiagnostics = diagnostics if isinstance(diagnostics, dict) else {}
+        if parameterInspection is not None:
+            normalizedDiagnostics = parameterInspection.captureEffective(normalizedDiagnostics)
         if not isinstance(result, dict) or result.get("status") != "ok":
             error = result.get("error", {}) if isinstance(result, dict) else {}
             code = error.get("code", "E_EXEC_FAILED") if isinstance(error, dict) else "E_EXEC_FAILED"
             message = error.get("message", f"node execute failed: {node.nodeId}") if isinstance(error, dict) else str(error)
             failedMetrics = result.get("metrics", {}) if isinstance(result, dict) else {}
-            failedDiagnostics = result.get("diagnostics", {}) if isinstance(result, dict) else {}
-            normalizedDiagnostics = (
-                dict(failedDiagnostics) if isinstance(failedDiagnostics, dict) else {}
-            )
             if loggingDiagnostics:
-                normalizedDiagnostics["operatorLogging"] = loggingDiagnostics
+                normalizedDiagnostics = dict(normalizedDiagnostics, operatorLogging=loggingDiagnostics)
             raise WorkflowExecutionError(
                 str(code),
                 str(message),
@@ -265,11 +276,8 @@ class OperatorExecutor:
             )
         outputs = rawOutputs
         metrics = result.get("metrics", {})
-        diagnostics = result.get("diagnostics", {})
-        normalizedDiagnostics = diagnostics if isinstance(diagnostics, dict) else {}
         if loggingDiagnostics:
-            normalizedDiagnostics = dict(normalizedDiagnostics)
-            normalizedDiagnostics["operatorLogging"] = loggingDiagnostics
+            normalizedDiagnostics = dict(normalizedDiagnostics, operatorLogging=loggingDiagnostics)
         return outputs, metrics if isinstance(metrics, dict) else {}, normalizedDiagnostics
 
     def _operatorForNode(self, node, context, cancellation) -> object | None:

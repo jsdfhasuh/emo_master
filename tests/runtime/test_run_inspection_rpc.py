@@ -104,6 +104,11 @@ def testDifferentRealJobsRetainSameInvocationImageAndCountAcrossPromotion(tmp_pa
             load = next(event for event in events if event.eventType == 'node.completed' and event.nodeId == 'load')
             count = next(event for event in events if event.eventType == 'node.completed' and event.nodeId == 'count')
             assert json.loads(count.payloadJson)['outputs']['count'] == expected
+            payload = json.loads(load.payloadJson)
+            manifest = runtime.pluginScanResult.activeOperators["vision.io.image_loader"].manifest
+            assert (payload["operatorId"], payload["operatorVersion"]) == (manifest.operatorId, manifest.version)
+            assert any(row["path"] == ["imagePath"] and row["stage"] == "call"
+                       and row["value"].endswith("input.png") for row in payload["parameterSummary"])
             assert source.nodeRunId == load.nodeRunId and source.workflowRunId == load.workflowRunId
             assert source.originJobId == job and source.captureId
             saved = listed(client, project, session, job, 'save')
@@ -130,7 +135,10 @@ def testActualFailedJobKeepsEarlierCompletedNodeAndNoFailedNodePixels(tmp_path):
         runtime.jobSupervisor.finishRetirements()
         assert not (runtime.workspaceRoot / start.job_id).exists()
         events = [asdict(event) for event in runtime.eventStore.readMerged(start.job_id)]
-        assert any(event['eventType'] == 'node.failed' and event['nodeId'] == 'save' for event in events)
+        failed = next(event for event in events if event['eventType'] == 'node.failed' and event['nodeId'] == 'save')
+        payload = json.loads(failed["payloadJson"])
+        manifest = runtime.pluginScanResult.activeOperators["vision.io.image_saver"].manifest
+        assert (payload["operatorId"], payload["operatorVersion"]) == (manifest.operatorId, manifest.version)
 
 
 def testSessionCapacityRejectedRequestOldClientAndLeaseCloseDoNotStopJob(tmp_path):

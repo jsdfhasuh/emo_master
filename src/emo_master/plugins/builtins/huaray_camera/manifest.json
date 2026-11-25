@@ -49,6 +49,7 @@
     "additionalProperties": false,
     "properties": {
       "selectionMode": {
+        "description": "直接IMV路径按IP/唯一key/用户名称/索引选择设备；托管路径由绑定类型的connection确定。",
         "title": "连接方式",
         "type": "string",
         "enum": [
@@ -60,24 +61,28 @@
         "default": "ip"
       },
       "ipAddress": {
+        "description": "直接路径selectionMode=ip时的规范IPv4。",
         "title": "相机 IP 地址",
         "type": "string",
         "default": "",
         "maxLength": 255
       },
       "cameraKey": {
+        "description": "直接路径cameraKey选择；托管IMV固定取device.connection.cameraKey。",
         "title": "设备唯一标识",
         "type": "string",
         "default": "",
         "maxLength": 255
       },
       "userId": {
+        "description": "直接路径userId选择时的设备用户标识。",
         "title": "用户自定义名称",
         "type": "string",
         "default": "",
         "maxLength": 255
       },
       "deviceIndex": {
+        "description": "直接路径index选择时的零基枚举索引。",
         "title": "设备索引",
         "type": "integer",
         "minimum": 0,
@@ -85,6 +90,7 @@
         "default": 0
       },
       "triggerMode": {
+        "description": "hardware外部触发、software单次软触发、freeRun连续采集；决定取帧选择策略。",
         "title": "触发模式",
         "type": "string",
         "enum": [
@@ -95,6 +101,7 @@
         "default": "hardware"
       },
       "triggerSource": {
+        "description": "hardware有效的触发输入线；IMV Line1..4，托管MVS为Line0..3。",
         "title": "触发输入线",
         "type": "string",
         "enum": [
@@ -106,6 +113,7 @@
         "default": "Line1"
       },
       "triggerActivation": {
+        "description": "hardware有效触发边沿RisingEdge/FallingEdge。",
         "title": "触发边沿",
         "type": "string",
         "enum": [
@@ -115,6 +123,7 @@
         "default": "RisingEdge"
       },
       "captureTimeoutMs": {
+        "description": "直接路径有界取图预算；托管设备允许0表示可取消硬件等待，实际还受动作deadline限制。",
         "title": "取图超时（毫秒）",
         "type": "integer",
         "minimum": 1,
@@ -134,9 +143,10 @@
           "bounded": "有界超时（兼容默认）",
           "hardware": "持续等待硬件触发"
         },
-        "description": "持续等待仅用于硬件触发且异常重试次数必须为 0；停止仍通过 100 毫秒 SDK 时间片取消。预览始终有界。"
+        "description": "直接路径hardware为持续等待，要求硬件触发且retryCount=0；托管由captureTimeoutMs=0表达。"
       },
       "sequencePolicy": {
+        "description": "IMV可要求blockId严格连续；托管MVS声明未提供此配置。",
         "title": "设备帧号检查",
         "type": "string",
         "enum": [
@@ -151,6 +161,7 @@
         }
       },
       "retryCount": {
+        "description": "直接IMV路径失败重试数；超时直接返回；托管IMV强制0、不自动重放触发。",
         "title": "异常重试次数",
         "type": "integer",
         "minimum": 0,
@@ -158,6 +169,7 @@
         "default": 1
       },
       "retryDelayMs": {
+        "description": "直接重试前的可取消等待毫秒；托管采集不使用此节点字段。",
         "title": "重试间隔（毫秒）",
         "type": "integer",
         "minimum": 0,
@@ -165,6 +177,7 @@
         "default": 200
       },
       "outputColor": {
+        "description": "输出uint8 BGR三通道或gray单通道。",
         "title": "输出颜色",
         "type": "string",
         "enum": [
@@ -174,6 +187,7 @@
         "default": "bgr"
       },
       "demosaic": {
+        "description": "IMV像素转换去马赛克算法；MVS当前设备schema无此项。",
         "title": "去马赛克算法",
         "type": "string",
         "enum": [
@@ -184,6 +198,7 @@
         "default": "bilinear"
       },
       "exposureMode": {
+        "description": "keep不写曝光配置；manual关闭自动曝光并设置ExposureTime。",
         "title": "曝光设置",
         "type": "string",
         "enum": [
@@ -193,12 +208,14 @@
         "default": "keep"
       },
       "exposureUs": {
+        "description": "manual请求的曝光微秒；不是当然等于本帧真实曝光。",
         "title": "曝光时间（微秒）",
         "type": "number",
         "exclusiveMinimum": 0,
         "default": 10000.0
       },
       "gainMode": {
+        "description": "keep保留设备当前增益；manual关闭自动并设置增益。",
         "title": "增益设置",
         "type": "string",
         "enum": [
@@ -208,11 +225,13 @@
         "default": "keep"
       },
       "gainRaw": {
+        "description": "IMV手动原始增益值；MVS使用设备gainDb，不可混同。",
         "title": "增益值",
         "type": "number",
         "default": 0.0
       },
       "frameRateMode": {
+        "description": "IMV keep保留或manual使能并设置采集帧率。",
         "title": "帧率设置",
         "type": "string",
         "enum": [
@@ -222,12 +241,14 @@
         "default": "keep"
       },
       "frameRate": {
+        "description": "IMV manual帧率值fps。",
         "title": "采集帧率（帧/秒）",
         "type": "number",
         "exclusiveMinimum": 0,
         "default": 30.0
       },
       "roiMode": {
+        "description": "IMV keep保留ROI，full取SDK最大宽高并清零偏移，custom使用指定宽高偏移。",
         "title": "采集区域",
         "type": "string",
         "enum": [
@@ -238,30 +259,35 @@
         "default": "keep"
       },
       "width": {
+        "description": "IMV custom ROI宽度像素。",
         "title": "图像宽度（像素）",
         "type": "integer",
         "minimum": 1,
         "default": 1
       },
       "height": {
+        "description": "IMV custom ROI高度像素。",
         "title": "图像高度（像素）",
         "type": "integer",
         "minimum": 1,
         "default": 1
       },
       "offsetX": {
+        "description": "IMV custom ROI水平偏移像素；输出frame变换采用实际SDK读回偏移。",
         "title": "水平偏移（像素）",
         "type": "integer",
         "minimum": 0,
         "default": 0
       },
       "offsetY": {
+        "description": "IMV custom ROI垂直偏移像素；输出frame变换采用实际SDK读回偏移。",
         "title": "垂直偏移（像素）",
         "type": "integer",
         "minimum": 0,
         "default": 0
       },
       "pixelFormat": {
+        "description": "IMV keep保留，其他值写SDK PixelFormat；不是输出numpy颜色模式。",
         "title": "相机像素格式",
         "type": "string",
         "enum": [
@@ -289,5 +315,129 @@
     "controllerEntry": "emo_master.plugins.builtins.huaray_camera.editor:HuarayCameraEditorController",
     "fallback": "schemaForm",
     "previewMode": "live"
+  },
+  "resultSchema": {
+    "outputs": {
+      "image": {"title": "图像", "description": "托管设备/直接IMV采集所得uint8 BGR或灰度原图。"},
+      "frame": {
+        "title": "坐标框",
+        "description": "图像局部bbox，transformToSource含实际ROI offsetX/offsetY。",
+        "fields": {
+          "type": {"title": "类型", "description": "固定bbox2d图像有效内容矩形类型。"},
+          "schemaVersion": {"title": "结构版本", "description": "坐标契约版本；这些图像来源构建仿射坐标系。"},
+          "x": {"title": "横坐标", "description": "有效内容矩形左上角x，来源图像为0。", "unit": "pixel"},
+          "y": {"title": "纵坐标", "description": "有效内容矩形左上角y，来源图像为0。", "unit": "pixel"},
+          "width": {"title": "宽度", "description": "本次真实图像宽度。", "unit": "pixel"},
+          "height": {"title": "高度", "description": "本次真实图像高度。", "unit": "pixel"},
+          "coordinateSpace": {
+            "title": "坐标空间",
+            "description": "记录原点、X 轴方向、Y 轴方向、单位、参考空间、来源标识、图像宽度、图像高度、回源变换矩阵。",
+            "fields": {
+              "origin": {"title": "原点", "description": "固定topLeft，坐标原点在左上角。"},
+              "xAxis": {"title": "X 轴方向", "description": "固定right，横轴向右。"},
+              "yAxis": {"title": "Y 轴方向", "description": "固定down，纵轴向下。"},
+              "unit": {"title": "单位", "description": "固定pixel，未进行物理单位标定。"},
+              "reference": {"title": "参考空间", "description": "本坐标系参考标签，具体来源见该算子frame输出说明。"},
+              "sourceId": {"title": "来源标识", "description": "SDK会话提供的硬件来源标识；托管路径取acquisition.sourceId。"},
+              "imageWidth": {"title": "图像宽度", "description": "坐标空间图像宽度；声明未知时不输出。", "unit": "pixel"},
+              "imageHeight": {"title": "图像高度", "description": "坐标空间图像高度；声明未知时不输出。", "unit": "pixel"},
+              "transformToSource": {
+                "title": "回源变换矩阵",
+                "description": "仿射数组[a,b,c,d,e,f]，x′=a*x+c*y+e，y′=b*x+d*y+f。工业相机含实际ROI offsetX/offsetY平移。"
+              }
+            }
+          }
+        }
+      },
+      "blockId": {"title": "采集块编号", "description": "SDK帧序号，不是处理张数或工作流轮次。"},
+      "deviceTimestamp": {"title": "设备时间戳", "description": "SDK原始设备计时值，未统一换算单位。"},
+      "actualExposureUs": {"title": "实际曝光", "description": "曝光微秒证据值；读取来源依exposureEvidence，不能默认宣称逐帧硬件测量。", "unit": "μs"}
+    },
+    "metrics": {
+      "captureAttempts": {
+        "title": "采集尝试次数",
+        "description": "直接路径attempt+1；托管路径固定1代表本次capture，不是底层连接重试。",
+        "unit": "次",
+        "group": "business"
+      },
+      "latencyMs": {"title": "算子内部耗时", "description": "仅直接路径发布，含可能连接/重试/取帧；托管路径无此metric。", "unit": "ms", "group": "duration"}
+    },
+    "diagnostics": {
+      "deviceFrame": {
+        "title": "采集帧信息",
+        "description": "记录帧标识、名称、形状、数据类型、存储字节数、周期标识、代次、请求标识、执行计划修订、采集信息。",
+        "fields": {
+          "frameId": {"title": "帧标识", "description": "本次共享内存原图引用ID。"},
+          "name": {"title": "名称", "description": "共享内存段名称，技术字段，不是图片文件路径。"},
+          "shape": {"title": "形状", "description": "图像维度数组。"},
+          "dtype": {"title": "数据类型", "description": "固定uint8。"},
+          "nbytes": {"title": "存储字节数", "description": "实际原图字节数。"},
+          "cycleId": {"title": "周期标识", "description": "采集所属运行周期ID。"},
+          "generation": {
+            "title": "代次",
+            "description": "FrameStore调用方传入的设备操作运行代号；不与acquisition.connectionGeneration或streamGeneration混用。"
+          },
+          "requestId": {"title": "请求标识", "description": "本次采集请求ID。"},
+          "planRevision": {"title": "执行计划修订", "description": "采集冻结的在线计划修订号。"},
+          "acquisition": {
+            "title": "采集信息",
+            "description": "记录采集块编号、设备时间戳、实际曝光、曝光值来源、帧曝光量、请求曝光量、来源标识、横向偏移、纵向偏移、连接代次、采集流代次、选区、保留当前状态。",
+            "fields": {
+              "blockId": {"title": "采集块编号", "description": "SDK原生帧编号；不是工作流iteration index。"},
+              "deviceTimestamp": {"title": "设备时间戳", "description": "SDK原生设备时间戳，当前代码未换算单位，不能标为Unix秒/ms。"},
+              "actualExposureUs": {"title": "实际曝光", "description": "IMV配置读回；MVS优先帧ExposureTime，否则配置读回，需结合exposureEvidence。", "unit": "μs"},
+              "exposureEvidence": {"title": "曝光值来源", "description": "IMV固定configuration_readback_not_frame_metadata；MVS可能frame_metadata。"},
+              "frameExposureUs": {"title": "帧曝光量", "description": "逐帧元数据曝光值；IMV始终null，MVS无有效帧值时null。", "unit": "μs"},
+              "requestedExposureUs": {"title": "请求曝光量", "description": "仅托管IMV发布，manual时请求曝光，否则null。", "unit": "μs"},
+              "sourceId": {"title": "来源标识", "description": "实际相机来源标识。"},
+              "offsetX": {"title": "横向偏移", "description": "实际采集ROI水平偏移px。"},
+              "offsetY": {"title": "纵向偏移", "description": "实际采集ROI垂直偏移px。"},
+              "connectionGeneration": {"title": "连接代次", "description": "Host内连接身份代号。"},
+              "streamGeneration": {"title": "采集流代次", "description": "采集流代号；重新设置/重启流会变化。"},
+              "selection": {"title": "选区", "description": "仅IMV：continuous_queue/latest_complete/single_software_trigger。"},
+              "retainedCurrentState": {"title": "保留当前状态", "description": "仅IMV：任意采集设置为keep时true，声明部分设置沿用硬件当前状态。"}
+            }
+          }
+        }
+      },
+      "sourceId": {"title": "来源标识", "description": "直接路径相机来源ID。"},
+      "selector": {"title": "选择值", "description": "直接路径mode:identifier选择描述。"},
+      "sdkVersion": {"title": "SDK 版本", "description": "直接路径SDK版本，读不到为unknown。"},
+      "resourceCleanup": {"title": "资源清理信息", "description": "直接路径重配置/失败清理异常，可为文本或{code,message,...}对象。"},
+      "operation": {"title": "操作", "description": "SDK失败操作名。"},
+      "sdkCode": {"title": "SDK 返回码", "description": "SDK错误整数码。"},
+      "checkedPaths": {"title": "已检查路径", "description": "SDK查找候选路径列表。"},
+      "processBits": {"title": "进程位数", "description": "进程位数。"},
+      "dllPath": {"title": "动态库路径", "description": "所尝试加载的SDK库路径。"},
+      "export": {"title": "导出信息", "description": "缺失SDK导出符号。"},
+      "deviceCount": {"title": "设备数量", "description": "枚举设备数。"},
+      "deviceIndex": {"title": "设备索引", "description": "出错的选择索引。"},
+      "cleanupError": {"title": "清理错误", "description": "打开失败时附加清理错误字符串。"},
+      "releaseError": {"title": "释放错误", "description": "主错误附带的帧释放失败。"},
+      "cleanupErrors": {"title": "清理错误列表", "description": "资源清理错误字符串列表。"},
+      "deviceSettings": {
+        "title": "设备工作参数",
+        "description": "来源为本次实际绑定和解析的设备工作参数，其中会显示当前动作使用的字段。",
+        "group": "parameter",
+        "fields": {
+          "slot": {"title": "设备槽", "description": "本次动作绑定的设备槽。"},
+          "deviceTypeId": {"title": "设备类型", "description": "已绑定并完成准入的设备类型标识。"},
+          "schemaVersion": {"title": "设备定义版本", "description": "本次解析使用的设备定义结构版本。"},
+          "values": {
+            "title": "生效值",
+            "description": "依绑定设备定义解析后的选定工作值。",
+            "fields": {
+              "triggerMode": {"title": "触发模式", "description": "设备本次采用的外部触发、软触发或连续取帧方式。"},
+              "triggerSource": {"title": "触发输入线", "description": "仅外部触发使用，取值范围由绑定相机厂商的设备定义决定。"},
+              "triggerActivation": {"title": "有效触发边沿", "description": "仅外部触发使用，例如上升沿或下降沿。"},
+              "captureTimeoutMs": {"title": "取帧等待上限", "description": "本次解析的设备取帧等待值，零值表示可取消等待，并受动作截止时间约束。", "unit": "ms"},
+              "outputColor": {"title": "设备输出颜色", "description": "本次采集请求的输出颜色模式。"},
+              "exposureMode": {"title": "曝光设置方式", "description": "keep 沿用当前设置，manual 下发指定曝光值。"},
+              "exposureUs": {"title": "请求曝光", "description": "手动曝光模式请求的曝光值，逐帧证据见采集帧诊断。", "unit": "μs"}
+            }
+          }
+        }
+      }
+    }
   }
 }

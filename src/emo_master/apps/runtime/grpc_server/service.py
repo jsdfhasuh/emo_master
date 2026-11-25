@@ -1233,6 +1233,7 @@ class RuntimeService(OutputRequestsRpcMixin, RunReadRpcMixin, HistoryRpcMixin, P
                         descriptor.manifest.outputPorts, ensure_ascii=True
                     ),
                     param_schema_json=json.dumps(descriptor.manifest.paramSchema, ensure_ascii=True),
+                    result_schema_json=json.dumps(descriptor.manifest.resultSchema, ensure_ascii=False, separators=(",", ":")),
                     next_cycle_parameter_paths_json=json.dumps(descriptor.manifest.nextCycleParameterPaths),
                     min_core_version=descriptor.manifest.minCoreVersion,
                     max_core_version=descriptor.manifest.maxCoreVersion,

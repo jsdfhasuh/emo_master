@@ -109,12 +109,17 @@ class _ReadableTree(LogJsonTree):
         if rawParent and isinstance(rawParent[0], list):
             descriptor = fields.get("items")
         else:
-            descriptor = children.get(name) or _mapping(fields.get("xFieldDescriptions")).get(name)
+            descriptor = children.get(name, _mapping(fields.get("xFieldDescriptions")).get(name))
+            additional = fields.get("additionalProperties")
+            if descriptor is None and isinstance(additional, Mapping):
+                return self._namedValue(parent, name, value, additional, keepName=True)
         return self._namedValue(parent, name, value, _mapping(descriptor))
 
-    def _namedValue(self, parent, name, value, descriptor, *, summarized=False):
+    def _namedValue(self, parent, name, value, descriptor, *, summarized=False, keepName=False):
         title = descriptor.get("title")
-        label = f"{title}（{name}）" if isinstance(title, str) and title != name else str(name)
+        label = str(name)
+        if not keepName and isinstance(title, str) and title != name:
+            label = f"{title}（{name}）"
         item = super().appendValue(parent, label, value)
         if descriptor and not summarized:
             item.setData(0, _SEMANTICS_ROLE, dict(descriptor))
@@ -540,10 +545,11 @@ class LogRecordDetail(QWidget):
 
     def setDebugResult(self, record, *, sessionId, generation):
         self._startRecord(record, "调试执行结果", record.get("message", ""))
-        definition = self._definition(record)
+        sourceIdentity = record.get("sourceIdentity")
+        definition = self._definition(sourceIdentity)
         resultSchema = _mapping(definition.get("resultSchema"))
         remaining = dict(record)
-        for key in ("message", "sessionId", "generation", "executionId", "operatorId", "operatorVersion"):
+        for key in ("message", "sessionId", "generation", "executionId"):
             remaining.pop(key, None)
         if "status" in remaining:
             value = remaining.pop("status")
@@ -578,7 +584,7 @@ class LogRecordDetail(QWidget):
         if remaining:
             self.readable.field("附加字段", remaining)
         identity = {"调试会话": sessionId, "代次": generation}
-        identity.update(self._identity(record))
+        identity.update(self._identity(sourceIdentity))
         if "executionId" in record:
             identity["调试执行"] = record["executionId"]
         self.readable.field("记录身份", identity)

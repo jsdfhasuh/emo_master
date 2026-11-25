@@ -20,7 +20,7 @@ from emo_master.apps.runtime.operator_debug.bound_resources import resolveBoundR
 from emo_master.apps.runtime.operator_debug.data import prepareInputs, retainedAssetIds
 from emo_master.apps.runtime.operator_debug.state import DebugVariables
 from emo_master.apps.runtime.operator_debug.worker import DebugWorker
-from emo_master.core.contracts.log_safety import REDACTED, isSensitiveParameter, redactLogValue
+from emo_master.core.contracts.log_safety import REDACTED, isSensitiveParameter, redactLogText, redactLogValue
 from emo_master.core.plugin.result_schema import parameterSchemaAtPath
 from emo_master.core.project.node_input_files import NODE_INPUT_FILES, nodeInputPathKey
 
@@ -34,6 +34,15 @@ def _displayVariables(values, spec):
                for index, part in enumerate(binding["parameterPath"]))
     }
     return redactLogValue({key: REDACTED if key in hidden else value for key, value in values.items()})
+
+
+def _displayOutputUrls(value):
+    """Copy inline JSON output, masking only recognized URL authentication."""
+    if isinstance(value, dict):
+        return {key: _displayOutputUrls(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_displayOutputUrls(item) for item in value]
+    return redactLogText(value) if isinstance(value, str) else value
 
 
 @dataclass
@@ -228,7 +237,11 @@ class OperatorDebugManager:
                 result = session.executions.get(executionId)
                 if result is None:
                     fail("E_DEBUG_RESULT_EXPIRED", "execution result unavailable; never re-execute this request ID")
-                return dict(result)
+                display = dict(result)
+                if "outputs" in result:
+                    # Internal output references continue to use the stored, original result.
+                    display["outputs"] = _displayOutputUrls(result["outputs"])
+                return display
             if action == "events":
                 after = request.get("afterSequence", 0)
                 limit = min(100, max(1, request.get("limit", 100)))

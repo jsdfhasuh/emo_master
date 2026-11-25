@@ -8,6 +8,7 @@ from emo_master.apps.designer.ui import log_json_tree, log_record_detail
 from emo_master.apps.designer.ui.log_dialog import StructuredLogEntry
 from emo_master.apps.designer.ui.log_json_tree import LogJsonTree
 from emo_master.apps.designer.ui.log_record_detail import LogRecordDetail
+from emo_master.plugins.builtins.annotate.operator import AnnotateOperator
 
 
 def child(parent, name):
@@ -303,7 +304,9 @@ def testJobAndDebugExplainOnlyMatchingOperatorFieldsAndKeepRawValues(designerApp
     detail.copyRecordButton.click()
     assert json.loads(copies[-1]) == event
 
-    result = {**payload, "elapsedMs": 1.5, "outputs": {"objects": [{"score": 0, "extra": ""}]},
+    result = {"sourceIdentity": {"operatorId": "test.operator", "operatorVersion": "1.2", "generation": 1},
+              "metrics": payload["metrics"], "diagnostics": payload["diagnostics"], "parameterSummary": summary,
+              "elapsedMs": 1.5, "outputs": {"objects": [{"score": 0, "extra": ""}]},
               "effectiveParams": {"options": {"limit": 1, "constant": None}}}
     detail.setDebugResult(result, sessionId="session", generation=1)
     assert child(root, "调试执行耗时").text(1) == "1.5 ms"
@@ -325,9 +328,36 @@ def testJobAndDebugExplainOnlyMatchingOperatorFieldsAndKeepRawValues(designerApp
     assert json.loads(copies[-1]) == 0
     assert json.loads(detail.rawTree.toPlainText()) == result
 
-    mismatched = {**result, "operatorVersion": "older"}
+    mismatched = {**result, "sourceIdentity": {**result["sourceIdentity"], "operatorVersion": "older"}}
     detail.setDebugResult(mismatched, sessionId="session", generation=1)
     assert child(child(root, "已返回输出"), "objects")
     assert child(child(root, "指标"), "latencyMs").text(1) == "0.25"
     assert child(child(root, "本次生效参数"), "options.limit").text(1) == "0 · 输入覆盖"
     assert json.loads(detail.rawTree.toPlainText()) == mismatched
+
+
+def testAnnotateClassStylesExplainDynamicMembersAndCopyActualValues(designerApplication, monkeypatch):
+    copies = []
+    monkeypatch.setattr(log_json_tree, "_copyText", copies.append)
+    schema = AnnotateOperator.meta.paramSchema["properties"]["classStyles"]
+    style = {"displayLabel": "安全锥", "color": [0, 128, 255], "futureField": None}
+    styles = {"safety-cone": style}
+    tree = log_record_detail._ReadableTree()
+    group = tree.field("classStyles", styles, semantics=schema, expand=True)
+    member = child(group, "safety-cone")
+    assert schema["additionalProperties"]["description"] in member.toolTip(0)
+    member.setExpanded(True)
+    label = child(member, "显示标签（displayLabel）")
+    assert label.text(1) == "安全锥" and "不修改输入 label" in label.toolTip(0)
+    color = child(member, "类别颜色（BGR）（color）")
+    color.setExpanded(True)
+    firstChannel = child(color, "颜色通道值（0）")
+    assert (firstChannel.text(1), firstChannel.text(2)) == ("0", "number")
+    assert "按 B、G、R 顺序" in firstChannel.toolTip(0)
+    unknown = child(member, "futureField")
+    assert (unknown.text(1), unknown.text(2), unknown.toolTip(0)) == ("null", "null", "futureField")
+
+    for item in (group, member, color, firstChannel):
+        tree.setCurrentItem(item)
+        tree.copySelectedValue()
+    assert [json.loads(value) for value in copies] == [styles, style, [0, 128, 255], 0]

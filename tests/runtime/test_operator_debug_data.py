@@ -179,11 +179,23 @@ def testParameterBindingsUseFrozenIsolatedValues(runtime):
 
 def testFlowSwitchKeepsInlineBusinessObjectUnchanged(runtime):
     identity = ready(runtime, operatorId="vision.flow.switch")
-    business = {"tokenCount": 3, "item": {"value": None}}
+    source = "https://catalog.invalid/items?api_key=fixture-key&q=business"
+    safe = "https://catalog.invalid/items?api_key=<redacted>&q=business"
+    values = {"token": "batch-name", "tokenCount": 3, "values": [None, False, 0, "", [], {}]}
+    business = {**values, "item": {"services": [source]}}
     result = execute(runtime, identity, {}, {"value": pb.OperatorDebugValue(inline_json=json.dumps(business))})
     assert result["status"] == "SUCCEEDED"
-    assert result["outputs"] == {"default": business}
+    expected = {"default": {**values, "item": {"services": [safe]}}}
+    assert json.dumps(result["outputs"], sort_keys=True) == json.dumps(expected, sort_keys=True)
     assert "parameterSummary" not in result
+    manager = runtime.operatorDebugManager
+    with manager.lock:
+        view = manager.call("execution", {"runtimeInstanceId": runtime.runtimeInstanceId,
+            "sessionId": identity["session_id"], "generation": identity["generation"],
+            "executionId": result["executionId"]})
+        view["outputs"]["default"]["item"]["services"].clear()
+        stored = manager.sessions[identity["session_id"]].executions[result["executionId"]]
+        assert stored["outputs"] == {"default": business}
 
 
 def testVariableStateCopyWriteAndResetNeverMutateProduction(runtime):

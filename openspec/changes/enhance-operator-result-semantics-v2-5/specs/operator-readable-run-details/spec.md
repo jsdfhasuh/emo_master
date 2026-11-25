@@ -53,12 +53,19 @@ metrics SHALL 按字段语义分为执行耗时、业务统计、计算结果或
 
 ### Requirement: Preserve original values and source fields
 
-可读展示 SHALL 不改变原始值。0、false、null、空字符串、空数组、空对象和字段缺失必须可区分。系统 SHALL 保留原始 JSON、原始字段名、类型、复制值、复制记录及对象/数组展开能力。
+可读展示 SHALL 不改变供查看的安全记录中的非敏感原值。0、false、null、空字符串、空数组、空对象和字段缺失必须可区分。系统 SHALL 保留原始 JSON、原始字段名、类型、复制值、复制记录及对象/数组展开能力。已知认证信息遵循现有安全副本要求；此要求不授权将执行内部原值改成脱敏占位值。
 
 #### Scenario: Inspect duplicated fields
 
 - **WHEN** 同一统计值同时出现在 outputs 和 metrics
 - **THEN** 概览可突出一次，技术详情仍能查看两个原始来源
+
+#### Scenario: Explain a dynamic object member
+
+- **WHEN** 对象字段以 additionalProperties 对象定义动态成员值，例如 Annotate 的 classStyles 以检测类别原始 label 为 key
+- **THEN** 系统 SHALL 保留动态 key，并使用该定义及其 properties/items 解释 displayLabel、color 和数组元素等已知子字段
+- **AND** 具名字段说明优先；布尔形式的 additionalProperties 不作为说明，没有适用说明的字段继续显示原始名称、值与类型
+- **AND** 展开和复制 SHALL 保留供查看记录的实际值及原始结构
 
 ### Requirement: Reuse readable details for single-operator debugging
 
@@ -68,6 +75,13 @@ metrics SHALL 按字段语义分为执行耗时、业务统计、计算结果或
 
 - **WHEN** 工程师查看单算子调试执行
 - **THEN** 系统用相同中文说明展示真实调试结果，并明确标记调试来源
+
+#### Scenario: Explain an actual debug execution record
+
+- **WHEN** Designer 接收真实调试执行记录，可信身份位于 sourceIdentity.operatorId/operatorVersion
+- **THEN** 系统 SHALL 使用该身份匹配同版本定义，显示已有结果的中文说明、适用单位、指标分类及可确认的调用/生效信息
+- **AND** 系统 SHALL 展示本次真实算子身份，保留原始 sourceIdentity、session/generation/executionId 归属、原始 JSON 和复制内容
+- **AND** 正式 Job 继续使用事件 payload 身份；调试不依赖人为增加的顶层身份，也不从当前编辑器状态猜测身份
 
 #### Scenario: Explain a resource prepared by the debug worker
 

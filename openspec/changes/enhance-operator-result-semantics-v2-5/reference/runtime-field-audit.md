@@ -5,6 +5,10 @@
 
 以下路径均相对仓库根目录，行号对应上述固定提交。算子专属字段见 `operator-field-audit.json`，不在 82 个条目中重复通用生命周期。
 
+## 当前复审状态
+
+以下 F01–F09 保留 `ed98a0212820efd0e6436029b69e82dc6e313fc7` 的 P0 历史事实，不应作为当前未实现清单。本次实现复审头为 `3d6448d3da18790c5f97bfdecb5fc845ebd67a1c`；主体实现与 CI 已交付，R1、R2、R3 的当前证据见 [独立复审](pr20-review-20261125.md)。本次不重做 82 算子审查。
+
 ## F01：注册身份和元数据的权威来源
 
 - `core/plugin/models.py:18-35` 的 `PluginManifest` 保存 operatorId、version、端口、paramSchema 和 PR19 的 runtimeCapabilities；`PluginDescriptor` 将实际导入类与该 Manifest 绑定。以下省略的 `core/`、`apps/` 路径均位于 `src/emo_master/`。
@@ -87,5 +91,13 @@
 
 - F01–F03：`core/plugin/result_schema.py` 校验说明与端口、参数的引用。`OperatorInfo` 的字段 21 传输该声明。内嵌 Runtime 和回环 gRPC 经同一个 RuntimeClient 解析。
 - F04–F05：`ParameterInspection` 在调用边界截取选定的可显示参数，标明准备、变量或资源解析等来源。算子可通过实际指标、诊断或结构化证据提供生效值。设备证据保留设备槽及实际设备类型和 schema 版本。Runner 从已注册 Manifest 取得身份，JSONL 完成记录投影保留身份与受限摘要。
-- F06–F07：调试会话保存可信身份，Worker 等资源准备完成后采集调用值。调试提交、准备参数和绑定值的展示副本使用 schema 标记和已知认证字段脱敏，认证 URL 也处理；业务输出值及输出资产沿用执行结果。
+- F06–F07：调试会话保存可信身份，Worker 等资源准备完成后采集调用值。调试提交、准备参数和绑定值的展示副本使用 schema 标记和已知认证字段脱敏，认证 URL 在这些已覆盖字段中也处理；内部业务输出和输出资产沿用执行结果。复审发现 outputs 对外记录仍缺安全副本，见下述 R2，不据此认定 F07 已全部完成。
 - F08：复测后台受理、产物登记、FILE_REFERENCE、SQLite 提交回执和取消与真实故障等路径。测试通过情况及基线 CI 证据见 [交付记录](../delivery.md)。
+
+## 实现独立复审补充（3d6448d3）
+
+- **R1 / F06 消费端：** Runtime 已将可信 operatorId/operatorVersion 放入 sourceIdentity；LogRecordDetail 却按顶层身份查定义。修正调试消费者，不需要再次改 Runtime 身份合同。正式 Job 仍从 payload 取身份。
+- **R2 / F07 输出出口：** variable_read 读取含合成认证信息的 RTSP URL 时，会话和执行记录的变量副本已脱敏，但 outputs.value 原样经执行查询返回。该出口在基线中已存在，属于 F07 新承诺未覆盖的旧出口，不是 PR20 新增回归。复用现有 URL 规则，在查询/展示/复制/导出使用的记录副本中处理；session.executions 内部输出及实际 output_ref 解析保留原值，查询不得修改内部嵌套数据。
+- **R3 / 说明消费：** Annotate paramSchema 已通过 additionalProperties 描述动态成员；共享详情树尚未读取。只补已有 schema 消费，不增加算子专用组件或协议。
+
+R2 源码出口为 operator_debug/worker.py:161–165、manager.py:223–231,453–461、rpc.py:86–91；内部 output_ref 取值见 operator_debug/data.py:15–39。R1/R3 组件位置及实际证据见独立复审。所有行号均对应本节固定实现头，不能与上方 P0 行号混用。

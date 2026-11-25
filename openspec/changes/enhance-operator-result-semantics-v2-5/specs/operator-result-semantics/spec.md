@@ -66,6 +66,13 @@
 - **WHEN** 设备或算子配置包含认证信息
 - **THEN** 持久化日志和原始记录均不包含明文凭据
 
+#### Scenario: Hide authenticated output URLs while preserving output references
+
+- **WHEN** 单算子调试 outputs 包含已知认证 URL，且该执行输出可通过 output_ref 复用
+- **THEN** 系统 SHALL 在对外查询及查看、复制、导出共用的记录副本中隐藏 URL 认证信息，保留非认证内容
+- **AND** 可信内部输出及实际 output_ref 解析得到的执行值 SHALL 保持原值，查询与序列化不得原地污染内部记录
+- **AND** 系统 SHALL 复用已有认证字段和 URL 规则，不增加任意字符串秘密识别、全工程扫描或新的存储/RPC
+
 ### Requirement: Metrics and diagnostics are semantically described
 
 metrics 和 diagnostics 的固定字段、已知嵌套结构及动态键形成规则 SHALL 有明确用途、单位、统计口径和来源说明（适用时）。新增字段 SHALL 依据源码审查决定：有价值且可可靠取得的数据应补齐；已有权威输出、重复信息、无法可靠测量或没有业务价值的字段不要求新增，并记录理由。占位常量不得表述为测量结果。

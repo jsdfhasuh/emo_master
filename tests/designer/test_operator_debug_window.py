@@ -14,11 +14,16 @@ from shiboken2 import isValid
 
 from emo_master.apps.designer.operator_editors import EditorContext, EditorKey
 from emo_master.apps.designer.operator_editors.workspace_window import OperatorWorkspaceWindow
+from emo_master.apps.designer.services.operator_debug import DebugConnection
 from emo_master.apps.designer.services.runtime_client import RuntimeClient
+from emo_master.apps.designer.ui import log_json_tree
+from emo_master.apps.designer.ui.log_record_detail import LogRecordDetail
 from emo_master.apps.designer.ui.operator_debug_window import OperatorDebugWindow
 from emo_master.apps.designer.ui.debug_values import InputRow, ValueTree
+from tests.designer.test_log_json_tree import child
 from tests.runtime.operator_debug_fixture import project
 from tests.runtime.test_operator_debug_rpc import runtime as runtime
+from tests.runtime.test_operator_debug_sessions import waitFor
 from tests.designer.test_node_context_menu import canvas as canvas
 
 
@@ -44,6 +49,58 @@ def editorFor(runtime, operatorId="vision.value.number"):
         schema={"type": "object", "properties": {"value": {"type": "number", "default": 0}}}, values={"value": 3})
     editor.show()
     return editor, payload, before, calls
+
+
+def testDebugDetailUsesRealExecutionSourceIdentity(runtime, designerApplication, monkeypatch):
+    operatorId = "vision.compare.number"
+    client = RuntimeClient(runtime)
+    definition = next(row for row in client.listOperators() if row.operatorId == operatorId)
+    connection = DebugConnection(client)
+    try:
+        session = connection.open(project(operatorId),
+                                  EditorKey("draft", "main", "node"), operatorId)["session"]
+        waitFor(lambda: connection.call("GetOperatorDebugSession")["state"] == "READY")
+        accepted = connection.execute({"operator": "gt", "rightValue": 5},
+                                      {"left": {"inline": 0}, "right": {"inline": -1}})
+
+        def terminal():
+            result = connection.call("GetOperatorDebugExecution", execution_id=accepted["executionId"])
+            return result if result["status"] != "RUNNING" else None
+
+        record = waitFor(terminal)
+        assert record["outputs"] == {"result": True}
+        assert "operatorId" not in record and "operatorVersion" not in record
+        assert record["sourceIdentity"]["operatorId"] == operatorId
+        assert record["sourceIdentity"]["operatorVersion"] == definition.version
+
+        calls = []
+
+        def lookup(actualId, actualVersion):
+            calls.append((actualId, actualVersion))
+            return dict(operatorId=definition.operatorId, version=definition.version,
+                        resultSchema=definition.resultSchema, paramSchema=definition.paramSchema)
+
+        detail = LogRecordDetail(operatorLookup=lookup)
+        detail.setDebugResult(record, sessionId=session["sessionId"], generation=session["generation"])
+        assert calls == [(operatorId, definition.version)]
+        root = detail.readable.invisibleRootItem()
+        assert child(child(root, "已返回输出"), "结果（result）").text(1) == "true"
+        elapsed = child(child(root, "运行概览"), "算子内部耗时（latencyMs）")
+        assert elapsed.text(1).endswith(" ms") and "内部校验和比较耗时" in elapsed.toolTip(0)
+        assert child(child(root, "本次调用参数"), "右侧比较值（rightValue）").text(1).startswith("5.0 ·")
+        assert child(child(root, "本次生效参数"), "右操作数（right）").text(1) == "-1.0 · 指标"
+        identity = child(root, "记录身份")
+        identity.setExpanded(True)
+        for label, value in (("算子 ID", operatorId), ("算子版本", definition.version),
+                             ("调试会话", session["sessionId"]), ("代次", str(session["generation"])),
+                             ("调试执行", record["executionId"])):
+            assert child(identity, label).text(1) == value
+        copies = []
+        monkeypatch.setattr(log_json_tree, "_copyText", copies.append)
+        detail.copyRecordButton.click()
+        assert json.loads(copies[0]) == json.loads(detail.rawTree.toPlainText()) == record
+    finally:
+        connection.close()
 
 
 def testNativeWindowExecutesUnappliedDraftAndKeepsTwoResults(runtime):

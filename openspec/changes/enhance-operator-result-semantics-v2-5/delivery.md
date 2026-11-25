@@ -1,4 +1,12 @@
-# PR20 计划更新与 P0 交付记录
+# PR20 交付与独立复审记录
+
+## 当前状态
+
+ChatGPT Web 在干净的复审头 `3d6448d3da18790c5f97bfdecb5fc845ebd67a1c` 上完成独立复审，核对的 main 基线为 `ed98a0212820efd0e6436029b69e82dc6e313fc7`。Codex（6.2 Sol）已完成 R1–R3 源码修复及定向回归。P3.5 独立桌面走查待验收，PR 保持 Draft。
+
+任务状态以 [tasks.md](tasks.md) 为准。原 P0、主体实现、独立复审与各自测试证据按固定提交保留。
+
+## 原 P0 交付记录（历史）
 
 日期：2026-11-25（Asia/Shanghai）。执行角色：**ChatGPT Web**。
 
@@ -127,3 +135,38 @@ OPENSPEC_TELEMETRY=0 DO_NOT_TRACK=1 OPENSPEC_NO_UPDATE_CHECK=1 \
 - 复核 RTSP/RTSPS 认证 URL 时补齐裸查询令牌脱敏。具名业务查询和实际执行值保留，重复验证原始事件、持久化、查询和导出。
 
 以上修正后的定向集合 72 通过；Ruff、mypy 和差异检查通过。后续检查对应头提交及结论在 [PR20 Checks](https://github.com/jsdfhasuh/emo_master/pull/20/checks) 留档。
+
+
+## ChatGPT Web 独立复审与本次补充
+
+固定源码 `3d6448d3da18790c5f97bfdecb5fc845ebd67a1c`，原审查 worktree 干净。本补充在该提交的独立工作副本中只修改文档；包内文档校验针对“该提交 + 本补充”，不是声称原提交已经包含这些更新。问题详情及分层证据见 [独立复审](reference/pr20-review-20261125.md) 与 [复现摘要](reference/pr20-review-20261125/evidence.json)。
+
+| 项目 | 本轮实际确认 |
+|---|---|
+| 静态覆盖 | 独立运行检查：82 注册、0 拒绝，194 输入、235 输出、419 条参数路径；保留指标 130、诊断 221、复杂输出字段 313；固定耗时占位删除 1 项 |
+| 源码 CI | [45538005304](https://github.com/jsdfhasuh/emo_master/actions/runs/45538005304)，同一复审 SHA，attempt 1 success；Linux 9,882 通过/40 跳过，Windows 9,916 通过/6 跳过 |
+| Web CI | [45538005340 attempt 2](https://github.com/jsdfhasuh/emo_master/actions/runs/45538005340/attempts/2)，同一复审 SHA，3 jobs success；首轮 Windows 时序失败记录保留，复跑成功不等于根因已修复 |
+| R1 | 实际演示工程、真实 manager/Worker 执行 NumberCompare 成功；Qt 离屏详情未调用定义查询，缺概览与指标来源的生效参数；原始 JSON/复制保留 |
+| R2 | 真实 RuntimeService、Worker 与 RPC handler 返回合成认证输出；变量已脱敏而 outputs 未脱敏。原始 JSON/导出传播由源码确认，没有声称已手工操作 GUI 验证 |
+| R3 | 使用真实 Annotate schema 的离屏展开，动态样式子字段与颜色元素说明缺失；此复现已匹配定义，独立于 R1 |
+| 其他定向检查 | 既有两条 UI/目录测试通过；算子侧代表归一化、控制流、SQLite、ImageSaver 模拟后台受理等小复现未发现额外阻断问题 |
+| 未完成 | R1–R3 产品修复、修复提交回归与 CI、P3.5 独立桌面、真实相机/PLC 验收；不记为通过 |
+
+本轮交付包包含 OpenSpec 更新、复审证据、Codex 执行提示词及 PR 正文模板。包的 strict 校验与补丁适用性结果见包根目录 VALIDATION.md；文档校验不能关闭产品缺陷。
+
+### 后续修复交付记录填写要求
+
+执行者追加实际修复提交 SHA、工作区状态、三个定向场景结果、受影响检查与适用 CI 链接；注明实际执行角色，保留计划/P0/独立复审由 ChatGPT Web 完成。P3.5 单列并由独立验收者据实际结果更新；本节不预填未来通过次数或修复提交。
+
+## Codex 复审修复与开发验证
+
+执行角色为 **Codex（6.2 Sol）**。计划、P0 与独立复审归属 **ChatGPT Web**。在本地和远端均为 `3d6448d3da18790c5f97bfdecb5fc845ebd67a1c` 时，将包内 11 文件补丁应用到干净 PR20 worktree。下表开发验证使用该提交加本轮修复、回归和演示的工作区。
+
+| 场景 | 实际结果 |
+|---|---|
+| R1 | 真实 NumberCompare 单算子调试经 Runtime、Worker 和查询到共享详情。按 `sourceIdentity` 精确匹配 ID/版本，显示中文结果、耗时单位和已有生效证据，保留原始记录以及会话、代次和执行归属。 |
+| R2 | 一次真实 `variable_read` 使用合成认证 URL。查询、原始 JSON、复制、原始文件和 ZIP 导出均隐藏认证内容，业务查询参数保留。使用同一执行 ID 的 `output_ref` 准备与取值仍取得原始 URL。既有 FlowSwitch 测试同时核对嵌套业务值、类型与副本独立性。 |
+| R3 | 使用真实 Annotate 参数定义展开动态类别、`displayLabel`、`color` 和颜色数组元素。原始类别 key、未知字段、非敏感值和复制内容保留。 |
+| 桌面交接准备 | 2.10 / 1.3 演示保留数值比较入口并加入小图与合成检测的动态类别样式场景。生成、编译、保存重读、实际 Designer 加载入口及离屏调试导出通过，`drawnCount=1`。P3.5 独立交互仍待验收。 |
+
+Windows Python 3.10 / PySide2 离屏的 Runtime 和 Designer 受影响分组 173 项通过。82 个内置算子仍全部注册且零拒绝。逐字段静态核对、协议生成一致性、OpenSpec strict、Ruff、mypy 和差异检查通过。真实设备连接和独立原生桌面交互未执行。

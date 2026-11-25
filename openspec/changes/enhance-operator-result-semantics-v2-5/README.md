@@ -1,27 +1,37 @@
-# V2.5 OpenSpec 计划包
+# V2.5 OpenSpec 计划与复审补充
 
 ## 当前状态
 
-**P0 已完成，P1/P2/P3 待实施。** 本轮由 ChatGPT Web 更新 PR20 计划并完成 82 个算子的静态源码审查；后续可从 P1 开始，不需要再交给其他执行者重做全量审查。
+**PR20 主体实现、R1–R3 修复及定向源码回归已完成。修复提交的 CI 结论见交付记录和 PR Checks。P3.5 独立桌面走查待验收，PR 保持 Draft。**
 
-代码基线：`ed98a0212820efd0e6436029b69e82dc6e313fc7`，已含 PR19、PR25。审查源工作区干净；工作分支正常同步此 main。本轮相对该基线只新增或更新本计划包，未实现产品功能。后续源码变化时复核受影响条目即可。
+- 原 main 基线：`ed98a0212820efd0e6436029b69e82dc6e313fc7`，已包含 PR19、PR25。
+- 本轮复审与补充包基于 PR20 头：`3d6448d3da18790c5f97bfdecb5fc845ebd67a1c`。
+- 计划、P0 与独立复审由 **ChatGPT Web** 完成。主体实现、本轮修复和开发验证由 **Codex（6.2 Sol）** 完成。
+- 82 算子静态覆盖与注册核对继续有效，后续按实际提交复核受影响增量。
 
-审查覆盖 194 个输入端口、235 个输出端口、366 个顶层参数，逐字段记录还包括嵌套配置、托管设备参数、现有 metrics/diagnostics、复杂输出字段及源码依据。静态审查完成不代表 82 个算子已执行或说明已经实现。
+| 修复项 | 实际范围 | 对应原任务 |
+|---|---|---|
+| R1 真实调试身份未接入详情 | 从实际记录的 sourceIdentity 匹配定义并显示身份 | P2.4、P3.4 |
+| R2 调试 outputs 认证 URL 未安全化 | 外发记录生成安全副本，内部 output_ref 保留执行原值 | P1.5、P3.3 |
+| R3 动态参数说明未消费 | 共享树读取已有 additionalProperties 对象说明 | P2.2、P3.4 |
+
+原复审头的 CI 和历史基线故障按固定提交留档。本轮源码回归与修复提交的 CI 见 [交付记录](delivery.md) 和 [PR20 Checks](https://github.com/jsdfhasuh/emo_master/pull/20/checks)。
 
 ## 阅读入口
 
-- [proposal.md](proposal.md)：范围与影响。
-- [design.md](design.md)：根据源码确定的结构和最小实现路径。
-- [tasks.md](tasks.md)：唯一实施清单；P0 已勾选，后续任务保留未完成。
-- [operator-field-audit.md](reference/operator-field-audit.md)：82 个算子的可读索引与关键结论。
-- [operator-field-audit.json](reference/operator-field-audit.json)：完整逐字段事实、当前合同、实际参数来源、处理决定和源码证据。
-- [runtime-field-audit.md](reference/runtime-field-audit.md)：注册、参数阶段、事件投影、调试与安全副本的共用链路审查。
-- [delivery.md](delivery.md)：本轮基线、修改、验证边界和 CI 状态记录。
+- [tasks.md](tasks.md) 是唯一实施状态清单，记录三项修复及各自验证状态。
+- [reference/pr20-review-20261125.md](reference/pr20-review-20261125.md)：三项已确认问题、源码依据、实际复现及最小回归要求。
+- [design.md](design.md)：保留原设计，并明确本轮三项局部修正边界。
+- [proposal.md](proposal.md)：原目标、当前阶段与本次补充范围。
+- [desktop-walkthrough.md](desktop-walkthrough.md)：修复后独立桌面走查；离屏测试不能代替 P3.5。
+- [delivery.md](delivery.md)：保留原 P0、实施与 CI 记录，追加本次复审状态。
+- [operator-field-audit.md](reference/operator-field-audit.md) 与 [完整字段记录](reference/operator-field-audit.json)：沿用已经完成的 82 算子 P0，不重复审查。
+- [runtime-field-audit.md](reference/runtime-field-audit.md)：原基线共用链路事实及实现复核补充。
 
 ## 规格
 
-- [operator-result-semantics](specs/operator-result-semantics/spec.md)：字段语义、可信身份和受控参数摘要。
-- [operator-readable-run-details](specs/operator-readable-run-details/spec.md)：正式 Job 与单算子调试的详情解释。
-- [runtime-log-workbench](specs/runtime-log-workbench/spec.md)：在现有能力上增加身份、摘要和语义解释的增量要求。
+- [operator-result-semantics](specs/operator-result-semantics/spec.md)：补足认证输出安全副本与内部输出引用的场景。
+- [operator-readable-run-details](specs/operator-readable-run-details/spec.md)：补足真实调试记录身份与动态对象展开场景。
+- [runtime-log-workbench](specs/runtime-log-workbench/spec.md)：沿用既有正式 Job、查询、导出与详情要求，本补充不修改该规格。
 
-本计划不包含历史工程迁移、历史日志回填或旧版本兼容工作。
+本轮不重开全量 P0，不要求全部 82 个算子实际执行，不新增历史迁移、全模型、生产硬件或第二套日志框架。现有界面布局与正式 Job 合同继续沿用。

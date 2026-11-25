@@ -1,10 +1,14 @@
-"""Generate the device-free PR20 desktop walkthrough project from this checkout."""
+"""Generate the PR20 walkthrough project and local inputs for Annotate debug."""
 from argparse import ArgumentParser
+import json
 from pathlib import Path
+
+from PIL import Image
 
 import emo_master
 from emo_master.apps.designer.state.project_store import loadProjectDocument, saveProject
 from emo_master.apps.designer.state.workflow_store import WorkflowStore
+from emo_master.core.contracts.geometry2d import BBox2D, CoordinateSpace2D, Detection2D, DetectionCollection
 from emo_master.core.plugin.registry import PluginRegistry
 from emo_master.core.project.dependencies import validateOperatorDependencies
 from emo_master.core.project.models import ProjectDocument
@@ -13,8 +17,20 @@ from emo_master.core.workflow.compiler import WorkflowCompiler
 
 NUMBER = "vision.value.number"
 COMPARE = "vision.compare.number"
+ANNOTATE = "vision.render.annotate"
 ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_PATH = ROOT / "manual_test_workspace" / "pr20-demo" / "run-details.emoproj"
+
+
+def writeAnnotateInputs(target: Path) -> None:
+    folder = target.parent / f"{target.stem}-annotate-inputs"
+    folder.mkdir(parents=True, exist_ok=True)
+    width, height = 160, 100
+    Image.new("RGB", (width, height), (28, 28, 28)).save(folder / "image.png")
+    space = CoordinateSpace2D(sourceId="sourceImage", imageWidth=width, imageHeight=height)
+    detection = Detection2D.fromGeometry("person-1", 0, "person", 0.9, BBox2D(42, 32, 57, 44, space))
+    payload = DetectionCollection((detection,), space).toPayload()
+    (folder / "detections.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
 def buildDemo(target: Path) -> ProjectDocument:
@@ -47,8 +63,29 @@ def buildDemo(target: Path) -> ProjectDocument:
     store.projectExtensions["globalVariables"] = {
         "demo-limit": {"name": "演示阈值", "type": "number", "kind": "constant", "initialValue": 5},
     }
+
+    annotateManifest = registered[ANNOTATE].manifest
+    annotateInputs = {key: annotateManifest.inputPorts[key] for key in ("image", "detections")}
+    annotateWorkflowId = store.addWorkflow("动态类别样式演示", "annotate-demo",
+                                           inputs=annotateInputs,
+                                           outputs={"drawnCount": annotateManifest.outputPorts["drawnCount"]})
+    annotateWorkflow = store.workflows[annotateWorkflowId]
+    boundaries = {node["kind"]: node["nodeId"] for node in annotateWorkflow.nodes}
+    inputId, outputId = boundaries["workflow_input"], boundaries["workflow_output"]
+    annotateWorkflow.nodes.append(operator("annotate", ANNOTATE, "标注模拟检测", {
+        "classStyles": {"person": {"displayLabel": "人员", "color": [0, 128, 255]}},
+    }))
+    annotateWorkflow.edges.extend(
+        dict(fromNode=inputId, fromPort=key, toNode="annotate", toPort=key)
+        for key in annotateInputs
+    )
+    annotateWorkflow.edges.append(dict(fromNode="annotate", fromPort="drawnCount",
+                                      toNode=outputId, toPort="drawnCount"))
+    annotateWorkflow.layout["nodePositions"] = {
+        inputId: {"x": 40, "y": 30}, "annotate": {"x": 320, "y": 30}, outputId: {"x": 620, "y": 30},
+    }
     store.dependencies["operators"] = [
-        {"operatorId": key, "version": registered[key].manifest.version} for key in (NUMBER, COMPARE)
+        {"operatorId": key, "version": registered[key].manifest.version} for key in (NUMBER, COMPARE, ANNOTATE)
     ]
 
     document = ProjectDocument.model_validate(store.toPayload("PR20 算子运行详情演示"))
@@ -58,6 +95,7 @@ def buildDemo(target: Path) -> ProjectDocument:
     reloaded = loadProjectDocument(target)
     if reloaded != document:
         raise RuntimeError("Saved project does not match the validated document")
+    writeAnnotateInputs(target)
     return reloaded
 
 

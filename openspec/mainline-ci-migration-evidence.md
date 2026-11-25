@@ -23,3 +23,8 @@ Baseline verified on 2026-11-24 UTC. This is a record of the new implementation,
 - Source decision/receipt and non-required shadow writeback checks were added as a local software boundary. 12 local unit tests pass (5 envelope and 7 receipt/writeback). There is no deployed reporter, Source job dispatch or formal gate in this commit. No publish, Private switch or workflow retirement.
 
 - [Original-scope Capture 45567025964](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45567025964) started after focused hosted success on the same product SHA `e1c19fcdbbee523b51c34ece905d45152033dfda`, controller `7e8a3bdb7a8508bbf05fa6556987889a5faa927f`. Original collection/order/assertions retained; full hosted result and new V2 recovery pending.
+
+### Hosted results for the synchronized product candidate
+
+- Run 45567025964: full Capture pytest failed with a later Windows native termination in the device usability chain. The Capture witness payload was present and its independent validator passed. No completed JUnit report; 6,259 passing call phase records and no failed call-phase records were recorded before termination. These are partial phase counts, not a full suite verdict. Both V2 archives were downloaded and verified inside the existing private boundary (receipt run 45578764771, job 139083197068). No rerun.
+- Run 45566601554: Designer and Runtime BuildOnly jobs passed the build and their target-specific validation; two package archives and two diagnostic archives were uploaded encrypted. GitHub outer SHA-256 metadata recorded; independent package recovery pending. No publish.

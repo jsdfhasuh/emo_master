@@ -16,5 +16,15 @@
   },
   "paramSchema": {"type": "object", "properties": {}, "additionalProperties": false},
   "minCoreVersion": "0.6.1",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "numerator": {"title": "分子", "description": "必需有限非负分子，排除bool。"},
+      "denominator": {"title": "分母", "description": "可选有限非负分母，未提供时实际取1；0是合法但比值未定义。"}
+    },
+    "outputs": {
+      "value": {"title": "百分比", "description": "分子/分母×100的百分数；分母0时None，不替换为0%。", "unit": "%"},
+      "defined": {"title": "百分比有定义", "description": "bool(denominator)：非零为true、零为false；与节点成功状态独立。"}
+    }
+  }
 }

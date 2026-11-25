@@ -251,3 +251,83 @@ def testFrameworkPresentationTranslatesOnlyKnownFieldsAndCopiesOriginalValues(de
     assert child(root, "状态").text(1) == "UNRECOGNIZED"
     detail.setEvent({"eventType": "node.completed", "payload": {"status": "COMPLETED"}})
     assert child(root, "状态").text(1) == "已完成"
+
+
+def testJobAndDebugExplainOnlyMatchingOperatorFieldsAndKeepRawValues(designerApplication, monkeypatch):
+    copies = []
+    monkeypatch.setattr(log_json_tree, "_copyText", copies.append)
+    definition = {"operatorId": "test.operator", "version": "1.2", "paramSchema": {"properties": {
+        "options": {
+            "properties": {"limit": {"title": "限制", "description": "限制说明", "xUnit": "px"}},
+            "xFieldDescriptions": {"constant": {"title": "常量", "description": "显式提供的常量"}},
+        }}},
+        "resultSchema": {
+            "inputs": {"amount": {"title": "输入数值", "description": "实际输入"}},
+            "outputs": {"objects": {"title": "对象集合", "description": "实际结果集合",
+                                    "items": {"title": "对象", "fields": {"score": {
+                                        "title": "评分", "description": "对象得分", "unit": "分"}}}}},
+            "metrics": {"latencyMs": {"title": "提交用时", "description": "只统计后台提交", "unit": "ms",
+                                      "group": "duration"}},
+            "diagnostics": {"effectiveLimit": {"title": "实际限制", "description": "归一化后的值",
+                                                "group": "parameter"}},
+        }}
+    detail = LogRecordDetail(operatorLookup=lambda *_: definition)
+    summary = [
+        {"path": ["options", "limit"], "value": None, "stage": "call", "source": "prepared"},
+        {"path": ["options", "limit"], "value": 0, "stage": "effective", "source": "input"},
+    ]
+    payload = {"operatorId": "test.operator", "operatorVersion": "1.2",
+               "metrics": {"latencyMs": 0.25, "unknown": False}, "diagnostics": {"effectiveLimit": 0},
+               "parameterSummary": summary}
+    event = {"eventType": "node.completed", "payload": {**payload, "ioSummary": {
+        "version": 1, "inputs": {"items": [{"port": "amount", "value": {"kind": "scalar", "value": 0}}],
+                                 "portCount": 1},
+        "outputs": {"items": [{"port": "objects", "value": {"kind": "collection", "count": 1}}],
+                    "portCount": 1},
+    }}}
+    detail.setEvent(event, nodeElapsedMs=3)
+    root = detail.readable.invisibleRootItem()
+    assert child(root, "节点总耗时").text(1) == "3 ms · 节点起止事件"
+    latency = child(child(root, "运行概览"), "提交用时（latencyMs）")
+    assert latency.text(1) == "0.25 ms" and "只统计后台提交" in latency.toolTip(0)
+    assert child(child(root, "输入摘要"), "输入数值（amount）").text(1) == "0"
+    output = child(child(root, "输出摘要"), "对象集合（objects）")
+    assert "1 项" in output.text(1) and "仅显示数量" in output.text(1)
+    output.setExpanded(True)
+    assert child(output, "count").text(1) == "1"
+    assert child(child(root, "指标"), "unknown").text(1) == "false"
+    param = "限制（options.limit）"
+    assert child(child(root, "本次调用参数"), param).text(1) == "null · 准备后的节点参数"
+    assert child(child(root, "本次生效参数"), param).text(1) == "0 px · 输入覆盖"
+    assert child(child(root, "本次生效参数"), "实际限制（effectiveLimit）").text(1) == "0 · 诊断"
+    detail.copyRecordButton.click()
+    assert json.loads(copies[-1]) == event
+
+    result = {**payload, "elapsedMs": 1.5, "outputs": {"objects": [{"score": 0, "extra": ""}]},
+              "effectiveParams": {"options": {"limit": 1, "constant": None}}}
+    detail.setDebugResult(result, sessionId="session", generation=1)
+    assert child(root, "调试执行耗时").text(1) == "1.5 ms"
+    output = child(child(root, "已返回输出"), "对象集合（objects）")
+    output.setExpanded(True)
+    entry = child(output, "对象（0）")
+    entry.setExpanded(True)
+    score = child(entry, "评分（score）")
+    assert score.text(1) == "0 分" and child(entry, "extra").text(1) == '""'
+    prepared = child(root, "准备阶段参数")
+    prepared.setExpanded(True)
+    options = child(prepared, "options")
+    options.setExpanded(True)
+    preparedLimit = child(options, "限制（limit）")
+    assert preparedLimit.text(1) == "1 px" and "限制说明" in preparedLimit.toolTip(0)
+    assert child(options, "常量（constant）").text(1) == "null"
+    detail.readable.setCurrentItem(score)
+    detail.copyValueButton.click()
+    assert json.loads(copies[-1]) == 0
+    assert json.loads(detail.rawTree.toPlainText()) == result
+
+    mismatched = {**result, "operatorVersion": "older"}
+    detail.setDebugResult(mismatched, sessionId="session", generation=1)
+    assert child(child(root, "已返回输出"), "objects")
+    assert child(child(root, "指标"), "latencyMs").text(1) == "0.25"
+    assert child(child(root, "本次生效参数"), "options.limit").text(1) == "0 · 输入覆盖"
+    assert json.loads(detail.rawTree.toPlainText()) == mismatched

@@ -37,6 +37,7 @@ class ImageBatchLoaderOperator:
             "type": "object",
             "properties": {
                 "folderPath": {
+                    "description": "枚举图片文件夹；strip/expanduser/resolve。",
                     "title": "\u56fe\u7247\u6587\u4ef6\u5939",
                     "type": "string",
                     "default": "",
@@ -44,12 +45,14 @@ class ImageBatchLoaderOperator:
                     "xFileMode": "directory",
                 },
                 "colorMode": {
+                    "description": "委托ImageLoader的BGR/灰度解码模式。",
                     "title": "\u989c\u8272\u6a21\u5f0f",
                     "type": "string",
                     "enum": ["color", "grayscale"],
                     "default": "color",
                 },
                 "recursive": {
+                    "description": "是否递归枚举支持扩展名png/jpg/jpeg/bmp/tif/tiff/webp。",
                     "title": "\u5305\u542b\u5b50\u6587\u4ef6\u5939",
                     "type": "boolean",
                     "default": False,

@@ -28,6 +28,7 @@
     "additionalProperties": false,
     "properties": {
       "channel": {
+        "description": "网关通道，决定机器人或 PLC 的请求和回执协议。",
         "title": "网关输入通道",
         "type": "string",
         "enum": [
@@ -48,5 +49,20 @@
   "summary": "按本次请求校验正常网关 ACK，不仅匹配 OK 前缀；不确认设备动作完成。",
   "minCoreVersion": "0.6.1",
   "maxCoreVersion": "1.x",
-  "iconKey": "default"
+  "iconKey": "default",
+  "resultSchema": {
+    "inputs": {
+      "request": {"title": "请求", "description": "本次已经发送的规范 ASCII TcpMessage，用于推导应收到的 ACK。"},
+      "response": {"title": "响应", "description": "已经完成 TCP 分帧的响应 TcpMessage；按字节精确比较，不 strip 或只匹配 OK 前缀。"}
+    },
+    "outputs": {
+      "acknowledged": {"title": "请求已确认", "description": "仅在响应与本次请求精确相关时输出 true；不匹配走错误而非输出 false。"}
+    },
+    "diagnostics": {
+      "physicalCompletionConfirmed": {"title": "物理动作完成确认", "description": "正常响应固定 false：ACK 不证明物理动作完成。"},
+      "plcYWriteConfirmed": {"title": "PLC Y 写入确认", "description": "正常响应固定 false：PLC ACK 不证明 Y 写入。"},
+      "executionOutcome": {"title": "执行结果状态", "description": "ACK 不匹配时为 uncertain，表示本事务执行结果不确定。"},
+      "expectedAck": {"title": "预期回执", "description": "ACK 不匹配时给出由本次请求推导的期望 ACK。"}
+    }
+  }
 }

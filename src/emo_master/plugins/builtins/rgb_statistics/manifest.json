@@ -46,17 +46,23 @@
     "type": "object",
     "properties": {
       "ddof": {
+        "description": "标准差分母使用 N-ddof；0 为总体、1 为样本，必须小于选中像素数。",
         "title": "标准差自由度修正值",
         "type": "integer",
-        "enum": [0, 1],
+        "enum": [
+          0,
+          1
+        ],
         "default": 0
       },
       "clipRoi": {
+        "description": "ROI 超出图像时是否裁切；关闭则报错；点 ROI 越界始终报错。",
         "title": "裁剪 ROI 到图像边界",
         "type": "boolean",
         "default": true
       },
       "emitMask": {
+        "description": "是否提供统计像素选择掩膜端口。",
         "title": "输出掩膜",
         "type": "boolean",
         "default": false
@@ -64,5 +70,75 @@
     }
   },
   "minCoreVersion": "0.2.0",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "image": {"title": "图像", "description": "非空、有限实数的三通道 BGR 数组；允许非 uint8，未归一化。"},
+      "roi": {"title": "感兴趣区域", "description": "可省略或为 null；给出时按几何选像素。其坐标空间与 frame 相同，但实际 ROI 分支不再交 frame 内容矩形。"},
+      "frame": {"title": "坐标框", "description": "图像有效内容及回源空间；无 ROI 时选取 frameMask，缺失时由图像或 ROI 空间形成默认全图。"}
+    },
+    "outputs": {
+      "statistics": {
+        "title": "统计结果",
+        "description": "选定像素的 RGB 三通道统计结构，含像素数、区域和 ddof。",
+        "fields": {
+          "channels": {
+            "title": "通道列表",
+            "description": "记录红色通道、绿色通道、蓝色通道。",
+            "fields": {
+              "r": {
+                "title": "红色通道",
+                "description": "记录最小值、最大值、均值、标准差。",
+                "fields": {
+                  "minimum": {"title": "最小值", "description": "所选像素红通道的最小值。", "unit": "输入像素原量纲"},
+                  "maximum": {"title": "最大值", "description": "所选像素红通道的最大值。", "unit": "输入像素原量纲"},
+                  "mean": {"title": "均值", "description": "所选像素红通道的算术均值。", "unit": "输入像素原量纲"},
+                  "standardDeviation": {"title": "标准差", "description": "np.std(...,ddof) 计算的标准差。", "unit": "输入像素原量纲"}
+                }
+              },
+              "g": {
+                "title": "绿色通道",
+                "description": "记录最小值、最大值、均值、标准差。",
+                "fields": {
+                  "minimum": {"title": "最小值", "description": "所选像素绿通道的最小值。", "unit": "输入像素原量纲"},
+                  "maximum": {"title": "最大值", "description": "所选像素绿通道的最大值。", "unit": "输入像素原量纲"},
+                  "mean": {"title": "均值", "description": "所选像素绿通道的算术均值。", "unit": "输入像素原量纲"},
+                  "standardDeviation": {"title": "标准差", "description": "np.std(...,ddof) 计算的标准差。", "unit": "输入像素原量纲"}
+                }
+              },
+              "b": {
+                "title": "蓝色通道",
+                "description": "记录最小值、最大值、均值、标准差。",
+                "fields": {
+                  "minimum": {"title": "最小值", "description": "所选像素蓝通道的最小值。", "unit": "输入像素原量纲"},
+                  "maximum": {"title": "最大值", "description": "所选像素蓝通道的最大值。", "unit": "输入像素原量纲"},
+                  "mean": {"title": "均值", "description": "所选像素蓝通道的算术均值。", "unit": "输入像素原量纲"},
+                  "standardDeviation": {"title": "标准差", "description": "np.std(...,ddof) 计算的标准差。", "unit": "输入像素原量纲"}
+                }
+              }
+            }
+          },
+          "pixelCount": {"title": "像素数", "description": "选择掩膜非零像素数。", "unit": "px"},
+          "colorSpace": {"title": "颜色空间", "description": "固定 RGB，输入 BGR 已换序。"},
+          "region": {"title": "区域", "description": "本次选择区域的几何：未给 ROI 时 frame，否则原 ROI。", "unit": "geometry2d"},
+          "attributes": {
+            "title": "扩展属性",
+            "description": "记录标准差自由度修正。",
+            "fields": {
+              "ddof": {"title": "标准差自由度修正", "description": "本次标准差自由度修正。", "unit": "无量纲"}
+            }
+          }
+        }
+      },
+      "mask": {"title": "掩膜", "description": "emitMask=true 时输出用于本次统计的 uint8 0/255 选择掩膜。"},
+      "frame": {"title": "坐标框", "description": "输入解析后的 frame 原样语义输出。"}
+    },
+    "metrics": {
+      "latencyMs": {"title": "算子内部耗时", "description": "从函数入口至统计和输出组装后的本地耗时，四舍五入三位。", "unit": "ms", "group": "duration"},
+      "pixelCount": {"title": "像素数", "description": "本次统计选中的像素数。", "unit": "px", "group": "business"}
+    },
+    "diagnostics": {
+      "text": {"title": "摘要", "description": "成功统计像素数英文摘要。"}
+    }
+  }
 }

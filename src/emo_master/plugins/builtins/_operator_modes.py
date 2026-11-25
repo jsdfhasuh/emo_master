@@ -87,10 +87,12 @@ def modeSchema(operatorId, schema):
         selector, choices = INPUT_CHOICES[operatorId]
         properties = {selector: {
             "title": "处理对象", "type": "string", "enum": ["", *choices], "default": "",
+            "description": "选择唯一的处理对象。留空时由本次唯一提供的业务输入确定。",
             "xOptionLabels": {"": "请选择处理对象", **choices},
         }, **properties}
         schema["properties"] = properties
         if operatorId == "vision.geometry.extract_points":
+            properties[selector]["description"] = "选择符合取点特征的输入对象；留空时由本次唯一提供的业务输入确定。"
             properties[selector]["xEnumBy"] = {"parameter": "feature", "options": FEATURE_INPUTS}
     for name, condition in PARAMETER_CONDITIONS.get(operatorId, {}).items():
         properties[name]["xVisibleWhen"] = deepcopy(condition)

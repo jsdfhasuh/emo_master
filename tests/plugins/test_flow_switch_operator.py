@@ -1,3 +1,6 @@
+import pytest
+
+from emo_master.core.project.snapshots import _parameters
 from emo_master.plugins.builtins.flow_switch.operator import FlowSwitchOperator
 
 
@@ -35,13 +38,16 @@ def testFlowSwitchRoutesToDefaultWhenNoCaseMatches() -> None:
     assert outputs == {"default": "Z"}
 
 
-def testFlowSwitchIgnoresUnconfiguredEmptyCase() -> None:
+@pytest.mark.parametrize(("params", "output"), [({}, "default"), ({"case2Value": ""}, "case2")])
+def testFlowSwitchIgnoresUnconfiguredEmptyCase(params, output) -> None:
     operator = FlowSwitchOperator()
+    prepared = _parameters(params, operator.meta.paramSchema, "params")
+    assert prepared == params
     result = operator.executeNode(
         inputs={"value": ""},
-        params={},
+        params=prepared,
         runtimeContext={},
     )
     assert result["status"] == "ok"
     outputs = result.get("outputs", {})
-    assert outputs == {"default": ""}
+    assert outputs == {output: ""}

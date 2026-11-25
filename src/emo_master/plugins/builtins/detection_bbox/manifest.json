@@ -28,5 +28,16 @@
   "summary": "从明确选中的单个检测对象提取强类型轴对齐包围框，供测量区域裁剪。",
   "minCoreVersion": "0.6.1",
   "maxCoreVersion": "1.x",
-  "iconKey": "default"
+  "iconKey": "default",
+  "resultSchema": {
+    "inputs": {
+      "detections": {"title": "检测结果", "description": "必须明确选中且恰含一个检测对象的强类型集合；不会自动取第一个。"}
+    },
+    "outputs": {
+      "bbox": {"title": "包围框", "description": "该检测对象已有轴对齐bbox，保留其坐标空间；不由叠加图重新测量。"}
+    },
+    "diagnostics": {
+      "detectionId": {"title": "检测标识", "description": "被提取对象的原检测ID，用于解释来源。"}
+    }
+  }
 }

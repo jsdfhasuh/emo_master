@@ -58,6 +58,7 @@ _PARAM_SCHEMA: dict[str, object] = {
     "type": "object",
     "properties": {
         "modelPath": {
+            "description": "Runtime 本地 .onnx 检测模型；相对路径依 workspacePath，expanduser/resolve 后加载；模型仅接受支持的 float32 单输入/输出 detect 格式。",
             "title": "模型路径",
             "type": "string",
             "default": "",
@@ -72,7 +73,7 @@ _PARAM_SCHEMA: dict[str, object] = {
             "maximum": 1.0,
             "default": 0.25,
             "xExample": 0.25,
-            "description": "保留置信度不低于此值的检测结果，范围为 0～1。",
+            "description": "每个候选框的最大类别分数 >= 此阈值才保留；不乘独立 objectness。",
         },
         "iou": {
             "title": "非极大值抑制 IoU 阈值",
@@ -81,7 +82,7 @@ _PARAM_SCHEMA: dict[str, object] = {
             "maximum": 1.0,
             "default": 0.45,
             "xExample": 0.45,
-            "description": "非极大值抑制的交并比阈值，范围为 0～1。",
+            "description": "NMS 时 IoU 严格大于阈值才抑制；相等不抑制。",
         },
         "imageSize": {
             "title": "推理图像尺寸",
@@ -90,7 +91,7 @@ _PARAM_SCHEMA: dict[str, object] = {
             "default": 640,
             "xUnit": "像素",
             "xExample": 640,
-            "description": "模型输入的目标图像尺寸，填写正整数。",
+            "description": "仅用来填补 ONNX 动态 H/W；模型固定高度/宽度各自优先，实际输入可非正方形。",
         },
         "maxDetections": {
             "title": "最大检测数量",
@@ -99,7 +100,7 @@ _PARAM_SCHEMA: dict[str, object] = {
             "default": 300,
             "xUnit": "个",
             "xExample": 300,
-            "description": "单次推理最多保留的检测结果数量。",
+            "description": "NMS 之后取前 N，后续回原图裁边丢弃零面积可能让最终数量更少。",
         },
         "device": {
             "title": "推理设备",
@@ -107,25 +108,32 @@ _PARAM_SCHEMA: dict[str, object] = {
             "enum": ["auto", "cpu"],
             "default": "auto",
             "xOptionLabels": {"auto": "自动（当前使用 CPU）", "cpu": "CPU"},
-            "description": "当前 ONNX 推理使用 CPU 执行提供程序。",
+            "description": "auto/cpu 均使用 CPUExecutionProvider；参与模型缓存 key，但不选择 GPU。",
         },
         "classes": {
             "title": "检测类别（可选）",
-            "description": "留空表示检测模型支持的全部类别；填写 0, 1 等类别编号时仅保留指定类别，也可粘贴 [0, 1]。类别名称由模型决定。",
+            "description": "非空时只保留 argmax 类别在列表中的检测；空数组表示全部类别。",
             "type": "array",
             "xWidget": "integer-list",
             "xPlaceholder": "全部类别",
-            "items": {"type": "integer", "minimum": 0},
+            "items": {
+                "title": "列表项", "description": "模型 0 起始非负整数类别 ID；类别名称取模型 metadata，缺失回退 ID 字符串。",
+                "type": "integer", "minimum": 0
+            },
             "default": [],
             "xBlankMeansEmpty": True,
             "xExample": [0, 1],
         },
         "agnosticNms": {
+            "description": "true 跨类别抑制；false 只对同类候选执行 IoU 抑制。",
             "title": "不区分类别的非极大值抑制",
             "type": "boolean",
             "default": False,
         },
-        "drawOverlay": {"title": "绘制叠加图", "type": "boolean", "default": True},
+        "drawOverlay": {
+            "description": "是否输出检测叠加图，关闭记录原因但保留检测。",
+            "title": "绘制叠加图", "type": "boolean", "default": True
+        },
         "outputCrop": {
             "title": "输出裁剪图",
             "type": "boolean",

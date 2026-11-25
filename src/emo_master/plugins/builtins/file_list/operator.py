@@ -17,12 +17,15 @@ class FileListOperator:
         paramSchema={
             "type": "object",
             "properties": {
-                "folderPath": {"title": "文件夹", "type": "string", "default": "",
+                "folderPath": {"description": "文件夹路径，经strip/expanduser/resolve后枚举；相对值以进程当前路径解释（上层可先解析资源）。", "title": "文件夹", "type": "string", "default": "",
                                "xWidget": "file", "xFileMode": "directory"},
                 "patterns": {"title": "文件类型", "type": "array", "default": ["*"], "minItems": 1,
-                             "items": {"type": "string", "minLength": 1}, "xWidget": "file-patterns",
-                             "description": "选择视频或图片格式；特殊文件名可使用自定义规则。"},
-                "recursive": {"title": "包含子文件夹", "type": "boolean", "default": False},
+                             "items": {
+                                 "title": "列表项", "description": "单项文件名规则，如*.png，至少一项。",
+                                 "type": "string", "minLength": 1
+                             }, "xWidget": "file-patterns",
+                             "description": "文件名glob模式列表；只匹配文件名，不允许目录分隔符，按casefold匹配。"},
+                "recursive": {"description": "true递归rglob，否则仅根目录iterdir。", "title": "包含子文件夹", "type": "boolean", "default": False},
             },
             "required": ["folderPath"],
         },

@@ -16,5 +16,15 @@
   },
   "paramSchema": {"type": "object", "properties": {}, "additionalProperties": false},
   "minCoreVersion": "0.3.0",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "condition": {"title": "条件", "description": "必须为真正bool，决定读取哪个候选输入；不是任意真值转换。"},
+      "trueValue": {"title": "真分支值", "description": "condition=true时必须存在且非None的候选值；未选中时不要求。"},
+      "falseValue": {"title": "假分支值", "description": "condition=false时必须存在且非None的候选值；未选中时不要求。"}
+    },
+    "outputs": {
+      "value": {"title": "值", "description": "当前条件选中的原值，不转换类型、不取上次值，也不回退另一侧。"}
+    }
+  }
 }

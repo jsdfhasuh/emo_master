@@ -47,9 +47,11 @@ def watchParent(workspace, cancellation, stop, heartbeat, finished):
 def runOperatorDebug(specJson, commands, events, cancellation, stop, heartbeat):
     from emo_master.apps.runtime.execution.background_tasks import BackgroundTaskService
     from emo_master.apps.runtime.execution.operator_executor import OperatorExecutor
+    from emo_master.apps.runtime.execution.parameter_inspection import ParameterInspection
     from emo_master.apps.runtime.workflow.cancellation import CancellationToken
     from emo_master.apps.runtime.workflow.context import RunContext
     from emo_master.core.workflow.models import CompiledNode
+    from emo_master.core.contracts.log_safety import redactLogText, redactLogValue
     from emo_master.apps.runtime.operator_debug.assets import DebugAssets, freezeOutputs
     from emo_master.apps.runtime.operator_debug.data import materialize
     from emo_master.apps.runtime.operator_debug.state import DebugVariables, DebugCounters
@@ -116,6 +118,7 @@ def runOperatorDebug(specJson, commands, events, cancellation, stop, heartbeat):
             started = time.monotonic()
             outputAssets = DebugAssets(spec["workspacePath"], budget=command["outputBudget"])
             notes = {}
+            parameters = None
             backgroundTasks = None
             try:
                 if spec.get("executionWarning") and not command.get("sideEffectConfirmed"):
@@ -130,6 +133,13 @@ def runOperatorDebug(specJson, commands, events, cancellation, stop, heartbeat):
                 params, values, mapped, notes = resources.prepare(command["params"],
                     materialize(command["inputs"], DebugAssets(spec["workspacePath"])), context, token,
                     projectInputPath=command.get("projectInputPath"))
+                sources = {tuple(binding["parameterPath"]): "variable"
+                           for binding in spec.get("variableBindings", ())}
+                sources.update({(key,): "resource" for key in spec.get("boundResourceParams", {})})
+                sources.update({(key,): "resource" for key in notes.get("resourcePaths", {})})
+                if spec["operatorId"] == "vision.io.video_loader" and "videoPath" in values:
+                    sources[("videoPath",)] = "input"
+                parameters = ParameterInspection(spec["paramSchema"], spec.get("inspectionSchema", {}), sources)
                 ports = spec["inputPorts"] if spec["operatorId"] == "vision.io.sqlite_writer" else command["inputPorts"]
                 node = CompiledNode(spec["nodeId"], "operator", spec["operatorId"], ports,
                                     command["outputPorts"], params, paramSchema=spec["paramSchema"])
@@ -142,7 +152,8 @@ def runOperatorDebug(specJson, commands, events, cancellation, stop, heartbeat):
                     backgroundTasks = BackgroundTaskService(token, stagingWorkspace=spec["workspacePath"],
                                                            stagingRecoveryRoot=spec.get("_stagingRecoveryRoot"))
                     executor.backgroundTasks = backgroundTasks
-                outputs, metrics, diagnostics = executor.execute(node, values, executionContext, token, mapped)
+                outputs, metrics, diagnostics = executor.execute(node, values, executionContext, token, mapped,
+                                                                 parameterInspection=parameters)
                 if backgroundTasks is not None:
                     backgroundTasks.close()
                     backgroundTasks.raiseUnobservedFailure()
@@ -150,12 +161,14 @@ def runOperatorDebug(specJson, commands, events, cancellation, stop, heartbeat):
                 inline, references = freezeOutputs(outputs, outputAssets,
                     dict(kind="debug-output", projectId=spec["projectId"], workflowId=spec["workflowId"], nodeId=spec["nodeId"],
                          executionId=command["executionId"], captureId=command["executionId"]))
-                result = dict(status="SUCCEEDED", outputs=inline, outputAssets=references, metrics=metrics, diagnostics=diagnostics)
+                result = dict(status="SUCCEEDED", outputs=inline, outputAssets=references,
+                              metrics=redactLogValue(metrics), diagnostics=redactLogValue(diagnostics))
             except Exception as error:
                 outputAssets.discard()
                 code = getattr(error, "code", "E_EXEC_FAILED")
                 result = dict(status="CANCELLED" if code == "E_CANCELLED" else "FAILED", code=code,
-                              message=str(error)[:2048], diagnostics={**notes, **getattr(error, "diagnostics", {})})
+                              message=redactLogText(str(error))[:2048],
+                              diagnostics=redactLogValue({**notes, **getattr(error, "diagnostics", {})}))
                 if code == "E_RESOURCE_CLEANUP_FAILED":
                     primary = error
                     stop.set()
@@ -163,6 +176,8 @@ def runOperatorDebug(specJson, commands, events, cancellation, stop, heartbeat):
                 if backgroundTasks is not None:
                     backgroundTasks.close(drain=False, waitForActive=token.is_cancelled())
                     executor.backgroundTasks = None
+            if parameters is not None and parameters.rows:
+                result["parameterSummary"] = parameters.rows
             result.update(kind="result", executionId=command["executionId"], elapsedMs=(time.monotonic()-started)*1000,
                           finishedAtMs=monotonicMs(), variables=variables.values)
             try:
@@ -174,7 +189,8 @@ def runOperatorDebug(specJson, commands, events, cancellation, stop, heartbeat):
     except BaseException as error:
         primary = error
         try:
-            send(dict(kind="fault", code=getattr(error, "code", "E_DEBUG_WORKER_FAILED"), message=str(error)[:2048]))
+            send(dict(kind="fault", code=getattr(error, "code", "E_DEBUG_WORKER_FAILED"),
+                      message=redactLogText(str(error))[:2048]))
         except (OSError, ValueError):
             pass
     finally:
@@ -186,7 +202,7 @@ def runOperatorDebug(specJson, commands, events, cancellation, stop, heartbeat):
             send({"kind": "closed"})
         except BaseException as error:
             try:
-                send(dict(kind="fault", code="E_RESOURCE_CLEANUP_FAILED", message=str(error)[:2048]))
+                send(dict(kind="fault", code="E_RESOURCE_CLEANUP_FAILED", message=redactLogText(str(error))[:2048]))
             except (OSError, ValueError):
                 pass
         finally:

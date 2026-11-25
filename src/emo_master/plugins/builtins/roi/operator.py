@@ -42,18 +42,26 @@ _PARAM_SCHEMA: dict[str, object] = {
     "type": "object",
     "properties": {
         "roiType": {
+            "description": "选择矩形、旋转矩形或多边形；顶层还可选择组合区域。",
             "title": "ROI 类型",
             "type": "string",
             "enum": ["bbox", "rotatedBox", "polygon"],
             "default": "bbox",
         },
-        "x": {"title": "X 坐标", "type": "number", "default": 0.0},
-        "y": {"title": "Y 坐标", "type": "number", "default": 0.0},
-        "width": {"title": "宽度（像素）", "type": "number", "minimum": 0.0, "default": 1.0},
-        "height": {"title": "高度（像素）", "type": "number", "minimum": 0.0, "default": 1.0},
-        "centerX": {"title": "中心 X 坐标", "type": "number", "default": 0.0},
-        "centerY": {"title": "中心 Y 坐标", "type": "number", "default": 0.0},
+        "x": {"description": "矩形左上角在当前图像中的 X 坐标，单位为像素。", "title": "X 坐标", "type": "number", "default": 0.0},
+        "y": {"description": "矩形左上角在当前图像中的 Y 坐标，单位为像素。", "title": "Y 坐标", "type": "number", "default": 0.0},
+        "width": {
+            "description": "矩形或旋转矩形的宽度，单位为像素；执行时必须大于 0。",
+            "title": "宽度（像素）", "type": "number", "minimum": 0.0, "default": 1.0
+        },
+        "height": {
+            "description": "矩形或旋转矩形的高度，单位为像素；执行时必须大于 0。",
+            "title": "高度（像素）", "type": "number", "minimum": 0.0, "default": 1.0
+        },
+        "centerX": {"description": "旋转矩形中心的 X 坐标，单位为像素。", "title": "中心 X 坐标", "type": "number", "default": 0.0},
+        "centerY": {"description": "旋转矩形中心的 Y 坐标，单位为像素。", "title": "中心 Y 坐标", "type": "number", "default": 0.0},
         "angleDegrees": {
+            "description": "旋转矩形的角度，单位为度；范围为 −180（包含）至 180（不包含）。",
             "title": "旋转角度（度）",
             "type": "number",
             "minimum": -180.0,
@@ -61,19 +69,23 @@ _PARAM_SCHEMA: dict[str, object] = {
             "default": 0.0,
         },
         "points": {
+            "description": "当前图像坐标下的多边形顶点，按边界顺序排列。",
             "title": "多边形顶点",
             "type": "array",
             "items": {
+                "title": "多边形顶点",
+                "description": "多边形的一个顶点，X 和 Y 以当前图像像素为单位。",
                 "type": "object",
                 "properties": {
-                    "x": {"title": "X 坐标", "type": "number"},
-                    "y": {"title": "Y 坐标", "type": "number"},
+                    "x": {"description": "多边形顶点的 X 坐标，单位为像素。", "title": "X 坐标", "type": "number"},
+                    "y": {"description": "多边形顶点的 Y 坐标，单位为像素。", "title": "Y 坐标", "type": "number"},
                 },
                 "required": ["x", "y"],
             },
             "default": [],
         },
         "padValue": {
+            "description": "裁剪超界和选择掩膜外像素填充值；BGR 三通道同值。",
             "title": "填充值",
             "type": "integer",
             "minimum": 0,
@@ -81,6 +93,7 @@ _PARAM_SCHEMA: dict[str, object] = {
             "default": 0,
         },
         "interpolation": {
+            "description": "croppedImage 的仿射重采样；掩膜始终最近邻。",
             "title": "插值方式",
             "type": "string",
             "enum": ["nearest", "linear", "cubic"],
@@ -95,17 +108,24 @@ _REGION_PROPERTIES = deepcopy(_PARAM_PROPERTIES)
 for _name in ("padValue", "interpolation"):
     _REGION_PROPERTIES.pop(_name)
 _REGION_PROPERTIES.update({
-    "name": {"title": "区域名称", "type": "string"},
-    "purpose": {"title": "区域用途", "type": "string", "enum": ["keep", "exclude"], "default": "keep"},
-    "enabled": {"title": "启用", "type": "boolean", "default": True},
+    "name": {"description": "区域显示名称；执行几何运算未使用该字段。", "title": "区域名称", "type": "string"},
+    "purpose": {
+        "description": "keep 加入选区，exclude 从选区扣除。",
+        "title": "区域用途", "type": "string", "enum": ["keep", "exclude"], "default": "keep"
+    },
+    "enabled": {"description": "是否参与选择计算；false 不参与，但仍接受参数校验。", "title": "启用", "type": "boolean", "default": True},
 })
 _PARAM_PROPERTIES["roiType"]["enum"].append("regions")
 _PARAM_PROPERTIES["roiType"]["xOptionLabels"] = {
     "bbox": "矩形", "rotatedBox": "旋转矩形", "polygon": "多边形", "regions": "组合区域",
 }
 _PARAM_PROPERTIES["regions"] = {
+    "description": "多区域配置数组：enabled keep 的并集减 enabled exclude；无 keep 则全图起始，最后与 frame 交集。",
     "title": "区域配置", "type": "array", "default": [],
-    "items": {"type": "object", "properties": _REGION_PROPERTIES},
+    "items": {
+        "title": "区域条目", "description": "一个非嵌套区域配置；校验遍历所有项，包括 disabled；roiType 在实现中必须显式给出。",
+        "type": "object", "properties": _REGION_PROPERTIES
+    },
     "xVisibleWhen": {"roiType": ["regions"]},
     "xValidateWhen": {"roiType": ["regions"]},
 }

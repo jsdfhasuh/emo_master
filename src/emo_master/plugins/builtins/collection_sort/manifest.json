@@ -41,6 +41,7 @@
           "matches"
         ],
         "default": "",
+        "description": "选择唯一的处理对象。留空时由本次唯一提供的业务输入确定。",
         "xOptionLabels": {
           "": "请选择处理对象",
           "detections": "检测结果",
@@ -53,6 +54,7 @@
         }
       },
       "key": {
+        "description": "按类型白名单读取字段；空字符串在执行时自动选择：blob/contour/measurement→area，detection→confidence，line→length，circle→radius，match→quality。",
         "title": "排序字段",
         "type": "string",
         "enum": [
@@ -192,6 +194,7 @@
         }
       },
       "direction": {
+        "description": "ascending升序，descending降序；相同键保留输入次序，缺失值无论方向都放末尾。",
         "title": "排序方向",
         "type": "string",
         "enum": [
@@ -204,5 +207,50 @@
     "xModeOperator": "vision.collection.sort"
   },
   "minCoreVersion": "0.3.0",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "blobs": {"title": "连通域", "description": "连通域强类型集合；七种集合端口中本次只能有一种，保留其items、对象ID及coordinateSpace。"},
+      "detections": {"title": "检测结果", "description": "检测对象强类型集合；七种集合端口中本次只能有一种，保留其items、对象ID及coordinateSpace。"},
+      "contours": {"title": "轮廓", "description": "轮廓强类型集合；七种集合端口中本次只能有一种，保留其items、对象ID及coordinateSpace。"},
+      "measurements": {"title": "形状测量", "description": "形状测量强类型集合；七种集合端口中本次只能有一种，保留其items、对象ID及coordinateSpace。"},
+      "lines": {"title": "线段", "description": "线段强类型集合；七种集合端口中本次只能有一种，保留其items、对象ID及coordinateSpace。"},
+      "circles": {"title": "圆", "description": "圆强类型集合；七种集合端口中本次只能有一种，保留其items、对象ID及coordinateSpace。"},
+      "matches": {"title": "模板匹配", "description": "模板匹配对象强类型集合；七种集合端口中本次只能有一种，保留其items、对象ID及coordinateSpace。"}
+    },
+    "outputs": {
+      "sortedBlobs": {"title": "排序后的连通域", "description": "按所选实际键稳定排序的连通域集合；只有当前输入类型对应端口返回，保持对象和坐标空间。"},
+      "sortedDetections": {"title": "排序后的检测结果", "description": "按所选实际键稳定排序的检测对象集合；只有当前输入类型对应端口返回，保持对象和坐标空间。"},
+      "sortedContours": {"title": "排序后的轮廓", "description": "按所选实际键稳定排序的轮廓集合；只有当前输入类型对应端口返回，保持对象和坐标空间。"},
+      "sortedMeasurements": {"title": "排序后的形状测量", "description": "按所选实际键稳定排序的形状测量集合；只有当前输入类型对应端口返回，保持对象和坐标空间。"},
+      "sortedLines": {"title": "排序后的线段", "description": "按所选实际键稳定排序的线段集合；只有当前输入类型对应端口返回，保持对象和坐标空间。"},
+      "sortedCircles": {"title": "排序后的圆", "description": "按所选实际键稳定排序的圆集合；只有当前输入类型对应端口返回，保持对象和坐标空间。"},
+      "sortedMatches": {"title": "排序后的模板匹配", "description": "按所选实际键稳定排序的模板匹配对象集合；只有当前输入类型对应端口返回，保持对象和坐标空间。"}
+    },
+    "metrics": {
+      "latencyMs": {
+        "title": "算子内部耗时",
+        "description": "算子executeNode入口计时到构造成功返回的内部耗时，含本算子校验/集合处理，不含框架排队及下游。",
+        "unit": "ms",
+        "group": "duration"
+      },
+      "collectionKind": {
+        "title": "集合类型",
+        "description": "实际解析的集合种类（blob/detection/contour/measurement/line/circle/match），不是性能指标。",
+        "group": "result"
+      },
+      "count": {"title": "数量", "description": "排序后对象数，包含被放到末尾的缺失值对象；不表示过滤数量。", "unit": "个", "group": "business"},
+      "missingValues": {
+        "title": "缺失值数量",
+        "description": "排序键缺失的对象数量；例如Blob.label为None或Blob.circularity不可用。",
+        "unit": "个",
+        "group": "business"
+      }
+    },
+    "diagnostics": {
+      "text": {"title": "摘要", "description": "实际排序对象数与已解析key的摘要。"},
+      "effectiveParameters": {"title": "实际生效参数", "description": "空排序键解析后实际采用的排序字段，或显式指定的字段。"}
+    },
+    "captureParams": [["key"], ["direction"]]
+  }
 }

@@ -49,7 +49,7 @@ class MinimumEnclosingCircleOperator:
                     "perContour": "各轮廓分别求圆",
                     "allContours": "合并全部轮廓点求单圆",
                 },
-                "description": "合并模式将当前输入集合的所有轮廓顶点一起求一个最小外接圆；不是平均圆心或合并多个图像。",
+                "description": "perContour每个轮廓单独求最小外接圆；allContours合并所有轮廓顶点求单圆，不平均圆心。",
             },
         },
         "additionalProperties": False,
@@ -129,7 +129,7 @@ class GeometryPointsOperator:
          "bbox": port("bbox2d", required=False)},
         {"points": port("list<point2d>"), "pointCount": {"type": "integer", "required": True, "nullable": False}},
         modeSchema("vision.geometry.extract_points", {"type": "object", "additionalProperties": False, "properties": {
-            "feature": {"title": "取点特征", "type": "string", "default": "circleCenter",
+            "feature": {"description": "circleCenter圆心；bboxCenter轴对齐框中心；bboxTopLeft左上角；minAreaRectCenter旋转矩形中心；centroid读取已有质心，不计算Blob内心。", "title": "取点特征", "type": "string", "default": "circleCenter",
                 "enum": ["circleCenter", "bboxCenter", "bboxTopLeft", "minAreaRectCenter", "centroid"],
                 "xOptionLabels": {"circleCenter": "圆心", "bboxCenter": "轴对齐包围框中心", "bboxTopLeft": "轴对齐包围框左上角",
                     "minAreaRectCenter": "最小面积旋转矩形中心", "centroid": "轮廓质心（不是 Blob 内心）"}}}}))

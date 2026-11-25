@@ -4,6 +4,8 @@
 
 本文件是唯一实施清单。本轮计划更新与 P0 执行角色为 **ChatGPT Web**。后续直接复用已完成审查；若代码有增量，只复核受影响条目，不重新委托全量 P0。
 
+P1、P2 实现与开发验证由 **Codex（6.2 Sol）** 执行。独立桌面走查按 P3.5 单列。
+
 ## P0：82 个算子逐字段审查（已完成）
 
 - [x] P0.1 以 82 个 operatorId 为单位，核对当前 Manifest、paramSchema、端口定义、实际执行实现及共享 helper / 继承 / 设备托管路径。
@@ -17,32 +19,34 @@
 
 ## P1：元数据和 Runtime 数据
 
-- [ ] P1.1 实现 design.md 的可选 resultSchema，按端口 key 旁挂说明，保留端口合同及 runtimeCapabilities；配置说明继续复用 paramSchema。
-- [ ] P1.2 按审查缺口补齐 82 算子说明及已知嵌套结构；同步各条 schemaSource 的实际 OperatorMeta，复用注册一致性和字段引用检查。
-- [ ] P1.3 正式 Job 从实际描述符取得 operatorId/operatorVersion；调试从可信会话补齐 operatorId，保留自身执行身份。
-- [ ] P1.4 采集必要 parameterSummary，区分 call/effective 和已确认来源；处理内部归一化、输入覆盖及调试 resources.prepare 后的值，优先复用现有结果数据。
-- [ ] P1.5 在事件/调试展示记录形成前筛选脱敏，并更新 JSONL 完成事件白名单，保证安全摘要与身份在查询/导出中保留。
-- [ ] P1.6 按逐算子决定仅补必要真实数据和修正误导说明；去除 EmptyOperator 固定零耗时占位，不为纯数值/几何算子增造专用指标。
-- [ ] P1.7 在现有 OperatorInfo 增加 result_schema_json，更新 Runtime/RuntimeClient/OperatorDefinition 并运行 scripts/gen_proto.py；不增加 RPC 或将结果说明混入参数 schema。
+- [x] P1.1 实现 design.md 的可选 resultSchema，按端口 key 旁挂说明，保留端口合同及 runtimeCapabilities；配置说明继续复用 paramSchema。
+- [x] P1.2 按审查缺口补齐 82 算子说明及已知嵌套结构；同步各条 schemaSource 的实际 OperatorMeta，复用注册一致性和字段引用检查。
+- [x] P1.3 正式 Job 从实际描述符取得 operatorId/operatorVersion；调试从可信会话补齐 operatorId，保留自身执行身份。
+- [x] P1.4 采集必要 parameterSummary，区分 call/effective 和已确认来源；处理内部归一化、输入覆盖及调试 resources.prepare 后的值，优先复用现有结果数据。
+- [x] P1.5 在事件/调试展示记录形成前筛选脱敏，并更新 JSONL 完成事件白名单，保证安全摘要与身份在查询/导出中保留。
+- [x] P1.6 按逐算子决定仅补必要真实数据和修正误导说明；去除 EmptyOperator 固定零耗时占位，不为纯数值/几何算子增造专用指标。
+- [x] P1.7 在现有 OperatorInfo 增加 result_schema_json，更新 Runtime/RuntimeClient/OperatorDefinition 并运行 scripts/gen_proto.py；不增加 RPC 或将结果说明混入参数 schema。
 
 ## P2：Designer 详情接入
 
-- [ ] P2.1 RuntimeClient 获取并解析算子语义元数据，供本地和远程 Runtime 共用。
-- [ ] P2.2 复用 LogRecordDetail，将右侧详情按运行概览、输入、实际生效参数、输出、指标、诊断和技术详情组织；无数据区域不显示虚构内容。
-- [ ] P2.3 概览可以合并重复值，但保留原始来源；原始 JSON、复制、展开能力继续可用。
-- [ ] P2.4 单算子调试复用同一解释组件，使用真实身份及资源准备后的安全摘要，不把调用参数或 manager 的早期参数快照冒充最终生效值。
-- [ ] P2.5 未知字段、缺少说明的算子和无法匹配身份的记录使用通用原始展示。
+- [x] P2.1 RuntimeClient 获取并解析算子语义元数据，供本地和远程 Runtime 共用。
+- [x] P2.2 复用 LogRecordDetail，将右侧详情按运行概览、输入、实际生效参数、输出、指标、诊断和技术详情组织；无数据区域不显示虚构内容。
+- [x] P2.3 概览可以合并重复值，但保留原始来源；原始 JSON、复制、展开能力继续可用。
+- [x] P2.4 单算子调试复用同一解释组件，使用真实身份及资源准备后的安全摘要，不把调用参数或 manager 的早期参数快照冒充最终生效值。
+- [x] P2.5 未知字段、缺少说明的算子和无法匹配身份的记录使用通用原始展示。
 
 ## P3：验证与收尾
 
-- [ ] P3.1 对全部 82 个算子执行静态覆盖检查：端口、参数说明、字段引用及审查结论完整。
-- [ ] P3.2 用少量代表算子验证真实执行和字段解释，覆盖图像处理、推理、集合/几何、数值/控制流、通讯/设备托管及存储类型。
-- [ ] P3.3 验证真实注册版本、参数阶段/来源及脱敏，贯通完成事件投影、原始记录、查询和导出；复用少量直接反例。
-- [ ] P3.4 验证 Designer 正式 Job、单算子调试、本地 Runtime 和远程 Runtime 共用解释机制。
+- [x] P3.1 对全部 82 个算子执行静态覆盖检查：端口、参数说明、字段引用及审查结论完整。
+- [x] P3.2 用少量代表算子验证真实执行和字段解释，覆盖图像处理、推理、集合/几何、数值/控制流、通讯/设备托管及存储类型。
+- [x] P3.3 验证真实注册版本、参数阶段/来源及脱敏，贯通完成事件投影、原始记录、查询和导出；复用少量直接反例。
+- [x] P3.4 验证 Designer 正式 Job、单算子调试、本地 Runtime 和远程 Runtime 共用解释机制。
 - [ ] P3.5 完成一次 Qt 桌面走查，检查工程师能否看懂关键结果，并确认原始 JSON、复制和展开仍可用。
 - [ ] P3.6 运行受影响测试和适用 CI，更新审查清单及实施报告；未执行或跳过项如实记录。
 
 ## 测试范围原则
+
+P3.5 的入口、工程生成器和检查步骤见 [独立桌面走查](desktop-walkthrough.md)。
 
 - 82 个算子全部做静态字段覆盖，不要求全部执行。
 - 共享渲染器、参数来源、脱敏、未知字段和值语义按共用机制测试，不为每个算子重复写相同测试。

@@ -47,6 +47,7 @@ class CannyEdgeOperator:
             "type": "object",
             "properties": {
                 "thresholdLow": {
+                    "description": "Canny低阈值，0..255且必须小于高阈值。",
                     "title": "低阈值",
                     "type": "integer",
                     "minimum": 0,
@@ -54,14 +55,18 @@ class CannyEdgeOperator:
                     "default": 50,
                 },
                 "thresholdHigh": {
+                    "description": "Canny高阈值，0..255且高于低阈值。",
                     "title": "高阈值",
                     "type": "integer",
                     "minimum": 0,
                     "maximum": 255,
                     "default": 150,
                 },
-                "apertureSize": {"title": "Sobel 孔径大小", "type": "integer", "enum": [3, 5, 7], "default": 3},
-                "l2Gradient": {"title": "使用 L2 梯度", "type": "boolean", "default": False},
+                "apertureSize": {
+                    "description": "传给Canny的Sobel孔径3/5/7。",
+                    "title": "Sobel 孔径大小", "type": "integer", "enum": [3, 5, 7], "default": 3
+                },
+                "l2Gradient": {"description": "传给Canny的L2gradient开关。", "title": "使用 L2 梯度", "type": "boolean", "default": False},
             },
             "required": ["thresholdLow", "thresholdHigh"],
         },

@@ -4372,6 +4372,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         dialog.enableWorkbench(makeEntry=self._runtimeLogEntry, onCurrent=lambda: self.logEntries,
             directory=self._localLogDirectory, onError=lambda message: self.appendRuntimeLog("ERROR", message),
             onDiagnostic=self.appendLocalEvent)
+        dialog.view.recordDetail.operatorLookup = self._resultOperatorDefinition
+        dialog.jobLogs.detail.operatorLookup = self._resultOperatorDefinition
         dialog.setWorkbenchClient(self.runtimeClient, runtimeInstance=self._currentLogRuntimeInstance)
         if self._globalLogDelivery is not None:
             dialog.jobLogs.progress(*self._globalLogDelivery)
@@ -4950,7 +4952,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             return
         debug = editor._debugWindow
         if debug is None or not isValid(debug):
-            debug = OperatorDebugWindow(editor, valid)
+            debug = OperatorDebugWindow(editor, valid, operatorLookup=self._resultOperatorDefinition)
             editor._debugWindow = debug
         debug.show()
         debug.raise_()
@@ -5212,6 +5214,14 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             if definition.get("operatorId") == operatorId:
                 return dict(definition)
         return {}
+
+    def _resultOperatorDefinition(self, operatorId: str, version: str) -> dict[str, object]:
+        provider = self.operatorIconProvider
+        scope = str(getattr(self.runtimeClient, "runtimeScope", id(self.runtimeClient)))
+        if provider is not None and provider.scope != scope:
+            return {}
+        definition = self._operatorDefinition(operatorId)
+        return definition if definition.get("version") == version else {}
 
     def _nodeEditorSchema(self, node, sourceWorkflowId=None) -> dict[str, object]:
         sourceWorkflowId = sourceWorkflowId or self.activeWorkflowId

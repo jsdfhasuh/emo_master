@@ -413,6 +413,7 @@ def _projectEvent(event: RuntimeEvent) -> dict[str, object]:
         payload = {"value": payload}
     if event.eventType.endswith(".completed") and not event.eventType.startswith("device."):
         loopFields = ("iteration", "bodyExecuted") if event.eventType == "loop.iteration.completed" else ()
+        operatorFields = ("operatorId", "operatorVersion", "parameterSummary") if event.eventType == "node.completed" else ()
         payload = {
             key: payload[key]
             for key in (
@@ -442,6 +443,7 @@ def _projectEvent(event: RuntimeEvent) -> dict[str, object]:
                 "slot",
                 "deviceBindings",
                 *loopFields,
+                *operatorFields,
             )
             if key in payload
         }

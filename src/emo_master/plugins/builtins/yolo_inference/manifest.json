@@ -52,6 +52,7 @@
     "type": "object",
     "properties": {
       "modelPath": {
+        "description": "Runtime 本地 .onnx 检测模型；相对路径依 workspacePath，expanduser/resolve 后加载；模型仅接受支持的 float32 单输入/输出 detect 格式。",
         "title": "模型路径",
         "type": "string",
         "default": "",
@@ -62,20 +63,20 @@
       "confidence": {
         "title": "置信度阈值",
         "type": "number",
-        "minimum": 0,
-        "maximum": 1,
+        "minimum": 0.0,
+        "maximum": 1.0,
         "default": 0.25,
         "xExample": 0.25,
-        "description": "保留置信度不低于此值的检测结果，范围为 0～1。"
+        "description": "每个候选框的最大类别分数 >= 此阈值才保留；不乘独立 objectness。"
       },
       "iou": {
         "title": "非极大值抑制 IoU 阈值",
         "type": "number",
-        "minimum": 0,
-        "maximum": 1,
+        "minimum": 0.0,
+        "maximum": 1.0,
         "default": 0.45,
         "xExample": 0.45,
-        "description": "非极大值抑制的交并比阈值，范围为 0～1。"
+        "description": "NMS 时 IoU 严格大于阈值才抑制；相等不抑制。"
       },
       "imageSize": {
         "title": "推理图像尺寸",
@@ -84,7 +85,7 @@
         "default": 640,
         "xUnit": "像素",
         "xExample": 640,
-        "description": "模型输入的目标图像尺寸，填写正整数。"
+        "description": "仅用来填补 ONNX 动态 H/W；模型固定高度/宽度各自优先，实际输入可非正方形。"
       },
       "maxDetections": {
         "title": "最大检测数量",
@@ -93,7 +94,7 @@
         "default": 300,
         "xUnit": "个",
         "xExample": 300,
-        "description": "单次推理最多保留的检测结果数量。"
+        "description": "NMS 之后取前 N，后续回原图裁边丢弃零面积可能让最终数量更少。"
       },
       "device": {
         "title": "推理设备",
@@ -107,15 +108,17 @@
           "auto": "自动（当前使用 CPU）",
           "cpu": "CPU"
         },
-        "description": "当前 ONNX 推理使用 CPU 执行提供程序。"
+        "description": "auto/cpu 均使用 CPUExecutionProvider；参与模型缓存 key，但不选择 GPU。"
       },
       "classes": {
         "title": "检测类别（可选）",
-        "description": "留空表示检测模型支持的全部类别；填写 0, 1 等类别编号时仅保留指定类别，也可粘贴 [0, 1]。类别名称由模型决定。",
+        "description": "非空时只保留 argmax 类别在列表中的检测；空数组表示全部类别。",
         "type": "array",
         "xWidget": "integer-list",
         "xPlaceholder": "全部类别",
         "items": {
+          "title": "列表项",
+          "description": "模型 0 起始非负整数类别 ID；类别名称取模型 metadata，缺失回退 ID 字符串。",
           "type": "integer",
           "minimum": 0
         },
@@ -127,11 +130,13 @@
         ]
       },
       "agnosticNms": {
+        "description": "true 跨类别抑制；false 只对同类候选执行 IoU 抑制。",
         "title": "不区分类别的非极大值抑制",
         "type": "boolean",
         "default": false
       },
       "drawOverlay": {
+        "description": "是否输出检测叠加图，关闭记录原因但保留检测。",
         "title": "绘制叠加图",
         "type": "boolean",
         "default": true
@@ -167,16 +172,31 @@
       "onMissingCrop": {
         "title": "无裁剪目标时",
         "type": "string",
-        "enum": ["error", "skip"],
+        "enum": [
+          "error",
+          "skip"
+        ],
         "default": "error",
         "xOptionLabels": {
           "error": "报错停止",
           "skip": "跳过裁剪，继续检测"
         },
-        "xEnabledWhen": {"outputCrop": [true]},
+        "xEnabledWhen": {
+          "outputCrop": [
+            true
+          ]
+        },
         "description": "跳过时保留检测集合和叠加图，不生成裁剪图；依赖裁剪图的后续节点跳过本次执行。模型、参数和推理错误仍然报错。",
-        "xVisibleWhen": {"outputCrop": [true]},
-        "xValidateWhen": {"outputCrop": [true]}
+        "xVisibleWhen": {
+          "outputCrop": [
+            true
+          ]
+        },
+        "xValidateWhen": {
+          "outputCrop": [
+            true
+          ]
+        }
       }
     },
     "required": [
@@ -185,5 +205,77 @@
     "xModeOperator": "vision.inference.yolo"
   },
   "minCoreVersion": "0.2.0",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "image": {"title": "图像", "description": "非空 uint8 灰度/BGR 原图；整图做 letterbox，frame 内容框不限制检测推理。"},
+      "frame": {"title": "坐标框", "description": "检测结果的坐标空间与可选裁剪的有效内容；缺失按图生成。"}
+    },
+    "outputs": {
+      "detections": {
+        "title": "检测结果",
+        "description": "经置信度/类别/有效框过滤与 NMS 的检测集合；回到原图坐标后裁边并丢弃零面积，按置信度稳定降序。",
+        "fields": {
+          "items": {
+            "title": "集合条目",
+            "description": "集合条目的有序列表。",
+            "items": {
+              "title": "集合条目",
+              "description": "记录标识、类别编号、标签、置信度、包围框、几何对象、扩展属性。",
+              "fields": {
+                "id": {"title": "标识", "description": "det-后端顺序1起始索引；丢弃零面积可产生空号，不是跨帧 tracking ID。"},
+                "classId": {"title": "类别编号", "description": "每候选最大类别分数的索引。", "unit": "0起始索引"},
+                "label": {"title": "标签", "description": "模型 metadata 类别名，未找到时为 classId 字符串。"},
+                "confidence": {"title": "置信度", "description": "最大类别分数，通过[0,1]校验；非经业务校准的正确率。", "unit": "0–1"},
+                "bbox": {"title": "包围框", "description": "回原图并裁至图像边界的轴对齐框，坐标在 frame.coordinateSpace；非跟踪/分割轮廓。", "unit": "px"},
+                "geometry": {"title": "几何对象", "description": "同一检测 bbox 几何，由 Detection2D.fromGeometry 生成。", "unit": "bbox2d"},
+                "attributes": {
+                  "title": "扩展属性",
+                  "description": "记录推理后端。",
+                  "fields": {
+                    "backend": {"title": "推理后端", "description": "固定 onnxruntime。"}
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "overlay": {"title": "叠加图", "description": "drawOverlay=true 时 BGR 原图副本上绘制绿色 bbox 与 label/置信度。"},
+      "croppedImage": {"title": "裁剪图像", "description": "outputCrop=true 且目标存在时，从原图 bbox 裁剪原始像素；复用 Crop 取整/clip，不裁 overlay。"},
+      "croppedFrame": {"title": "裁剪图坐标框", "description": "所选检测框的裁剪图有效内容/回源空间，Crop 返回的 frame。"},
+      "frame": {"title": "坐标框", "description": "原输入解析后的 frame。"}
+    },
+    "metrics": {
+      "latencyMs": {
+        "title": "算子内部耗时",
+        "description": "整个本地执行耗时：模型缓存访问/首次加载、推理锁等待、预处理、ONNX、后处理、可选裁剪和绘图；非纯推理时间。",
+        "unit": "ms",
+        "group": "duration"
+      },
+      "detectionCount": {
+        "title": "检测结果数量",
+        "description": "最终公开 detections.items 的有效框数，经过过滤/NMS/原图裁边和零面积剔除。",
+        "unit": "个",
+        "group": "business"
+      }
+    },
+    "diagnostics": {
+      "text": {"title": "摘要", "description": "最终检测数量英文摘要。"},
+      "modelPath": {"title": "模型路径", "description": "实际已解析绝对模型路径；真实解析路径可供复制与排障。", "group": "parameter"},
+      "backend": {"title": "推理后端", "description": "固定 onnxruntime。"},
+      "provider": {"title": "执行提供程序", "description": "取 OnnxInferenceResult.provider，正常实现固定 CPUExecutionProvider。"},
+      "inputShape": {"title": "模型输入形状", "description": "实际送入模型的 [1,3,H,W]；可揭示固定模型维度覆盖 imageSize。", "group": "parameter"},
+      "imageOutputMessages": {
+        "title": "图像输出说明",
+        "description": "可选图像缺省原因映射；不能用没有 image 错误概括全部缺省。",
+        "fields": {
+          "croppedImage": {"title": "裁剪图像", "description": "关闭裁剪或 skip 缺目标时的原因。"},
+          "croppedFrame": {"title": "裁剪图坐标框", "description": "仅启用裁剪且 skip 缺目标时写入；关闭裁剪分支没有此 key。"},
+          "overlay": {"title": "叠加图", "description": "关闭叠加图时原因。"}
+        }
+      }
+    },
+    "captureParams": [["confidence"], ["outputCrop"], ["cropTargetIndex"], ["onMissingCrop"]]
+  }
 }

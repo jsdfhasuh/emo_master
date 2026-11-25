@@ -40,27 +40,30 @@ class PatchCoreInferenceOperator:
                 "modelPath": {
                     "title": "模型部署目录", "type": "string", "default": "",
                     "xWidget": "file", "xFileMode": "directory",
-                    "description": "Runtime 所在电脑上的完整 DINO ONNX 部署目录，或包含 transfer.json 和 payload 的导出目录；不会自动上传。",
+                    "description": "Runtime 可访问的完整 DINO ONNX 部署目录或 transfer.json+payload 导出目录；相对路径基于 workspacePath，不能用单个 .onnx。",
                 },
                 "drawHeatmap": {
                     "title": "输出彩色热图", "type": "boolean", "default": True,
-                    "description": "每张图相对响应的彩色显示，不是像素缺陷判定。",
+                    "description": "是否生成 heatmap 端口；关闭提供 imageOutputMessages.heatmap。",
                 },
-                "drawOverlay": {"title": "输出叠加图", "type": "boolean", "default": True},
+                "drawOverlay": {
+                    "description": "是否生成 overlay；关闭时不校验/使用显示模式及高亮阈值。",
+                    "title": "输出叠加图", "type": "boolean", "default": True
+                },
                 "overlayMode": {
                     "title": "叠加显示", "type": "string", "default": "heatmap",
                     "enum": ["heatmap", "highlight"],
                     "xOptionLabels": {"heatmap": "整图热图", "highlight": "疑似缺陷高亮"},
-                    "description": "高亮模式仅标出 NG 图中的相对高响应位置；OK 图保留原图。不是像素级缺陷判定。",
+                    "description": "heatmap 为整图热色混合；highlight 仅对 NG 显示相对高响应，不改变模型判定。",
                 },
                 "highlightThreshold": {
                     "title": "高亮相对阈值", "type": "number", "default": .7,
                     "exclusiveMinimum": 0, "maximum": 1,
-                    "description": "仅用于显示，范围 (0, 1]；数值越大，高亮范围越小。不修改模型判定阈值。",
+                    "description": "highlight 模式的每图相对响应阈值 (0,1]；不是模型 threshold。",
                 },
                 "outputAnomalyMap": {
                     "title": "输出原始异常数值", "type": "boolean", "default": False,
-                    "description": "输出原始 256×256 float32 数值和几何还原信息；不进行色彩归一化。",
+                    "description": "是否把原始异常图数值与还原几何作为对象输出；不影响 score/判定。",
                 },
             },
             "required": ["modelPath"],

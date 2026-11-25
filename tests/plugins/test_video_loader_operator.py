@@ -194,7 +194,7 @@ def testDynamicPathCanOmitFixedPath(tmp_path):
 
 def testManifestMatchesImplementation():
     root = Path(__file__).resolve().parents[2] / "src/emo_master/plugins/builtins/video_loader"
-    manifest = json.loads((root / "manifest.json").read_text())
+    manifest = json.loads((root / "manifest.json").read_text(encoding="utf-8"))
     for key in ("operatorId", "version", "displayName", "inputPorts", "outputPorts", "paramSchema"):
         assert manifest[key] == getattr(VideoLoaderOperator.meta, key)
 

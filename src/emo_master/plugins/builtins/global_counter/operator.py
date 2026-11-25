@@ -18,7 +18,10 @@ class OperatorMeta:
 _PARAM_SCHEMA: dict[str, object] = {
     "type": "object",
     "properties": {
-        "name": {"title": "计数器名称", "type": "string", "minLength": 1, "maxLength": 128},
+        "name": {
+            "description": "项目范围持久化共享计数器名称，区分大小写/精确字符串，不允许两端空白。",
+            "title": "计数器名称", "type": "string", "minLength": 1, "maxLength": 128
+        },
     },
     "required": ["name"],
     "additionalProperties": False,

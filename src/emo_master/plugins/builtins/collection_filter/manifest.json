@@ -38,50 +38,1094 @@
     "type": "object",
     "xCollectionFilter": true,
     "properties": {
-      "collectionType": {"title":"筛选对象","type":"string","default":"","enum":["","detections","blobs","contours","measurements","lines","circles","matches"],"xOptionLabels":{"":"请选择筛选对象","detections":"检测结果","blobs":"连通域","contours":"轮廓","measurements":"形状测量","lines":"直线","circles":"圆","matches":"模板匹配结果"}},
-      "areaEnabled": {"title":"面积筛选","type":"boolean","xVisibleWhen":{"collectionType":["blobs","contours","measurements"]},"xValidateWhen":{"collectionType":["","blobs","contours","measurements"]}},
-      "minArea": {"title":"最小面积","type":"number","minimum":0,"default":0,"xVisibleWhen":{"collectionType":["blobs","contours","measurements"],"areaEnabled":[true]},"xValidateWhen":{"collectionType":["","blobs","contours","measurements"],"areaEnabled":[true]}},
-      "maxArea": {"title":"最大面积","type":"number","minimum":0,"default":0,"xVisibleWhen":{"collectionType":["blobs","contours","measurements"],"areaEnabled":[true]},"xValidateWhen":{"collectionType":["","blobs","contours","measurements"],"areaEnabled":[true]}},
-      "contourPointsEnabled": {"title":"轮廓点数筛选","type":"boolean","xVisibleWhen":{"collectionType":["contours"]},"xValidateWhen":{"collectionType":["","contours"]}},
-      "minContourPoints": {"title":"最小轮廓点数","type":"integer","minimum":0,"default":0,"description":"按轮廓近似后的顶点数筛选，包含下限；0 表示不限制。","xVisibleWhen":{"collectionType":["contours"],"contourPointsEnabled":[true]},"xValidateWhen":{"collectionType":["","contours"],"contourPointsEnabled":[true]}},
-      "perimeterEnabled": {"title":"周长筛选","type":"boolean","xVisibleWhen":{"collectionType":["contours","measurements"]},"xValidateWhen":{"collectionType":["","contours","measurements"]}},
-      "minPerimeter": {"title":"最小周长","type":"number","minimum":0,"default":0,"xVisibleWhen":{"collectionType":["contours","measurements"],"perimeterEnabled":[true]},"xValidateWhen":{"collectionType":["","contours","measurements"],"perimeterEnabled":[true]}},
-      "maxPerimeter": {"title":"最大周长","type":"number","minimum":0,"default":0,"xVisibleWhen":{"collectionType":["contours","measurements"],"perimeterEnabled":[true]},"xValidateWhen":{"collectionType":["","contours","measurements"],"perimeterEnabled":[true]}},
-      "circularityEnabled": {"title":"圆度筛选","type":"boolean","xVisibleWhen":{"collectionType":["blobs","measurements"]},"xValidateWhen":{"collectionType":["","blobs","measurements"]},"default":false},
-      "minCircularity": {"title":"最小圆度","type":"number","minimum":0,"maximum":1,"default":0,"xVisibleWhen":{"collectionType":["blobs","measurements"],"circularityEnabled":[true]},"xValidateWhen":{"collectionType":["","blobs","measurements"],"circularityEnabled":[true]}},
-      "maxCircularity": {"title":"最大圆度","type":"number","minimum":0,"maximum":1,"default":1,"xVisibleWhen":{"collectionType":["blobs","measurements"],"circularityEnabled":[true]},"xValidateWhen":{"collectionType":["","blobs","measurements"],"circularityEnabled":[true]}},
-      "blobLabelsEnabled": {"title":"连通域标签筛选","type":"boolean","xVisibleWhen":{"collectionType":["blobs"]},"xValidateWhen":{"collectionType":["","blobs"]}},
-      "blobLabels": {"title":"连通域标签","type":"array","items":{"type":"integer","minimum":0},"default":[],"xVisibleWhen":{"collectionType":["blobs"],"blobLabelsEnabled":[true]},"xValidateWhen":{"collectionType":["","blobs"],"blobLabelsEnabled":[true]},"xWidget":"integer-list"},
-      "contourEnabled": {"title":"轮廓存在性筛选","type":"boolean","xVisibleWhen":{"collectionType":["blobs"]},"xValidateWhen":{"collectionType":["","blobs"]}},
-      "contourMode": {"title":"轮廓筛选模式","type":"string","enum":["any","present","absent"],"default":"any","xVisibleWhen":{"collectionType":["blobs"],"contourEnabled":[true]},"xValidateWhen":{"collectionType":["","blobs"],"contourEnabled":[true]},"xOptionLabels":{"any":"不限","present":"存在轮廓","absent":"无轮廓"}},
-      "confidenceEnabled": {"title":"置信度筛选","type":"boolean","xVisibleWhen":{"collectionType":["detections"]},"xValidateWhen":{"collectionType":["","detections"]}},
-      "minConfidence": {"title":"最低置信度","type":"number","minimum":0,"maximum":1,"default":0,"xVisibleWhen":{"collectionType":["detections"],"confidenceEnabled":[true]},"xValidateWhen":{"collectionType":["","detections"],"confidenceEnabled":[true]}},
-      "maxConfidence": {"title":"最高置信度","type":"number","minimum":0,"maximum":1,"default":1,"xVisibleWhen":{"collectionType":["detections"],"confidenceEnabled":[true]},"xValidateWhen":{"collectionType":["","detections"],"confidenceEnabled":[true]}},
-      "classIdsEnabled": {"title":"类别编号筛选","type":"boolean","xVisibleWhen":{"collectionType":["detections"]},"xValidateWhen":{"collectionType":["","detections"]}},
-      "classIds": {"title":"类别编号","type":"array","items":{"type":"integer","minimum":0},"default":[],"xVisibleWhen":{"collectionType":["detections"],"classIdsEnabled":[true]},"xValidateWhen":{"collectionType":["","detections"],"classIdsEnabled":[true]},"xWidget":"integer-list"},
-      "detectionLabelsEnabled": {"title":"检测标签筛选","type":"boolean","xVisibleWhen":{"collectionType":["detections"]},"xValidateWhen":{"collectionType":["","detections"]}},
-      "detectionLabels": {"title":"检测标签","type":"array","items":{"type":"string"},"default":[],"xVisibleWhen":{"collectionType":["detections"],"detectionLabelsEnabled":[true]},"xValidateWhen":{"collectionType":["","detections"],"detectionLabelsEnabled":[true]}},
-      "geometryTypesEnabled": {"title":"几何类型筛选","type":"boolean","xVisibleWhen":{"collectionType":["detections"]},"xValidateWhen":{"collectionType":["","detections"]}},
-      "geometryTypes": {"title":"几何类型","type":"array","items":{"type":"string","enum":["bbox2d","polygon2d","rotatedBox2d"],"xOptionLabels":{"bbox2d":"矩形框","polygon2d":"多边形","rotatedBox2d":"旋转矩形框"}},"default":[],"xVisibleWhen":{"collectionType":["detections"],"geometryTypesEnabled":[true]},"xValidateWhen":{"collectionType":["","detections"],"geometryTypesEnabled":[true]},"xOptionLabels":{"bbox2d":"矩形框","polygon2d":"多边形","rotatedBox2d":"旋转矩形框"}},
-      "holeEnabled": {"title":"孔洞筛选","type":"boolean","xVisibleWhen":{"collectionType":["contours"]},"xValidateWhen":{"collectionType":["","contours"]}},
-      "holeMode": {"title":"孔洞筛选模式","type":"string","enum":["any","outer","hole"],"default":"any","xVisibleWhen":{"collectionType":["contours"],"holeEnabled":[true]},"xValidateWhen":{"collectionType":["","contours"],"holeEnabled":[true]},"xOptionLabels":{"any":"不限","outer":"外轮廓","hole":"孔洞轮廓"}},
-      "sourceTypesEnabled": {"title":"来源类型筛选","type":"boolean","xVisibleWhen":{"collectionType":["measurements"]},"xValidateWhen":{"collectionType":["","measurements"]}},
-      "sourceTypes": {"title":"来源类型","type":"array","items":{"type":"string","enum":["contour","blob"],"xOptionLabels":{"contour":"轮廓","blob":"连通域"}},"default":[],"xVisibleWhen":{"collectionType":["measurements"],"sourceTypesEnabled":[true]},"xValidateWhen":{"collectionType":["","measurements"],"sourceTypesEnabled":[true]},"xOptionLabels":{"contour":"轮廓","blob":"连通域"}},
-      "lengthEnabled": {"title":"长度筛选","type":"boolean","xVisibleWhen":{"collectionType":["lines"]},"xValidateWhen":{"collectionType":["","lines"]}},
-      "minLength": {"title":"最小长度","type":"number","minimum":0,"default":0,"xVisibleWhen":{"collectionType":["lines"],"lengthEnabled":[true]},"xValidateWhen":{"collectionType":["","lines"],"lengthEnabled":[true]}},
-      "maxLength": {"title":"最大长度","type":"number","minimum":0,"default":0,"xVisibleWhen":{"collectionType":["lines"],"lengthEnabled":[true]},"xValidateWhen":{"collectionType":["","lines"],"lengthEnabled":[true]}},
-      "radiusEnabled": {"title":"半径筛选","type":"boolean","xVisibleWhen":{"collectionType":["circles"]},"xValidateWhen":{"collectionType":["","circles"]}},
-      "minRadius": {"title":"最小半径（像素）","type":"number","minimum":0,"default":0,"xVisibleWhen":{"collectionType":["circles"],"radiusEnabled":[true]},"xValidateWhen":{"collectionType":["","circles"],"radiusEnabled":[true]}},
-      "maxRadius": {"title":"最大半径（像素）","type":"number","minimum":0,"default":0,"xVisibleWhen":{"collectionType":["circles"],"radiusEnabled":[true]},"xValidateWhen":{"collectionType":["","circles"],"radiusEnabled":[true]}},
-      "qualityEnabled": {"title":"质量筛选","type":"boolean","xVisibleWhen":{"collectionType":["matches"]},"xValidateWhen":{"collectionType":["","matches"]}},
-      "minQuality": {"title":"最低质量","type":"number","minimum":0,"maximum":1,"default":0,"xVisibleWhen":{"collectionType":["matches"],"qualityEnabled":[true]},"xValidateWhen":{"collectionType":["","matches"],"qualityEnabled":[true]}},
-      "maxQuality": {"title":"最高质量","type":"number","minimum":0,"maximum":1,"default":1,"xVisibleWhen":{"collectionType":["matches"],"qualityEnabled":[true]},"xValidateWhen":{"collectionType":["","matches"],"qualityEnabled":[true]}},
-      "templateMethodsEnabled": {"title":"模板匹配方法筛选","type":"boolean","xVisibleWhen":{"collectionType":["matches"]},"xValidateWhen":{"collectionType":["","matches"]}},
-      "templateMethods": {"title":"模板匹配方法","type":"array","items":{"type":"string","enum":["sqdiff","sqdiffNormed","ccorr","ccorrNormed","ccoeff","ccoeffNormed"],"xOptionLabels":{"sqdiff":"平方差","sqdiffNormed":"归一化平方差","ccorr":"互相关","ccorrNormed":"归一化互相关","ccoeff":"相关系数","ccoeffNormed":"归一化相关系数"}},"default":[],"xVisibleWhen":{"collectionType":["matches"],"templateMethodsEnabled":[true]},"xValidateWhen":{"collectionType":["","matches"],"templateMethodsEnabled":[true]},"xOptionLabels":{"sqdiff":"平方差","sqdiffNormed":"归一化平方差","ccorr":"互相关","ccorrNormed":"归一化互相关","ccoeff":"相关系数","ccoeffNormed":"归一化相关系数"}},
-      "spatialEnabled": {"title":"空间关系筛选","type":"boolean","xVisibleWhen":{"collectionType":["detections","blobs","contours","measurements","lines","circles","matches"]},"xValidateWhen":{"collectionType":["","detections","blobs","contours","measurements","lines","circles","matches"]}},
-      "spatialMode": {"title":"空间筛选模式","type":"string","enum":["bboxContained","bboxIntersects","centerInside","none"],"default":"none","xVisibleWhen":{"collectionType":["detections","blobs","contours","measurements","lines","circles","matches"],"spatialEnabled":[true]},"xValidateWhen":{"collectionType":["","detections","blobs","contours","measurements","lines","circles","matches"],"spatialEnabled":[true]},"xOptionLabels":{"none":"请选择空间关系","centerInside":"中心位于区域内","bboxIntersects":"包围框与区域相交","bboxContained":"包围框完全位于区域内"}}
+      "collectionType": {
+        "description": "筛选对象；为空时在执行阶段采用实际输入集合端口。",
+        "title": "筛选对象",
+        "type": "string",
+        "default": "",
+        "enum": [
+          "",
+          "detections",
+          "blobs",
+          "contours",
+          "measurements",
+          "lines",
+          "circles",
+          "matches"
+        ],
+        "xOptionLabels": {
+          "": "请选择筛选对象",
+          "detections": "检测结果",
+          "blobs": "连通域",
+          "contours": "轮廓",
+          "measurements": "形状测量",
+          "lines": "直线",
+          "circles": "圆",
+          "matches": "模板匹配结果"
+        }
+      },
+      "areaEnabled": {
+        "title": "面积筛选",
+        "type": "boolean",
+        "description": "开启后对连通域、轮廓、形状测量应用此组条件。关闭时保留编辑值，执行时忽略此组条件。",
+        "xVisibleWhen": {
+          "collectionType": [
+            "blobs",
+            "contours",
+            "measurements"
+          ]
+        },
+        "xValidateWhen": {
+          "collectionType": [
+            "",
+            "blobs",
+            "contours",
+            "measurements"
+          ]
+        }
+      },
+      "minArea": {
+        "description": "面积含下限，单位pixel²；Blob用已有area，轮廓用cv2.contourArea绝对值，measurement用已有area。",
+        "title": "最小面积",
+        "type": "number",
+        "minimum": 0.0,
+        "default": 0.0,
+        "xVisibleWhen": {
+          "collectionType": [
+            "blobs",
+            "contours",
+            "measurements"
+          ],
+          "areaEnabled": [
+            true
+          ]
+        },
+        "xValidateWhen": {
+          "collectionType": [
+            "",
+            "blobs",
+            "contours",
+            "measurements"
+          ],
+          "areaEnabled": [
+            true
+          ]
+        }
+      },
+      "maxArea": {
+        "description": "面积含上限，0表示无上限；来源同minArea。",
+        "title": "最大面积",
+        "type": "number",
+        "minimum": 0.0,
+        "default": 0.0,
+        "xVisibleWhen": {
+          "collectionType": [
+            "blobs",
+            "contours",
+            "measurements"
+          ],
+          "areaEnabled": [
+            true
+          ]
+        },
+        "xValidateWhen": {
+          "collectionType": [
+            "",
+            "blobs",
+            "contours",
+            "measurements"
+          ],
+          "areaEnabled": [
+            true
+          ]
+        }
+      },
+      "contourPointsEnabled": {
+        "title": "轮廓点数筛选",
+        "type": "boolean",
+        "description": "开启后对轮廓应用此组条件。关闭时保留编辑值，执行时忽略此组条件。",
+        "xVisibleWhen": {
+          "collectionType": [
+            "contours"
+          ]
+        },
+        "xValidateWhen": {
+          "collectionType": [
+            "",
+            "contours"
+          ]
+        }
+      },
+      "minContourPoints": {
+        "title": "最小轮廓点数",
+        "type": "integer",
+        "minimum": 0,
+        "default": 0,
+        "description": "当前轮廓polygon.points数量含下限；针对上游近似后顶点数，0不限制。",
+        "xVisibleWhen": {
+          "collectionType": [
+            "contours"
+          ],
+          "contourPointsEnabled": [
+            true
+          ]
+        },
+        "xValidateWhen": {
+          "collectionType": [
+            "",
+            "contours"
+          ],
+          "contourPointsEnabled": [
+            true
+          ]
+        }
+      },
+      "perimeterEnabled": {
+        "title": "周长筛选",
+        "type": "boolean",
+        "description": "开启后对轮廓、形状测量应用此组条件。关闭时保留编辑值，执行时忽略此组条件。",
+        "xVisibleWhen": {
+          "collectionType": [
+            "contours",
+            "measurements"
+          ]
+        },
+        "xValidateWhen": {
+          "collectionType": [
+            "",
+            "contours",
+            "measurements"
+          ]
+        }
+      },
+      "minPerimeter": {
+        "description": "轮廓闭合周长或measurement.perimeter的含下限，单位pixel。",
+        "title": "最小周长",
+        "type": "number",
+        "minimum": 0.0,
+        "default": 0.0,
+        "xVisibleWhen": {
+          "collectionType": [
+            "contours",
+            "measurements"
+          ],
+          "perimeterEnabled": [
+            true
+          ]
+        },
+        "xValidateWhen": {
+          "collectionType": [
+            "",
+            "contours",
+            "measurements"
+          ],
+          "perimeterEnabled": [
+            true
+          ]
+        }
+      },
+      "maxPerimeter": {
+        "description": "周长含上限，0表示无上限。",
+        "title": "最大周长",
+        "type": "number",
+        "minimum": 0.0,
+        "default": 0.0,
+        "xVisibleWhen": {
+          "collectionType": [
+            "contours",
+            "measurements"
+          ],
+          "perimeterEnabled": [
+            true
+          ]
+        },
+        "xValidateWhen": {
+          "collectionType": [
+            "",
+            "contours",
+            "measurements"
+          ],
+          "perimeterEnabled": [
+            true
+          ]
+        }
+      },
+      "circularityEnabled": {
+        "title": "圆度筛选",
+        "type": "boolean",
+        "description": "开启后对连通域、形状测量应用此组条件。关闭时保留编辑值，执行时忽略此组条件。",
+        "xVisibleWhen": {
+          "collectionType": [
+            "blobs",
+            "measurements"
+          ]
+        },
+        "xValidateWhen": {
+          "collectionType": [
+            "",
+            "blobs",
+            "measurements"
+          ]
+        },
+        "default": false
+      },
+      "minCircularity": {
+        "description": "圆度含下限；Blob取attributes.circularity且字段缺失不通过已启用筛选，measurement取本身circularity。",
+        "title": "最小圆度",
+        "type": "number",
+        "minimum": 0.0,
+        "maximum": 1.0,
+        "default": 0.0,
+        "xVisibleWhen": {
+          "collectionType": [
+            "blobs",
+            "measurements"
+          ],
+          "circularityEnabled": [
+            true
+          ]
+        },
+        "xValidateWhen": {
+          "collectionType": [
+            "",
+            "blobs",
+            "measurements"
+          ],
+          "circularityEnabled": [
+            true
+          ]
+        }
+      },
+      "maxCircularity": {
+        "description": "圆度含上限，1是实际上限而非无限哨兵；与minCircularity共同约束[0,1]。",
+        "title": "最大圆度",
+        "type": "number",
+        "minimum": 0.0,
+        "maximum": 1.0,
+        "default": 1.0,
+        "xVisibleWhen": {
+          "collectionType": [
+            "blobs",
+            "measurements"
+          ],
+          "circularityEnabled": [
+            true
+          ]
+        },
+        "xValidateWhen": {
+          "collectionType": [
+            "",
+            "blobs",
+            "measurements"
+          ],
+          "circularityEnabled": [
+            true
+          ]
+        }
+      },
+      "blobLabelsEnabled": {
+        "title": "连通域标签筛选",
+        "type": "boolean",
+        "description": "开启后对连通域应用此组条件。关闭时保留编辑值，执行时忽略此组条件。",
+        "xVisibleWhen": {
+          "collectionType": [
+            "blobs"
+          ]
+        },
+        "xValidateWhen": {
+          "collectionType": [
+            "",
+            "blobs"
+          ]
+        }
+      },
+      "blobLabels": {
+        "description": "允许的连通域整数label列表；空列表不限制，按label而非blobId过滤。",
+        "title": "连通域标签",
+        "type": "array",
+        "items": {
+          "title": "列表项",
+          "description": "列表单项：允许的连通域整数label列表；空列表不限制，按label而非blobId过滤。",
+          "type": "integer",
+          "minimum": 0
+        },
+        "default": [],
+        "xVisibleWhen": {
+          "collectionType": [
+            "blobs"
+          ],
+          "blobLabelsEnabled": [
+            true
+          ]
+        },
+        "xValidateWhen": {
+          "collectionType": [
+            "",
+            "blobs"
+          ],
+          "blobLabelsEnabled": [
+            true
+          ]
+        },
+        "xWidget": "integer-list"
+      },
+      "contourEnabled": {
+        "title": "轮廓存在性筛选",
+        "type": "boolean",
+        "description": "开启后对连通域应用此组条件。关闭时保留编辑值，执行时忽略此组条件。",
+        "xVisibleWhen": {
+          "collectionType": [
+            "blobs"
+          ]
+        },
+        "xValidateWhen": {
+          "collectionType": [
+            "",
+            "blobs"
+          ]
+        }
+      },
+      "contourMode": {
+        "description": "any不限制；present要求Blob.contour非None；absent要求None。",
+        "title": "轮廓筛选模式",
+        "type": "string",
+        "enum": [
+          "any",
+          "present",
+          "absent"
+        ],
+        "default": "any",
+        "xVisibleWhen": {
+          "collectionType": [
+            "blobs"
+          ],
+          "contourEnabled": [
+            true
+          ]
+        },
+        "xValidateWhen": {
+          "collectionType": [
+            "",
+            "blobs"
+          ],
+          "contourEnabled": [
+            true
+          ]
+        },
+        "xOptionLabels": {
+          "any": "不限",
+          "present": "存在轮廓",
+          "absent": "无轮廓"
+        }
+      },
+      "confidenceEnabled": {
+        "title": "置信度筛选",
+        "type": "boolean",
+        "description": "开启后对检测结果应用此组条件。关闭时保留编辑值，执行时忽略此组条件。",
+        "xVisibleWhen": {
+          "collectionType": [
+            "detections"
+          ]
+        },
+        "xValidateWhen": {
+          "collectionType": [
+            "",
+            "detections"
+          ]
+        }
+      },
+      "minConfidence": {
+        "description": "Detection.confidence含下限，范围[0,1]；不是框架执行成功概率。",
+        "title": "最低置信度",
+        "type": "number",
+        "minimum": 0.0,
+        "maximum": 1.0,
+        "default": 0.0,
+        "xVisibleWhen": {
+          "collectionType": [
+            "detections"
+          ],
+          "confidenceEnabled": [
+            true
+          ]
+        },
+        "xValidateWhen": {
+          "collectionType": [
+            "",
+            "detections"
+          ],
+          "confidenceEnabled": [
+            true
+          ]
+        }
+      },
+      "maxConfidence": {
+        "description": "Detection.confidence含上限，默认1。",
+        "title": "最高置信度",
+        "type": "number",
+        "minimum": 0.0,
+        "maximum": 1.0,
+        "default": 1.0,
+        "xVisibleWhen": {
+          "collectionType": [
+            "detections"
+          ],
+          "confidenceEnabled": [
+            true
+          ]
+        },
+        "xValidateWhen": {
+          "collectionType": [
+            "",
+            "detections"
+          ],
+          "confidenceEnabled": [
+            true
+          ]
+        }
+      },
+      "classIdsEnabled": {
+        "title": "类别编号筛选",
+        "type": "boolean",
+        "description": "开启后对检测结果应用此组条件。关闭时保留编辑值，执行时忽略此组条件。",
+        "xVisibleWhen": {
+          "collectionType": [
+            "detections"
+          ]
+        },
+        "xValidateWhen": {
+          "collectionType": [
+            "",
+            "detections"
+          ]
+        }
+      },
+      "classIds": {
+        "description": "允许的Detection.classId整数列表；空列表不限制。",
+        "title": "类别编号",
+        "type": "array",
+        "items": {
+          "title": "列表项",
+          "description": "列表单项：允许的Detection.classId整数列表；空列表不限制。",
+          "type": "integer",
+          "minimum": 0
+        },
+        "default": [],
+        "xVisibleWhen": {
+          "collectionType": [
+            "detections"
+          ],
+          "classIdsEnabled": [
+            true
+          ]
+        },
+        "xValidateWhen": {
+          "collectionType": [
+            "",
+            "detections"
+          ],
+          "classIdsEnabled": [
+            true
+          ]
+        },
+        "xWidget": "integer-list"
+      },
+      "detectionLabelsEnabled": {
+        "title": "检测标签筛选",
+        "type": "boolean",
+        "description": "开启后对检测结果应用此组条件。关闭时保留编辑值，执行时忽略此组条件。",
+        "xVisibleWhen": {
+          "collectionType": [
+            "detections"
+          ]
+        },
+        "xValidateWhen": {
+          "collectionType": [
+            "",
+            "detections"
+          ]
+        }
+      },
+      "detectionLabels": {
+        "description": "允许的Detection.label字符串列表；空列表不限制，精确匹配。",
+        "title": "检测标签",
+        "type": "array",
+        "items": {
+          "title": "列表项",
+          "description": "列表单项：允许的Detection.label字符串列表；空列表不限制，精确匹配。",
+          "type": "string"
+        },
+        "default": [],
+        "xVisibleWhen": {
+          "collectionType": [
+            "detections"
+          ],
+          "detectionLabelsEnabled": [
+            true
+          ]
+        },
+        "xValidateWhen": {
+          "collectionType": [
+            "",
+            "detections"
+          ],
+          "detectionLabelsEnabled": [
+            true
+          ]
+        }
+      },
+      "geometryTypesEnabled": {
+        "title": "几何类型筛选",
+        "type": "boolean",
+        "description": "开启后对检测结果应用此组条件。关闭时保留编辑值，执行时忽略此组条件。",
+        "xVisibleWhen": {
+          "collectionType": [
+            "detections"
+          ]
+        },
+        "xValidateWhen": {
+          "collectionType": [
+            "",
+            "detections"
+          ]
+        }
+      },
+      "geometryTypes": {
+        "description": "允许的检测几何类型列表；优先item.geometry，无geometry时用bbox；空列表不限制。",
+        "title": "几何类型",
+        "type": "array",
+        "default": [],
+        "items": {
+          "title": "允许的几何类型",
+          "description": "矩形框、多边形或旋转矩形框。",
+          "type": "string",
+          "enum": [
+            "bbox2d",
+            "polygon2d",
+            "rotatedBox2d"
+          ],
+          "xOptionLabels": {
+            "bbox2d": "矩形框",
+            "polygon2d": "多边形",
+            "rotatedBox2d": "旋转矩形框"
+          }
+        },
+        "xVisibleWhen": {
+          "collectionType": [
+            "detections"
+          ],
+          "geometryTypesEnabled": [
+            true
+          ]
+        },
+        "xValidateWhen": {
+          "collectionType": [
+            "",
+            "detections"
+          ],
+          "geometryTypesEnabled": [
+            true
+          ]
+        },
+        "xOptionLabels": {
+          "bbox2d": "矩形框",
+          "polygon2d": "多边形",
+          "rotatedBox2d": "旋转矩形框"
+        }
+      },
+      "holeEnabled": {
+        "title": "孔洞筛选",
+        "type": "boolean",
+        "description": "开启后对轮廓应用此组条件。关闭时保留编辑值，执行时忽略此组条件。",
+        "xVisibleWhen": {
+          "collectionType": [
+            "contours"
+          ]
+        },
+        "xValidateWhen": {
+          "collectionType": [
+            "",
+            "contours"
+          ]
+        }
+      },
+      "holeMode": {
+        "description": "any不限；outer要求isHole=false；hole要求isHole=true。",
+        "title": "孔洞筛选模式",
+        "type": "string",
+        "enum": [
+          "any",
+          "outer",
+          "hole"
+        ],
+        "default": "any",
+        "xVisibleWhen": {
+          "collectionType": [
+            "contours"
+          ],
+          "holeEnabled": [
+            true
+          ]
+        },
+        "xValidateWhen": {
+          "collectionType": [
+            "",
+            "contours"
+          ],
+          "holeEnabled": [
+            true
+          ]
+        },
+        "xOptionLabels": {
+          "any": "不限",
+          "outer": "外轮廓",
+          "hole": "孔洞轮廓"
+        }
+      },
+      "sourceTypesEnabled": {
+        "title": "来源类型筛选",
+        "type": "boolean",
+        "description": "开启后对形状测量应用此组条件。关闭时保留编辑值，执行时忽略此组条件。",
+        "xVisibleWhen": {
+          "collectionType": [
+            "measurements"
+          ]
+        },
+        "xValidateWhen": {
+          "collectionType": [
+            "",
+            "measurements"
+          ]
+        }
+      },
+      "sourceTypes": {
+        "description": "允许的ShapeMeasurement.sourceType（contour/blob）列表；空列表不限制。",
+        "title": "来源类型",
+        "type": "array",
+        "default": [],
+        "items": {
+          "title": "允许的来源类型",
+          "description": "形状测量的来源，可为轮廓或连通域。",
+          "type": "string",
+          "enum": [
+            "contour",
+            "blob"
+          ],
+          "xOptionLabels": {
+            "contour": "轮廓",
+            "blob": "连通域"
+          }
+        },
+        "xVisibleWhen": {
+          "collectionType": [
+            "measurements"
+          ],
+          "sourceTypesEnabled": [
+            true
+          ]
+        },
+        "xValidateWhen": {
+          "collectionType": [
+            "",
+            "measurements"
+          ],
+          "sourceTypesEnabled": [
+            true
+          ]
+        },
+        "xOptionLabels": {
+          "contour": "轮廓",
+          "blob": "连通域"
+        }
+      },
+      "lengthEnabled": {
+        "title": "长度筛选",
+        "type": "boolean",
+        "description": "开启后对直线应用此组条件。关闭时保留编辑值，执行时忽略此组条件。",
+        "xVisibleWhen": {
+          "collectionType": [
+            "lines"
+          ]
+        },
+        "xValidateWhen": {
+          "collectionType": [
+            "",
+            "lines"
+          ]
+        }
+      },
+      "minLength": {
+        "description": "Line两端欧氏距离含下限，单位pixel。",
+        "title": "最小长度",
+        "type": "number",
+        "minimum": 0.0,
+        "default": 0.0,
+        "xVisibleWhen": {
+          "collectionType": [
+            "lines"
+          ],
+          "lengthEnabled": [
+            true
+          ]
+        },
+        "xValidateWhen": {
+          "collectionType": [
+            "",
+            "lines"
+          ],
+          "lengthEnabled": [
+            true
+          ]
+        }
+      },
+      "maxLength": {
+        "description": "Line长度含上限，0无上限。",
+        "title": "最大长度",
+        "type": "number",
+        "minimum": 0.0,
+        "default": 0.0,
+        "xVisibleWhen": {
+          "collectionType": [
+            "lines"
+          ],
+          "lengthEnabled": [
+            true
+          ]
+        },
+        "xValidateWhen": {
+          "collectionType": [
+            "",
+            "lines"
+          ],
+          "lengthEnabled": [
+            true
+          ]
+        }
+      },
+      "radiusEnabled": {
+        "title": "半径筛选",
+        "type": "boolean",
+        "description": "开启后对圆应用此组条件。关闭时保留编辑值，执行时忽略此组条件。",
+        "xVisibleWhen": {
+          "collectionType": [
+            "circles"
+          ]
+        },
+        "xValidateWhen": {
+          "collectionType": [
+            "",
+            "circles"
+          ]
+        }
+      },
+      "minRadius": {
+        "description": "Circle.radius含下限，单位pixel。",
+        "title": "最小半径（像素）",
+        "type": "number",
+        "minimum": 0.0,
+        "default": 0.0,
+        "xVisibleWhen": {
+          "collectionType": [
+            "circles"
+          ],
+          "radiusEnabled": [
+            true
+          ]
+        },
+        "xValidateWhen": {
+          "collectionType": [
+            "",
+            "circles"
+          ],
+          "radiusEnabled": [
+            true
+          ]
+        }
+      },
+      "maxRadius": {
+        "description": "Circle半径含上限，0无上限。",
+        "title": "最大半径（像素）",
+        "type": "number",
+        "minimum": 0.0,
+        "default": 0.0,
+        "xVisibleWhen": {
+          "collectionType": [
+            "circles"
+          ],
+          "radiusEnabled": [
+            true
+          ]
+        },
+        "xValidateWhen": {
+          "collectionType": [
+            "",
+            "circles"
+          ],
+          "radiusEnabled": [
+            true
+          ]
+        }
+      },
+      "qualityEnabled": {
+        "title": "质量筛选",
+        "type": "boolean",
+        "description": "开启后对模板匹配结果应用此组条件。关闭时保留编辑值，执行时忽略此组条件。",
+        "xVisibleWhen": {
+          "collectionType": [
+            "matches"
+          ]
+        },
+        "xValidateWhen": {
+          "collectionType": [
+            "",
+            "matches"
+          ]
+        }
+      },
+      "minQuality": {
+        "description": "TemplateMatch.quality含下限；使用已定义质量分值，不以rawScore直接代替。",
+        "title": "最低质量",
+        "type": "number",
+        "minimum": 0.0,
+        "maximum": 1.0,
+        "default": 0.0,
+        "xVisibleWhen": {
+          "collectionType": [
+            "matches"
+          ],
+          "qualityEnabled": [
+            true
+          ]
+        },
+        "xValidateWhen": {
+          "collectionType": [
+            "",
+            "matches"
+          ],
+          "qualityEnabled": [
+            true
+          ]
+        }
+      },
+      "maxQuality": {
+        "description": "模板quality含上限，范围[0,1]。",
+        "title": "最高质量",
+        "type": "number",
+        "minimum": 0.0,
+        "maximum": 1.0,
+        "default": 1.0,
+        "xVisibleWhen": {
+          "collectionType": [
+            "matches"
+          ],
+          "qualityEnabled": [
+            true
+          ]
+        },
+        "xValidateWhen": {
+          "collectionType": [
+            "",
+            "matches"
+          ],
+          "qualityEnabled": [
+            true
+          ]
+        }
+      },
+      "templateMethodsEnabled": {
+        "title": "模板匹配方法筛选",
+        "type": "boolean",
+        "description": "开启后对模板匹配结果应用此组条件。关闭时保留编辑值，执行时忽略此组条件。",
+        "xVisibleWhen": {
+          "collectionType": [
+            "matches"
+          ]
+        },
+        "xValidateWhen": {
+          "collectionType": [
+            "",
+            "matches"
+          ]
+        }
+      },
+      "templateMethods": {
+        "description": "允许的TemplateMatchCollection.method列表；按集合原始方法精确筛选，空列表不限。",
+        "title": "模板匹配方法",
+        "type": "array",
+        "default": [],
+        "items": {
+          "title": "允许的匹配方法",
+          "description": "一个模板匹配算法名称，按集合的方法精确匹配。",
+          "type": "string",
+          "enum": [
+            "sqdiff",
+            "sqdiffNormed",
+            "ccorr",
+            "ccorrNormed",
+            "ccoeff",
+            "ccoeffNormed"
+          ],
+          "xOptionLabels": {
+            "sqdiff": "平方差",
+            "sqdiffNormed": "归一化平方差",
+            "ccorr": "互相关",
+            "ccorrNormed": "归一化互相关",
+            "ccoeff": "相关系数",
+            "ccoeffNormed": "归一化相关系数"
+          }
+        },
+        "xVisibleWhen": {
+          "collectionType": [
+            "matches"
+          ],
+          "templateMethodsEnabled": [
+            true
+          ]
+        },
+        "xValidateWhen": {
+          "collectionType": [
+            "",
+            "matches"
+          ],
+          "templateMethodsEnabled": [
+            true
+          ]
+        },
+        "xOptionLabels": {
+          "sqdiff": "平方差",
+          "sqdiffNormed": "归一化平方差",
+          "ccorr": "互相关",
+          "ccorrNormed": "归一化互相关",
+          "ccoeff": "相关系数",
+          "ccoeffNormed": "归一化相关系数"
+        }
+      },
+      "spatialEnabled": {
+        "title": "空间关系筛选",
+        "type": "boolean",
+        "description": "开启后对检测结果、连通域、轮廓、形状测量、直线、圆、模板匹配结果应用此组条件。关闭时保留编辑值，执行时忽略此组条件。",
+        "xVisibleWhen": {
+          "collectionType": [
+            "detections",
+            "blobs",
+            "contours",
+            "measurements",
+            "lines",
+            "circles",
+            "matches"
+          ]
+        },
+        "xValidateWhen": {
+          "collectionType": [
+            "",
+            "detections",
+            "blobs",
+            "contours",
+            "measurements",
+            "lines",
+            "circles",
+            "matches"
+          ]
+        }
+      },
+      "spatialMode": {
+        "description": "none无空间筛选；centerInside按对象中心落在原ROI几何中；bboxIntersects/bboxContained使用对象及ROI的轴对齐包围框；边界相交计入。",
+        "title": "空间筛选模式",
+        "type": "string",
+        "enum": [
+          "bboxContained",
+          "bboxIntersects",
+          "centerInside",
+          "none"
+        ],
+        "default": "none",
+        "xVisibleWhen": {
+          "collectionType": [
+            "detections",
+            "blobs",
+            "contours",
+            "measurements",
+            "lines",
+            "circles",
+            "matches"
+          ],
+          "spatialEnabled": [
+            true
+          ]
+        },
+        "xValidateWhen": {
+          "collectionType": [
+            "",
+            "detections",
+            "blobs",
+            "contours",
+            "measurements",
+            "lines",
+            "circles",
+            "matches"
+          ],
+          "spatialEnabled": [
+            true
+          ]
+        },
+        "xOptionLabels": {
+          "none": "请选择空间关系",
+          "centerInside": "中心位于区域内",
+          "bboxIntersects": "包围框与区域相交",
+          "bboxContained": "包围框完全位于区域内"
+        }
+      }
     }
   },
   "minCoreVersion": "0.3.0",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "blobs": {"title": "连通域", "description": "连通域强类型集合；七种集合端口中本次只能有一种，保留其items、对象ID及coordinateSpace。"},
+      "detections": {"title": "检测结果", "description": "检测对象强类型集合；七种集合端口中本次只能有一种，保留其items、对象ID及coordinateSpace。"},
+      "contours": {"title": "轮廓", "description": "轮廓强类型集合；七种集合端口中本次只能有一种，保留其items、对象ID及coordinateSpace。"},
+      "measurements": {"title": "形状测量", "description": "形状测量强类型集合；七种集合端口中本次只能有一种，保留其items、对象ID及coordinateSpace。"},
+      "lines": {"title": "线段", "description": "线段强类型集合；七种集合端口中本次只能有一种，保留其items、对象ID及coordinateSpace。"},
+      "circles": {"title": "圆", "description": "圆强类型集合；七种集合端口中本次只能有一种，保留其items、对象ID及coordinateSpace。"},
+      "matches": {"title": "模板匹配", "description": "模板匹配对象强类型集合；七种集合端口中本次只能有一种，保留其items、对象ID及coordinateSpace。"},
+      "roi": {"title": "感兴趣区域", "description": "仅空间筛选启用时要求的几何区域；必须与输入集合使用同一坐标空间。"}
+    },
+    "outputs": {
+      "keptCount": {"title": "保留的数量", "description": "本次通过全部启用条件的对象数，与对应集合长度一致。", "unit": "个"},
+      "rejectedCount": {"title": "拒绝的数量", "description": "本次未通过全部启用条件的对象数，与对应集合长度一致。", "unit": "个"},
+      "keptBlobs": {"title": "保留的连通域", "description": "通过筛选的连通域集合；仅输出匹配本次输入类型的一对集合，原对象及坐标空间保留。"},
+      "rejectedBlobs": {"title": "拒绝的连通域", "description": "未通过筛选的连通域集合；仅输出匹配本次输入类型的一对集合，原对象及坐标空间保留。"},
+      "keptDetections": {"title": "保留的检测结果", "description": "通过筛选的检测对象集合；仅输出匹配本次输入类型的一对集合，原对象及坐标空间保留。"},
+      "rejectedDetections": {"title": "拒绝的检测结果", "description": "未通过筛选的检测对象集合；仅输出匹配本次输入类型的一对集合，原对象及坐标空间保留。"},
+      "keptContours": {"title": "保留的轮廓", "description": "通过筛选的轮廓集合；仅输出匹配本次输入类型的一对集合，原对象及坐标空间保留。"},
+      "rejectedContours": {"title": "拒绝的轮廓", "description": "未通过筛选的轮廓集合；仅输出匹配本次输入类型的一对集合，原对象及坐标空间保留。"},
+      "keptMeasurements": {"title": "保留的形状测量", "description": "通过筛选的形状测量集合；仅输出匹配本次输入类型的一对集合，原对象及坐标空间保留。"},
+      "rejectedMeasurements": {"title": "拒绝的形状测量", "description": "未通过筛选的形状测量集合；仅输出匹配本次输入类型的一对集合，原对象及坐标空间保留。"},
+      "keptLines": {"title": "保留的线段", "description": "通过筛选的线段集合；仅输出匹配本次输入类型的一对集合，原对象及坐标空间保留。"},
+      "rejectedLines": {"title": "拒绝的线段", "description": "未通过筛选的线段集合；仅输出匹配本次输入类型的一对集合，原对象及坐标空间保留。"},
+      "keptCircles": {"title": "保留的圆", "description": "通过筛选的圆集合；仅输出匹配本次输入类型的一对集合，原对象及坐标空间保留。"},
+      "rejectedCircles": {"title": "拒绝的圆", "description": "未通过筛选的圆集合；仅输出匹配本次输入类型的一对集合，原对象及坐标空间保留。"},
+      "keptMatches": {"title": "保留的模板匹配", "description": "通过筛选的模板匹配对象集合；仅输出匹配本次输入类型的一对集合，原对象及坐标空间保留。"},
+      "rejectedMatches": {"title": "拒绝的模板匹配", "description": "未通过筛选的模板匹配对象集合；仅输出匹配本次输入类型的一对集合，原对象及坐标空间保留。"}
+    },
+    "metrics": {
+      "latencyMs": {
+        "title": "算子内部耗时",
+        "description": "算子executeNode入口计时到构造成功返回的内部耗时，含本算子校验/集合处理，不含框架排队及下游。",
+        "unit": "ms",
+        "group": "duration"
+      },
+      "collectionKind": {
+        "title": "集合类型",
+        "description": "实际解析的集合种类（blob/detection/contour/measurement/line/circle/match），不是性能指标。",
+        "group": "result"
+      },
+      "keptCount": {"title": "保留的数量", "description": "与outputs.keptCount重复的通过筛选数量。", "unit": "个", "group": "business"},
+      "rejectedCount": {"title": "拒绝的数量", "description": "与outputs.rejectedCount重复的未通过筛选数量。", "unit": "个", "group": "business"}
+    },
+    "diagnostics": {
+      "text": {"title": "摘要", "description": "本次保留数量/输入数量摘要，不表示产品良率。"},
+      "effectiveParameters": {"title": "实际生效参数", "description": "实际集合类型、适用筛选组开关及本次启用条件。未启用的条件不会作为生效阈值记录。"}
+    }
+  }
 }

@@ -23,7 +23,7 @@
     "properties": {
       "outputPath": {
         "title": "输出路径",
-        "description": "未连接 fileName 时使用完整路径；连接后使用此路径的所在目录，文件名由输入提供，未带扩展名时沿用此路径的扩展名。",
+        "description": "基础输出路径；fileName输入可替换末段，唯一命名再追加UTC时间与uuid。",
         "type": "string",
         "default": "",
         "xWidget": "file",
@@ -32,30 +32,79 @@
       },
       "namingMode": {
         "title": "文件命名",
-        "description": "固定名称沿用 outputPath 或 fileName 输入；自动唯一命名在该文件名主体后追加 UTC 时间和唯一标识，保留目录和扩展名，每次创建新文件，不覆盖已有文件。",
+        "description": "fixed用原名；unique追加唯一后缀并强制overwrite=false。",
         "type": "string",
-        "enum": ["fixed", "unique"],
+        "enum": [
+          "fixed",
+          "unique"
+        ],
         "default": "fixed",
-        "xOptionLabels": {"fixed": "固定名称", "unique": "自动唯一命名"}
+        "xOptionLabels": {
+          "fixed": "固定名称",
+          "unique": "自动唯一命名"
+        }
       },
       "saveMode": {
         "title": "保存方式",
-        "description": "后台保存使用自动唯一命名，提交后工作流可继续执行。",
+        "description": "sync完成写入后返回；background只提交任务，要求unique与Runtime背景任务服务。",
         "type": "string",
-        "enum": ["sync", "background"],
+        "enum": [
+          "sync",
+          "background"
+        ],
         "default": "sync",
-        "xOptionLabels": {"sync": "同步保存", "background": "后台保存"}
+        "xOptionLabels": {
+          "sync": "同步保存",
+          "background": "后台保存"
+        }
       },
       "overwrite": {
         "title": "覆盖已有文件",
-        "description": "仅固定名称模式使用；自动唯一命名始终创建新文件。",
+        "description": "仅fixed时使用；unique始终不覆盖，后台同样不覆盖。",
         "type": "boolean",
         "default": true,
-        "xEnabledWhen": {"namingMode": ["fixed"]}
+        "xEnabledWhen": {
+          "namingMode": [
+            "fixed"
+          ]
+        }
       }
     },
-    "required": ["outputPath"]
+    "required": [
+      "outputPath"
+    ]
   },
   "minCoreVersion": "0.1.0",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "image": {"title": "图像", "description": "待保存numpy图像；后台提交前复制以冻结内容。"},
+      "fileName": {"title": "文件名", "description": "可选文件名输入；只替换outputPath文件名，无扩展名时沿用outputPath扩展名；禁止目录/非法字符。"}
+    },
+    "outputs": {
+      "result": {
+        "title": "结果",
+        "description": "同步成功{saved:true,path}；后台提交{accepted:true,saved:false,state:SUBMITTED,path,taskId}。path是目标路径，提交时尚非已发布文件。",
+        "fields": {
+          "accepted": {"title": "已接受", "description": "仅background提交回执存在且为true：Runtime已接收任务，不代表文件已落盘。"},
+          "saved": {"title": "保存完成", "description": "sync成功为true；background初始节点回执为false；任务成功最终结果才为true。"},
+          "state": {"title": "状态", "description": "仅background初始回执存在，固定SUBMITTED；任务终态从既有background task记录获取。"},
+          "path": {"title": "路径", "description": "最终目标路径；background初始回执只是预定路径，消费文件前需等待发布成功。"},
+          "taskId": {"title": "后台任务标识", "description": "仅background存在，关联既有后台任务和最终结果的ID。"}
+        }
+      }
+    },
+    "metrics": {
+      "latencyMs": {
+        "title": "算子内部耗时",
+        "description": "sync=校验/编码/写入耗时；background=校验/图像复制/提交耗时，不能解读为后台落盘耗时。",
+        "unit": "ms",
+        "group": "duration"
+      }
+    },
+    "diagnostics": {
+      "text": {"title": "摘要", "description": "Image saved或Image save submitted，需按保存阶段解释。"}
+    },
+    "captureParams": [["saveMode"], ["overwrite"], ["namingMode"]]
+  }
 }

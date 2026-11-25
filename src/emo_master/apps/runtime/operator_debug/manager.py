@@ -20,7 +20,20 @@ from emo_master.apps.runtime.operator_debug.bound_resources import resolveBoundR
 from emo_master.apps.runtime.operator_debug.data import prepareInputs, retainedAssetIds
 from emo_master.apps.runtime.operator_debug.state import DebugVariables
 from emo_master.apps.runtime.operator_debug.worker import DebugWorker
+from emo_master.core.contracts.log_safety import REDACTED, isSensitiveParameter, redactLogValue
+from emo_master.core.plugin.result_schema import parameterSchemaAtPath
 from emo_master.core.project.node_input_files import NODE_INPUT_FILES, nodeInputPathKey
+
+
+def _displayVariables(values, spec):
+    schema = spec.get("paramSchema", {})
+    hidden = {
+        binding["variableId"]
+        for binding in spec.get("variableBindings", ())
+        if any(isSensitiveParameter(part, parameterSchemaAtPath(schema, binding["parameterPath"][:index+1]) or {})
+               for index, part in enumerate(binding["parameterPath"]))
+    }
+    return redactLogValue({key: REDACTED if key in hidden else value for key, value in values.items()})
 
 
 @dataclass
@@ -134,7 +147,9 @@ class OperatorDebugManager:
                     draftDigest=session.spec["draftDigest"], operatorId=session.spec["operatorId"],
                     resourceRoot=session.spec.get("resourceRoot", ""),
                     boundResourceParams=session.spec.get("boundResourceParams", {}),
-                    variables=deepcopy(session.variables), cacheBytes=session.assets.used if session.assets else 0,
+                    variables=(deepcopy(session.variables) if session.spec.get("kind") == "workflow"
+                               else _displayVariables(session.variables, session.spec)),
+                    cacheBytes=session.assets.used if session.assets else 0,
                     debugKind=session.spec.get("kind", "operator"), flow=deepcopy(session.flow),
                     snapshots=[dict(snapshotId=key, phase=row.get("phase", ""), nodeId=row.get("nodeId", ""),
                                     identity=row.get("identity", {})) for key, row in session.checkpoints.items()],
@@ -255,7 +270,7 @@ class OperatorDebugManager:
                     copied = self.variableProvider(session.spec)
                     session.variables = DebugVariables(session.spec.get("variableDefinitions", {}),
                         dict(session.variables, **copied)).values
-                    response = dict(variables=deepcopy(session.variables), copied=list(copied))
+                    response = dict(variables=_displayVariables(session.variables, session.spec), copied=list(copied))
             elif action == "upload":
                 if session.state != "READY":
                     fail("E_RESOURCE_BUSY", "upload requires an idle session")
@@ -315,15 +330,19 @@ class OperatorDebugManager:
                 session.cancelCode = ""
                 session.cancellationAt = 0
                 session.state = "RUNNING"
+                schema = session.spec["paramSchema"]
+                bindings = {binding["variableId"]: session.variables[binding["variableId"]]
+                            for binding in session.spec.get("variableBindings", [])}
                 session.executions[executionId] = dict(executionId=executionId, status="RUNNING",
                     runtimeInstanceId=self.runtimeInstanceId, sessionId=session.sessionId, requestId=request["requestId"],
-                    inputSetId=inputId, rawParams=parse(request.get("paramsJson", "{}")), effectiveParams=params,
+                    inputSetId=inputId, rawParams=redactLogValue(parse(request.get("paramsJson", "{}")), schema),
+                    effectiveParams=redactLogValue(params, schema),
                     sideEffectWarning=session.spec.get("executionWarning", ""),
-                    inputSources=prepared["sources"], bindingSources={binding["variableId"]: session.variables[binding["variableId"]]
-                        for binding in session.spec.get("variableBindings", [])},
+                    inputSources=redactLogValue(prepared["sources"]), bindingSources=_displayVariables(bindings, session.spec),
                     sourceIdentity=dict(projectId=session.spec["projectId"], workflowId=session.spec["workflowId"],
                                         nodeId=session.spec["nodeId"], draftDigest=session.spec["draftDigest"],
-                                        operatorVersion=session.spec["version"], generation=session.generation))
+                                        operatorId=session.spec["operatorId"], operatorVersion=session.spec["version"],
+                                        generation=session.generation))
                 while len(session.executions) > self.maxResults:
                     session.executions.popitem(last=False)
                 session.assets.collectOutputs(retainedAssetIds(session))
@@ -437,7 +456,9 @@ class OperatorDebugManager:
                 session.assets.adopt(entry)
             if "variables" in event:
                 session.variables = DebugVariables(session.spec.get("variableDefinitions", {}), event["variables"]).values
-            record.update({k: v for k, v in event.items() if k != "kind"})
+            record.update({k: v for k, v in event.items() if k not in {"kind", "variables"}})
+            if "variables" in event:
+                record["variables"] = _displayVariables(session.variables, session.spec)
             if event.get("finishedAtMs", 0) > session.deadline * 1000 and not session.cancelCode:
                 session.cancelCode = "E_DEBUG_TIMEOUT"
             if session.cancelCode and record["status"] in {"SUCCEEDED", "CANCELLED"}:

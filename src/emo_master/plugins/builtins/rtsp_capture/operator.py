@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+from emo_master.plugins.builtins._device_settings import deviceSettings
 from emo_master.plugins.builtins._image_frame import defaultFrame
 
 
@@ -30,4 +31,5 @@ class RtspCaptureOperator:
         acquisition = descriptor['acquisition']
         frame = defaultFrame(image.shape[1], image.shape[0], sourceId=acquisition['sourceId'])
         return dict(status='ok', outputs=dict(image=image, frame=frame.toPayload(), capturedAt=acquisition['capturedAt']),
-                    diagnostics=dict(deviceFrame=descriptor), metrics={})
+                    diagnostics=dict(deviceFrame=descriptor, **deviceSettings(
+                        runtimeContext, "camera", ("colorMode", "maxFrameAgeMs"))), metrics={})

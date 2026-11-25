@@ -174,6 +174,16 @@ def testParameterBindingsUseFrozenIsolatedValues(runtime):
     assert result["outputs"]["value"] == 7
     assert result["rawParams"]["value"] == 99 and result["effectiveParams"]["value"] == 7
     assert result["bindingSources"] == {"v": 7}
+    assert {"path": ["value"], "value": 7, "stage": "call", "source": "variable"} in result["parameterSummary"]
+
+
+def testFlowSwitchKeepsInlineBusinessObjectUnchanged(runtime):
+    identity = ready(runtime, operatorId="vision.flow.switch")
+    business = {"tokenCount": 3, "item": {"value": None}}
+    result = execute(runtime, identity, {}, {"value": pb.OperatorDebugValue(inline_json=json.dumps(business))})
+    assert result["status"] == "SUCCEEDED"
+    assert result["outputs"] == {"default": business}
+    assert "parameterSummary" not in result
 
 
 def testVariableStateCopyWriteAndResetNeverMutateProduction(runtime):

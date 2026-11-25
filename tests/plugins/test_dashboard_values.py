@@ -11,7 +11,7 @@ from emo_master.plugins.builtins.percentage.operator import PercentageOperator
                                             ("percentage", PercentageOperator)])
 def test_manifest_matches_meta(folder, operator):
     root = Path(elapsed.__file__).parents[1]
-    manifest = json.loads((root / folder / "manifest.json").read_text())
+    manifest = json.loads((root / folder / "manifest.json").read_text(encoding="utf-8"))
     for key in ("operatorId", "displayName", "version", "inputPorts", "outputPorts", "paramSchema"):
         assert manifest[key] == getattr(operator.meta, key)
 

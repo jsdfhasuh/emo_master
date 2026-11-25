@@ -6,9 +6,15 @@ from urllib.parse import urlsplit
 
 
 CREDENTIAL_PROPERTIES = {
-    "username": {"title": "\u7528\u6237\u540d", "type": "string", "default": "admin"},
-    "password": {"title": "\u5bc6\u7801", "type": "string", "default": "", "xWidget": "password"},
-    "passwordEnv": {"title": "\u5bc6\u7801\u73af\u5883\u53d8\u91cf", "type": "string", "default": ""},
+    "username": {"description": "摄像头认证用户名。", "xSensitive": True, "title": "\u7528\u6237\u540d", "type": "string", "default": "admin"},
+    "password": {
+        "description": "摄像头认证密码，仅凭据环境变量未指定时使用。", "xSensitive": True,
+        "title": "\u5bc6\u7801", "type": "string", "default": "", "xWidget": "password"
+    },
+    "passwordEnv": {
+        "description": "Runtime 进程的凭据环境变量名，非空时优先读取该变量。", "xSensitive": True,
+        "title": "\u5bc6\u7801\u73af\u5883\u53d8\u91cf", "type": "string", "default": ""
+    },
 }
 
 

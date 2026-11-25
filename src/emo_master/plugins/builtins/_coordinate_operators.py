@@ -50,9 +50,10 @@ COORDINATE_READER_PARAM_SCHEMA: dict[str, object] = {
             "title": "坐标文件读取方式", "type": "string", "enum": ["perInvocation", "session"],
             "default": "perInvocation", "xGlobalVariableBindingDisabled": True,
             "xOptionLabels": {"perInvocation": "每次调用读取（兼容默认）", "session": "运行准入冻结内容"},
-            "description": "会话模式在根流程开始前冻结所有可达坐标文件和解析参数。同一路径修改不会混入当前运行；停止并重新准入后更新。",
+            "description": "perInvocation每次读文件；session使用运行准入冻结文件内容和解析参数。",
         },
         "filePath": {
+            "description": "TXT/CSV文件路径；绝对路径直接resolve，relative优先workspacePath，否则进程路径。",
             "title": "坐标文件路径",
             "type": "string",
             "default": "",
@@ -61,39 +62,51 @@ COORDINATE_READER_PARAM_SCHEMA: dict[str, object] = {
             "xFilter": "Coordinate files (*.txt *.csv)",
         },
         "fileFormat": {
+            "description": "auto按扩展名决定csv/txt，影响分隔符探测失败时默认选择。",
             "title": "文件格式",
             "type": "string",
             "enum": ["auto", "csv", "txt"],
             "default": "auto",
         },
         "encoding": {
+            "description": "原始字节的文本解码编码。",
             "title": "文本编码",
             "type": "string",
             "enum": ["utf-8", "utf-8-sig", "gb18030", "ascii"],
             "default": "utf-8",
         },
         "delimiter": {
+            "description": "显式comma/tab/semicolon/空白；auto对前20条非注释数据行Sniffer探测。",
             "title": "分隔符",
             "type": "string",
             "enum": ["auto", "comma", "tab", "space", "semicolon"],
             "default": "auto",
         },
         "headerMode": {
+            "description": "present总跳过首行；auto只在首行解析失败时视为表头；absent无表头。",
             "title": "表头模式",
             "type": "string",
             "enum": ["auto", "present", "absent"],
             "default": "auto",
         },
-        "xColumn": {"title": "X 坐标列索引", "type": "integer", "minimum": 0, "maximum": 255, "default": 0},
-        "yColumn": {"title": "Y 坐标列索引", "type": "integer", "minimum": 0, "maximum": 255, "default": 1},
-        "commentPrefix": {"title": "注释前缀", "type": "string", "default": "#"},
+        "xColumn": {"description": "X数值所在零基列索引。", "title": "X 坐标列索引", "type": "integer", "minimum": 0, "maximum": 255, "default": 0},
+        "yColumn": {
+            "description": "Y数值所在零基列索引，必须不同于X。",
+            "title": "Y 坐标列索引", "type": "integer", "minimum": 0, "maximum": 255, "default": 1
+        },
+        "commentPrefix": {
+            "description": "lstrip后以此开头的行不解析，空串禁用注释过滤。",
+            "title": "注释前缀", "type": "string", "default": "#"
+        },
         "onInvalidRow": {
+            "description": "error报错；skip跳过无效数据行并计数，不计表头/空行/注释。",
             "title": "无效行处理",
             "type": "string",
             "enum": ["error", "skip"],
             "default": "error",
         },
         "maxPoints": {
+            "description": "有效坐标数上限，超过即失败，不截断。",
             "title": "最大坐标点数",
             "type": "integer",
             "minimum": 1,
@@ -101,15 +114,23 @@ COORDINATE_READER_PARAM_SCHEMA: dict[str, object] = {
             "default": 10000,
         },
         "maxFileBytes": {
+            "description": "原文件字节大小上限，超限失败。",
             "title": "最大文件大小（字节）",
             "type": "integer",
             "minimum": 1,
             "maximum": 16777216,
             "default": 4194304,
         },
-        "asPolygon": {"title": "输出为多边形", "type": "boolean", "default": False},
-        "sourceId": {"title": "来源标识", "type": "string", "default": ""},
+        "asPolygon": {
+            "description": "true额外生成非零面积polygon；移除重复末尾闭合点，至少3点。",
+            "title": "输出为多边形", "type": "boolean", "default": False
+        },
+        "sourceId": {
+            "description": "无frame时的坐标源ID；空串回退实际坐标文件路径。",
+            "title": "来源标识", "type": "string", "default": ""
+        },
         "imageWidth": {
+            "description": "无frame时坐标空间图像宽度，0代表未提供。",
             "title": "图像宽度（像素）",
             "type": "integer",
             "minimum": 0,
@@ -117,6 +138,7 @@ COORDINATE_READER_PARAM_SCHEMA: dict[str, object] = {
             "default": 0,
         },
         "imageHeight": {
+            "description": "无frame时坐标空间图像高度，须与宽度同为0或正值。",
             "title": "图像高度（像素）",
             "type": "integer",
             "minimum": 0,
@@ -124,9 +146,10 @@ COORDINATE_READER_PARAM_SCHEMA: dict[str, object] = {
             "default": 0,
         },
         "transformToSource": {
+            "description": "无frame时声明的6元素仿射坐标映射；元数据，不在此处变换读出的x/y；顺序[a,b,c,d,e,f]对应x′=a*x+c*y+e、y′=b*x+d*y+f，仅声明坐标映射，不改读入点值。",
             "title": "到源坐标系的变换矩阵",
             "type": "array",
-            "items": {"type": "number"},
+            "items": {"title": "列表项", "description": "6个有限数值的仿射变换系数，按CoordinateSpace2D约定顺序。", "type": "number"},
             "minItems": 6,
             "maxItems": 6,
             "default": _IDENTITY_AFFINE,
@@ -159,7 +182,7 @@ COORDINATE_CALCULATOR_PARAM_SCHEMA: dict[str, object] = {
                 "dot": "点积",
                 "scalarMultiply": "标量乘法",
             },
-            "description": "选择测量、几何变换或坐标运算；参数和输出含义随模式变化。",
+            "description": "计算模式决定输出集合；measure测量、transform先变换后测量、scalarMultiply缩放后测量，add/subtract/dot按两组点配对运算。",
         },
         "pairing": {
             "title": "坐标配对方式",
@@ -170,20 +193,20 @@ COORDINATE_CALCULATOR_PARAM_SCHEMA: dict[str, object] = {
                 "strict": "逐项配对（数量相同）",
                 "broadcast": "单点广播",
             },
-            "description": "相加、相减、点积使用此配对方式；广播允许一侧仅有一个点。",
+            "description": "仅add/subtract/dot：strict等长逐项配对；broadcast允许一侧恰有一个点。",
         },
         "scalarValue": {
             "title": "标量值",
             "type": "number",
             "default": 1.0,
             "xExample": 1.5,
-            "description": "标量乘法的备用系数；连接 scalar 输入时优先使用输入值。",
+            "description": "仅scalarMultiply备用系数；可负、可0，只需有限，原坐标空间标识保留。",
         },
         "closed": {
             "title": "闭合路径",
             "type": "boolean",
             "default": False,
-            "description": "测量时将末点与首点相连，计算闭合路径的周长与面积。",
+            "description": "measure/transform/scalarMultiply将点序视为闭合多边形；先去掉重复末首点并要求至少3点和非零面积，再给周长/面积/polygon。",
         },
         "offsetX": {
             "title": "水平偏移",
@@ -191,7 +214,7 @@ COORDINATE_CALCULATOR_PARAM_SCHEMA: dict[str, object] = {
             "default": 0.0,
             "xUnit": "坐标单位",
             "xExample": 10.0,
-            "description": "坐标变换的水平平移量，单位与输入坐标一致。",
+            "description": "transform完成缩放/旋转后的X方向平移，单位pixel。",
         },
         "offsetY": {
             "title": "垂直偏移",
@@ -199,7 +222,7 @@ COORDINATE_CALCULATOR_PARAM_SCHEMA: dict[str, object] = {
             "default": 0.0,
             "xUnit": "坐标单位",
             "xExample": -5.0,
-            "description": "坐标变换的垂直平移量，单位与输入坐标一致。",
+            "description": "transform完成缩放/旋转后的Y方向平移，单位pixel。",
         },
         "scaleX": {
             "title": "水平缩放比例",
@@ -207,7 +230,7 @@ COORDINATE_CALCULATOR_PARAM_SCHEMA: dict[str, object] = {
             "default": 1.0,
             "xUnit": "倍",
             "xExample": 1.0,
-            "description": "水平缩放系数；1 表示保持原大小。",
+            "description": "transform绕pivot的X方向缩放倍数。",
         },
         "scaleY": {
             "title": "垂直缩放比例",
@@ -215,7 +238,7 @@ COORDINATE_CALCULATOR_PARAM_SCHEMA: dict[str, object] = {
             "default": 1.0,
             "xUnit": "倍",
             "xExample": 1.0,
-            "description": "垂直缩放系数；1 表示保持原大小。",
+            "description": "transform绕pivot的Y方向缩放倍数。",
         },
         "rotationDegrees": {
             "title": "旋转角度（度）",
@@ -225,7 +248,7 @@ COORDINATE_CALCULATOR_PARAM_SCHEMA: dict[str, object] = {
             "default": 0.0,
             "xUnit": "°",
             "xExample": 90.0,
-            "description": "绕选定中心旋转的角度；图像坐标中正角度为顺时针。",
+            "description": "transform绕pivot旋转角度；图像坐标y向下，正角度在图像中顺时针。",
         },
         "pivot": {
             "title": "旋转中心模式",
@@ -238,7 +261,7 @@ COORDINATE_CALCULATOR_PARAM_SCHEMA: dict[str, object] = {
                 "first": "第一个点",
                 "custom": "自定义坐标",
             },
-            "description": "选择缩放和旋转所使用的中心。",
+            "description": "origin用(0,0)，centroid用点均值，first用首点，custom用pivotX/Y；同时用于缩放和旋转。",
         },
         "pivotX": {
             "title": "旋转中心 X 坐标",
@@ -246,7 +269,7 @@ COORDINATE_CALCULATOR_PARAM_SCHEMA: dict[str, object] = {
             "default": 0.0,
             "xUnit": "坐标单位",
             "xExample": 0.0,
-            "description": "自定义中心的 X 坐标，单位与输入坐标一致。",
+            "description": "仅transform且pivot=custom使用的中心X。",
         },
         "pivotY": {
             "title": "旋转中心 Y 坐标",
@@ -254,7 +277,7 @@ COORDINATE_CALCULATOR_PARAM_SCHEMA: dict[str, object] = {
             "default": 0.0,
             "xUnit": "坐标单位",
             "xExample": 0.0,
-            "description": "自定义中心的 Y 坐标，单位与输入坐标一致。",
+            "description": "仅transform且pivot=custom使用的中心Y。",
         },
     },
 }
@@ -673,9 +696,15 @@ class CoordinateCalculatorOperator:
         except ValueError as exc:
             return _error("E_INPUT_SHAPE", str(exc))
         try:
+            diagnostics: dict[str, object] = {}
             if mode == "transform":
-                transformed = _transformPoints(calculationPoints, params)
+                transformed, pivot = _transformPoints(calculationPoints, params)
+                diagnostics["transformPivot"] = pivot
             elif mode == "scalarMultiply":
+                diagnostics["effectiveParameters"] = [{
+                    "path": ["scalarValue"], "value": scalar,
+                    "source": "input" if "scalar" in inputs else "normalized",
+                }]
                 transformed = tuple(
                     Point2D(
                         point.x * scalar,
@@ -691,7 +720,7 @@ class CoordinateCalculatorOperator:
         measurementOutputs = _measurementOutputs(transformed, closed)
         if isinstance(measurementOutputs, str):
             return _error("E_RESULT_INVALID", measurementOutputs)
-        return _coordinateResult(startedAt, mode, measurementOutputs)
+        return _coordinateResult(startedAt, mode, measurementOutputs, diagnostics)
 
 
 def _pointList(value: object, name: str) -> tuple[Point2D, ...]:
@@ -799,6 +828,7 @@ def _coordinateResult(
     startedAt: float,
     mode: str,
     outputs: dict[str, object],
+    diagnostics: dict[str, object] | None = None,
 ) -> dict[str, object]:
     resultCount = cast(int, outputs["resultCount"])
     latencyMs = round((perf_counter() - startedAt) * 1000.0, 3)
@@ -811,7 +841,8 @@ def _coordinateResult(
             "resultCount": resultCount,
         },
         "diagnostics": {
-            "text": f"Coordinate calculator mode={mode} produced {resultCount} result(s)"
+            "text": f"Coordinate calculator mode={mode} produced {resultCount} result(s)",
+            **(diagnostics or {}),
         },
     }
 
@@ -938,7 +969,7 @@ def _polygonPoints(points: tuple[Point2D, ...]) -> tuple[Point2D, ...]:
 def _transformPoints(
     points: tuple[Point2D, ...],
     params: dict[str, object],
-) -> tuple[Point2D, ...]:
+) -> tuple[tuple[Point2D, ...], dict[str, object]]:
     pivotMode = cast(str, params.get("pivot", "origin"))
     if pivotMode == "centroid":
         pivotX = sum(point.x for point in points) / len(points)
@@ -969,7 +1000,7 @@ def _transformPoints(
                 space,
             )
         )
-    return tuple(transformed)
+    return tuple(transformed), {"mode": pivotMode, "x": pivotX, "y": pivotY}
 
 
 def _signedArea(points: tuple[Point2D, ...]) -> float:

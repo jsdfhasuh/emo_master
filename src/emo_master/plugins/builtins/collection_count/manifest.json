@@ -5,7 +5,7 @@
   "entry": "emo_master.plugins.builtins.collection_count.operator:CollectionCountOperator",
   "category": "结果处理",
   "iconKey": "count",
-  "summary": "统计 Blob 或 Detection 集合中的目标数量。",
+  "summary": "统计检测结果、连通域、轮廓、形状测量、线段、圆或模板匹配集合中的对象数。",
   "inputPorts": {
     "blobs": {"type": "blobCollection", "required": false, "nullable": false, "schemaVersion": "1.x"},
     "detections": {"type": "detectionCollection", "required": false, "nullable": false, "schemaVersion": "1.x"},
@@ -35,6 +35,7 @@
           "matches"
         ],
         "default": "",
+        "description": "选择唯一的处理对象。留空时由本次唯一提供的业务输入确定。",
         "xOptionLabels": {
           "": "请选择处理对象",
           "detections": "检测结果",
@@ -50,5 +51,41 @@
     "xModeOperator": "vision.collection.count"
   },
   "minCoreVersion": "0.3.0",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "blobs": {"title": "连通域", "description": "连通域强类型集合；七种集合端口中本次只能有一种，保留其items、对象ID及coordinateSpace。"},
+      "detections": {"title": "检测结果", "description": "检测对象强类型集合；七种集合端口中本次只能有一种，保留其items、对象ID及coordinateSpace。"},
+      "contours": {"title": "轮廓", "description": "轮廓强类型集合；七种集合端口中本次只能有一种，保留其items、对象ID及coordinateSpace。"},
+      "measurements": {"title": "形状测量", "description": "形状测量强类型集合；七种集合端口中本次只能有一种，保留其items、对象ID及coordinateSpace。"},
+      "lines": {"title": "线段", "description": "线段强类型集合；七种集合端口中本次只能有一种，保留其items、对象ID及coordinateSpace。"},
+      "circles": {"title": "圆", "description": "圆强类型集合；七种集合端口中本次只能有一种，保留其items、对象ID及coordinateSpace。"},
+      "matches": {"title": "模板匹配", "description": "模板匹配对象强类型集合；七种集合端口中本次只能有一种，保留其items、对象ID及coordinateSpace。"}
+    },
+    "outputs": {
+      "count": {"title": "数量", "description": "当前唯一集合的items长度；空集合返回0。", "unit": "个"}
+    },
+    "metrics": {
+      "latencyMs": {
+        "title": "算子内部耗时",
+        "description": "算子executeNode入口计时到构造成功返回的内部耗时，含本算子校验/集合处理，不含框架排队及下游。",
+        "unit": "ms",
+        "group": "duration"
+      },
+      "collectionKind": {
+        "title": "集合类型",
+        "description": "实际解析的集合种类（blob/detection/contour/measurement/line/circle/match），不是性能指标。",
+        "group": "result"
+      },
+      "count": {
+        "title": "数量",
+        "description": "与outputs.count同一次len(collection.items)结果，属于业务数量而非耗时。",
+        "unit": "个",
+        "group": "business"
+      }
+    },
+    "diagnostics": {
+      "text": {"title": "摘要", "description": "集合元素数量的文字摘要。"}
+    }
+  }
 }

@@ -6,6 +6,7 @@ import math
 
 from emo_master.core.contracts.tcp_service import TcpServiceError, TcpSessionRef
 from emo_master.plugins.builtins._communication_operators import _encodeTcpData
+from emo_master.plugins.builtins._device_settings import deviceSettings
 
 
 @dataclass(frozen=True)
@@ -25,6 +26,8 @@ def ports(**types):
 
 
 class ManagedOperator:
+    deviceWorkFields: tuple[str, ...] = ()
+
     def validateParams(self, params):
         from emo_master.core.project.snapshots import _parameters
         try:
@@ -39,8 +42,10 @@ class ManagedOperator:
             if error:
                 raise ValueError(str(error))
             result = self.execute(inputs, params, runtimeContext)
-            return dict(status="ok", outputs=result,
-                        diagnostics={"tcpReceipt": result["receipt"]} if "receipt" in result else {})
+            diagnostics = {"tcpReceipt": result["receipt"]} if "receipt" in result else {}
+            if self.deviceWorkFields:
+                diagnostics.update(deviceSettings(runtimeContext, "tcp", self.deviceWorkFields))
+            return dict(status="ok", outputs=result, diagnostics=diagnostics)
         except Exception as error:
             # Cancellation may win before the parent replies, in which case the
             # proxy observes a closed pipe rather than E_CANCELLED. Use the live
@@ -65,6 +70,7 @@ class ManagedOperator:
 
 
 class TcpSessionOperator(ManagedOperator):
+    deviceWorkFields = ("timeoutMs",)
     meta = OperatorMeta("communication.tcp.session", "TCP 通道会话", "1.0.0", {}, ports(session="tcpSessionRef"),
         dict(type="object", additionalProperties=False, properties={}, required=[], xDeviceActionFields=[]))
 
@@ -73,6 +79,7 @@ class TcpSessionOperator(ManagedOperator):
 
 
 class TcpSessionSendOperator(ManagedOperator):
+    deviceWorkFields = ("encoding", "appendNewline")
     meta = OperatorMeta("communication.tcp.session_send", "TCP 会话发送", "1.0.0",
         ports(session="tcpSessionRef", data="string"), ports(receipt="tcpSendReceipt"),
         dict(type="object", additionalProperties=False, properties={}, required=[], xDeviceActionFields=[]))
@@ -95,10 +102,14 @@ class CoordinateMessageFormatOperator(ManagedOperator):
     meta = OperatorMeta("communication.coordinate_message_format", "坐标报文格式化", "1.0.0",
         ports(x="number", y="number"), ports(data="string"),
         dict(type="object", additionalProperties=False, properties={
-            "decimals": dict(title="舍入小数位数", type="integer", minimum=0, maximum=9, default=3),
-            "numberFormat": dict(title="数值表示", type="string", enum=["round", "fixed"], default="round"),
-            "quote": dict(title="包围引号", type="string", enum=["single", "double", "none"], default="single"),
-            "suffix": dict(title="报文后缀", type="string", default="EY", maxLength=80)}))
+            "decimals": dict(title="舍入小数位数", type="integer", minimum=0, maximum=9, default=3,
+                             description="X 与 Y 坐标使用同一小数精度，范围为 0 至 9 位。"),
+            "numberFormat": dict(title="数值表示", type="string", enum=["round", "fixed"], default="round",
+                                 description="round 保留舍入后的常规表示，fixed 补零以保留指定小数位数。"),
+            "quote": dict(title="包围引号", type="string", enum=["single", "double", "none"], default="single",
+                          description="整段报文外围使用单引号、双引号或无引号。"),
+            "suffix": dict(title="报文后缀", type="string", default="EY", maxLength=80,
+                           description="紧接 Y 坐标附加的文本，随后才添加右侧包围引号。")}))
 
     def execute(self, inputs, params, context):
         values = [inputs["x"], inputs["y"]]

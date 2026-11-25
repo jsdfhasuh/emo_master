@@ -8,6 +8,7 @@ from typing import Any, Callable, Mapping, cast
 
 from emo_master.core.contracts.geometry2d import BBox2D, CoordinateSpace2D
 from emo_master.core.contracts.operator_logging import getOperatorLogger
+from emo_master.plugins.builtins._device_settings import deviceSettings
 from emo_master.plugins.builtins._huaray_imv import (
     CameraSession,
     HuarayCameraError,
@@ -53,34 +54,51 @@ PARAM_SCHEMA: dict[str, object] = {
     "additionalProperties": False,
     "properties": {
         "selectionMode": {
+            "description": "直接IMV路径按IP/唯一key/用户名称/索引选择设备；托管路径由绑定类型的connection确定。",
             "title": "连接方式",
             "type": "string",
             "enum": ["ip", "cameraKey", "userId", "index"],
             "default": "ip",
         },
-        "ipAddress": {"title": "相机 IP 地址", "type": "string", "default": "", "maxLength": 255},
-        "cameraKey": {"title": "设备唯一标识", "type": "string", "default": "", "maxLength": 255},
-        "userId": {"title": "用户自定义名称", "type": "string", "default": "", "maxLength": 255},
-        "deviceIndex": {"title": "设备索引", "type": "integer", "minimum": 0, "maximum": 99, "default": 0},
+        "ipAddress": {
+            "description": "直接路径selectionMode=ip时的规范IPv4。",
+            "title": "相机 IP 地址", "type": "string", "default": "", "maxLength": 255
+        },
+        "cameraKey": {
+            "description": "直接路径cameraKey选择；托管IMV固定取device.connection.cameraKey。",
+            "title": "设备唯一标识", "type": "string", "default": "", "maxLength": 255
+        },
+        "userId": {
+            "description": "直接路径userId选择时的设备用户标识。",
+            "title": "用户自定义名称", "type": "string", "default": "", "maxLength": 255
+        },
+        "deviceIndex": {
+            "description": "直接路径index选择时的零基枚举索引。",
+            "title": "设备索引", "type": "integer", "minimum": 0, "maximum": 99, "default": 0
+        },
         "triggerMode": {
+            "description": "hardware外部触发、software单次软触发、freeRun连续采集；决定取帧选择策略。",
             "title": "触发模式",
             "type": "string",
             "enum": ["hardware", "software", "freeRun"],
             "default": "hardware",
         },
         "triggerSource": {
+            "description": "hardware有效的触发输入线；IMV Line1..4，托管MVS为Line0..3。",
             "title": "触发输入线",
             "type": "string",
             "enum": ["Line1", "Line2", "Line3", "Line4"],
             "default": "Line1",
         },
         "triggerActivation": {
+            "description": "hardware有效触发边沿RisingEdge/FallingEdge。",
             "title": "触发边沿",
             "type": "string",
             "enum": ["RisingEdge", "FallingEdge"],
             "default": "RisingEdge",
         },
         "captureTimeoutMs": {
+            "description": "直接路径有界取图预算；托管设备允许0表示可取消硬件等待，实际还受动作deadline限制。",
             "title": "取图超时（毫秒）",
             "type": "integer",
             "minimum": 1,
@@ -91,40 +109,71 @@ PARAM_SCHEMA: dict[str, object] = {
             "title": "取图等待方式", "type": "string", "enum": ["bounded", "hardware"],
             "default": "bounded", "xGlobalVariableBindingDisabled": True,
             "xOptionLabels": {"bounded": "有界超时（兼容默认）", "hardware": "持续等待硬件触发"},
-            "description": "持续等待仅用于硬件触发且异常重试次数必须为 0；停止仍通过 100 毫秒 SDK 时间片取消。预览始终有界。",
+            "description": "直接路径hardware为持续等待，要求硬件触发且retryCount=0；托管由captureTimeoutMs=0表达。",
         },
         "sequencePolicy": {
+            "description": "IMV可要求blockId严格连续；托管MVS声明未提供此配置。",
             "title": "设备帧号检查", "type": "string", "enum": ["off", "contiguous"],
             "default": "off", "xGlobalVariableBindingDisabled": True,
             "xOptionLabels": {"off": "不检查（兼容默认）", "contiguous": "严格连续，重复或缺帧停止"},
         },
-        "retryCount": {"title": "异常重试次数", "type": "integer", "minimum": 0, "maximum": 3, "default": 1},
+        "retryCount": {
+            "description": "直接IMV路径失败重试数；超时直接返回；托管IMV强制0、不自动重放触发。",
+            "title": "异常重试次数", "type": "integer", "minimum": 0, "maximum": 3, "default": 1
+        },
         "retryDelayMs": {
+            "description": "直接重试前的可取消等待毫秒；托管采集不使用此节点字段。",
             "title": "重试间隔（毫秒）",
             "type": "integer",
             "minimum": 0,
             "maximum": 5000,
             "default": 200,
         },
-        "outputColor": {"title": "输出颜色", "type": "string", "enum": ["bgr", "gray"], "default": "bgr"},
+        "outputColor": {
+            "description": "输出uint8 BGR三通道或gray单通道。",
+            "title": "输出颜色", "type": "string", "enum": ["bgr", "gray"], "default": "bgr"
+        },
         "demosaic": {
+            "description": "IMV像素转换去马赛克算法；MVS当前设备schema无此项。",
             "title": "去马赛克算法",
             "type": "string",
             "enum": ["nearest", "bilinear", "edgeSensing"],
             "default": "bilinear",
         },
-        "exposureMode": {"title": "曝光设置", "type": "string", "enum": ["keep", "manual"], "default": "keep"},
-        "exposureUs": {"title": "曝光时间（微秒）", "type": "number", "exclusiveMinimum": 0, "default": 10000.0},
-        "gainMode": {"title": "增益设置", "type": "string", "enum": ["keep", "manual"], "default": "keep"},
-        "gainRaw": {"title": "增益值", "type": "number", "default": 0.0},
-        "frameRateMode": {"title": "帧率设置", "type": "string", "enum": ["keep", "manual"], "default": "keep"},
-        "frameRate": {"title": "采集帧率（帧/秒）", "type": "number", "exclusiveMinimum": 0, "default": 30.0},
-        "roiMode": {"title": "采集区域", "type": "string", "enum": ["keep", "custom", "full"], "default": "keep"},
-        "width": {"title": "图像宽度（像素）", "type": "integer", "minimum": 1, "default": 1},
-        "height": {"title": "图像高度（像素）", "type": "integer", "minimum": 1, "default": 1},
-        "offsetX": {"title": "水平偏移（像素）", "type": "integer", "minimum": 0, "default": 0},
-        "offsetY": {"title": "垂直偏移（像素）", "type": "integer", "minimum": 0, "default": 0},
+        "exposureMode": {
+            "description": "keep不写曝光配置；manual关闭自动曝光并设置ExposureTime。",
+            "title": "曝光设置", "type": "string", "enum": ["keep", "manual"], "default": "keep"
+        },
+        "exposureUs": {
+            "description": "manual请求的曝光微秒；不是当然等于本帧真实曝光。",
+            "title": "曝光时间（微秒）", "type": "number", "exclusiveMinimum": 0, "default": 10000.0
+        },
+        "gainMode": {
+            "description": "keep保留设备当前增益；manual关闭自动并设置增益。",
+            "title": "增益设置", "type": "string", "enum": ["keep", "manual"], "default": "keep"
+        },
+        "gainRaw": {"description": "IMV手动原始增益值；MVS使用设备gainDb，不可混同。", "title": "增益值", "type": "number", "default": 0.0},
+        "frameRateMode": {
+            "description": "IMV keep保留或manual使能并设置采集帧率。",
+            "title": "帧率设置", "type": "string", "enum": ["keep", "manual"], "default": "keep"
+        },
+        "frameRate": {"description": "IMV manual帧率值fps。", "title": "采集帧率（帧/秒）", "type": "number", "exclusiveMinimum": 0, "default": 30.0},
+        "roiMode": {
+            "description": "IMV keep保留ROI，full取SDK最大宽高并清零偏移，custom使用指定宽高偏移。",
+            "title": "采集区域", "type": "string", "enum": ["keep", "custom", "full"], "default": "keep"
+        },
+        "width": {"description": "IMV custom ROI宽度像素。", "title": "图像宽度（像素）", "type": "integer", "minimum": 1, "default": 1},
+        "height": {"description": "IMV custom ROI高度像素。", "title": "图像高度（像素）", "type": "integer", "minimum": 1, "default": 1},
+        "offsetX": {
+            "description": "IMV custom ROI水平偏移像素；输出frame变换采用实际SDK读回偏移。",
+            "title": "水平偏移（像素）", "type": "integer", "minimum": 0, "default": 0
+        },
+        "offsetY": {
+            "description": "IMV custom ROI垂直偏移像素；输出frame变换采用实际SDK读回偏移。",
+            "title": "垂直偏移（像素）", "type": "integer", "minimum": 0, "default": 0
+        },
         "pixelFormat": {
+            "description": "IMV keep保留，其他值写SDK PixelFormat；不是输出numpy颜色模式。",
             "title": "相机像素格式",
             "type": "string",
             "enum": [
@@ -296,11 +345,18 @@ class HuarayCameraOperator:
             space = CoordinateSpace2D(reference=frameReference(runtimeContext, self.meta.operatorId),
                 sourceId=acquisition["sourceId"], imageWidth=width, imageHeight=height,
                 transformToSource=(1.0, 0.0, 0.0, 1.0, float(acquisition["offsetX"]), float(acquisition["offsetY"])))
+            work = cast(dict[str, dict[str, object]], runtimeContext.get("deviceParameters", {})).get("camera", {})
+            fields = ["triggerMode", "captureTimeoutMs", "outputColor", "exposureMode"]
+            if work.get("triggerMode") == "hardware":
+                fields.extend(("triggerSource", "triggerActivation"))
+            if work.get("exposureMode") == "manual":
+                fields.append("exposureUs")
             return dict(status="ok", outputs=dict(image=image,
                 frame=BBox2D(0.0, 0.0, float(width), float(height), space).toPayload(),
                 blockId=acquisition["blockId"], deviceTimestamp=acquisition["deviceTimestamp"],
                 actualExposureUs=float(acquisition["actualExposureUs"])),
-                metrics=dict(captureAttempts=1), diagnostics=dict(deviceFrame=descriptor))
+                metrics=dict(captureAttempts=1),
+                diagnostics=dict(deviceFrame=descriptor, **deviceSettings(runtimeContext, "camera", fields)))
         _ = inputs
         if runtimeContext.get("isPreview"):
             params = dict(params, waitMode="bounded", sequencePolicy="off",

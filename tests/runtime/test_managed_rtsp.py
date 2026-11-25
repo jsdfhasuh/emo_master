@@ -286,11 +286,19 @@ def testOperatorRequiresManagedRuntimeAndKeepsCapturedTimestamp():
     def proxy(slot):
         slots.append(slot)
         return image, descriptor
-    result = operator.executeNode({}, {}, {'captureDevice': proxy})
+    result = operator.executeNode({}, {}, {
+        'captureDevice': proxy,
+        'deviceParameters': {'camera': {'colorMode': 'color', 'maxFrameAgeMs': 3000}},
+        'deviceParameterSchemas': {'camera': {'deviceTypeId': 'device.camera.rtsp', 'schemaVersion': '1.1'}},
+    })
     assert slots == ['camera']
     assert result['outputs']['image'] is image
     assert result['outputs']['capturedAt'] == 1234.5
     assert result['outputs']['frame']['coordinateSpace']['imageWidth'] == 7
+    assert result['diagnostics']['deviceSettings'] == {
+        'slot': 'camera', 'deviceTypeId': 'device.camera.rtsp', 'schemaVersion': '1.1',
+        'values': {'colorMode': 'color', 'maxFrameAgeMs': 3000},
+    }
 
 
 def testManagerPublishesAcquisitionMetadataAndSharedOwners(monkeypatch):

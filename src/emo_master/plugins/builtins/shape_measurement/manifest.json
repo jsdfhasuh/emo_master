@@ -25,6 +25,7 @@
           "blobs"
         ],
         "default": "",
+        "description": "选择唯一的处理对象。留空时由本次唯一提供的业务输入确定。",
         "xOptionLabels": {
           "": "请选择处理对象",
           "contours": "轮廓",
@@ -35,5 +36,45 @@
     "xModeOperator": "vision.analysis.shape_measurement"
   },
   "minCoreVersion": "0.3.0",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "contours": {"title": "轮廓", "description": "轮廓集合输入，与blobs二选一；逐item.polygon测量。"},
+      "blobs": {"title": "连通域", "description": "连通域集合输入，与contours二选一；每个blob必须有contour。"}
+    },
+    "outputs": {
+      "measurements": {
+        "title": "形状测量",
+        "description": "每个输入轮廓一个ShapeMeasurement，带来源id/type与几何测量；沿用集合空间。",
+        "fields": {
+          "items": {
+            "title": "集合条目",
+            "description": "集合条目的有序列表。",
+            "items": {
+              "title": "集合条目",
+              "description": "记录标识、来源标识、来源类型、面积、周长、质心、包围框、最小面积外接矩形、圆度。",
+              "fields": {
+                "id": {"title": "标识", "description": "按输入顺序生成measurement-N。"},
+                "sourceId": {"title": "来源标识", "description": "对应contourId或blobId。"},
+                "sourceType": {"title": "来源类型", "description": "contour或blob来源类别。"},
+                "area": {"title": "面积", "description": "abs(cv2.contourArea)几何面积，不是像素计数。", "unit": "当前坐标单位²"},
+                "perimeter": {"title": "周长", "description": "闭合轮廓cv2.arcLength。", "unit": "当前坐标单位"},
+                "centroid": {"title": "质心", "description": "由轮廓矩m10/m00、m01/m00计算。", "unit": "当前坐标单位"},
+                "bbox": {"title": "包围框", "description": "点最小/最大坐标构成外接框，宽高为max-min。", "unit": "当前坐标单位"},
+                "minAreaRect": {"title": "最小面积外接矩形", "description": "cv2.minAreaRect后保证宽>=高，角度归一至[-90,90)。", "unit": "当前坐标单位/度"},
+                "circularity": {"title": "圆度", "description": "4π*area/perimeter²并限制到0..1。", "unit": "比例"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "metrics": {
+      "latencyMs": {"title": "算子内部耗时", "description": "输入检查、测量和输出payload构造的内部耗时。", "unit": "ms", "group": "duration"},
+      "measurementCount": {"title": "形状测量数量", "description": "实际生成的测量项数。", "unit": "个", "group": "business"}
+    },
+    "diagnostics": {
+      "text": {"title": "摘要", "description": "生成测量项数摘要。"}
+    }
+  }
 }

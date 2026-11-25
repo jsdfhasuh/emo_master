@@ -15,12 +15,14 @@
     "additionalProperties": false,
     "properties": {
       "code": {
+        "description": "主动报告的技术错误码，符合E_[A-Z0-9_]+。",
         "title": "错误码",
         "type": "string",
         "default": "E_WORKFLOW_GUARD",
         "pattern": "^E_[A-Z0-9_]+$"
       },
       "message": {
+        "description": "主动错误说明；非空白文本，不由算子自动推断根因。",
         "title": "错误说明",
         "type": "string",
         "default": "技术条件不满足，停止当前流程",
@@ -33,5 +35,11 @@
   "summary": "仅在依赖分支被选中时停止并报告技术错误，不实现业务 NG。",
   "minCoreVersion": "0.6.1",
   "maxCoreVersion": "1.x",
-  "iconKey": "default"
+  "iconKey": "default",
+  "resultSchema": {
+    "inputs": {
+      "after": {"title": "处理后", "description": "必需非None的执行依赖；只在本分支到达时触发技术错误，不分析该值为业务NG。"}
+    },
+    "captureParams": [["code"], ["message"]]
+  }
 }

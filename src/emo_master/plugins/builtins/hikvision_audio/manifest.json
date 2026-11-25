@@ -35,28 +35,36 @@
     "type": "object",
     "properties": {
       "cameraUrl": {
-        "title": "\u6444\u50cf\u5934HTTP\u5730\u5740",
+        "description": "无凭据、无路径/查询的HTTP(S)摄像头origin。",
+        "title": "摄像头HTTP地址",
         "type": "string",
         "default": ""
       },
       "username": {
-        "title": "\u7528\u6237\u540d",
+        "description": "摄像头认证用户名。",
+        "xSensitive": true,
+        "title": "用户名",
         "type": "string",
         "default": "admin"
       },
       "password": {
-        "title": "\u5bc6\u7801",
+        "description": "摄像头认证密码，仅凭据环境变量未指定时使用。",
+        "xSensitive": true,
+        "title": "密码",
         "type": "string",
         "default": "",
         "xWidget": "password"
       },
       "passwordEnv": {
-        "title": "\u5bc6\u7801\u73af\u5883\u53d8\u91cf",
+        "description": "Runtime 进程的凭据环境变量名，非空时优先读取该变量。",
+        "xSensitive": true,
+        "title": "密码环境变量",
         "type": "string",
         "default": ""
       },
       "audioSource": {
-        "title": "\u97f3\u9891\u6765\u6e90",
+        "description": "builtin内置音频或custom已上传音频槽。",
+        "title": "音频来源",
         "type": "string",
         "default": "builtin",
         "enum": [
@@ -64,12 +72,13 @@
           "custom"
         ],
         "xOptionLabels": {
-          "builtin": "\u5185\u7f6e\u97f3\u9891",
-          "custom": "\u5df2\u4e0a\u4f20\u97f3\u9891"
+          "builtin": "内置音频",
+          "custom": "已上传音频"
         }
       },
       "audioId": {
-        "title": "\u5185\u7f6e\u97f3\u9891ID",
+        "description": "builtin有效的内置ID(1..12)。",
+        "title": "内置音频ID",
         "type": "integer",
         "default": 12,
         "minimum": 1,
@@ -81,7 +90,8 @@
         }
       },
       "customAudioId": {
-        "title": "\u81ea\u5b9a\u4e49\u97f3\u9891\u69fd\u4f4d",
+        "description": "custom有效的槽位(1..3)，实际playbackId=12+槽位。",
+        "title": "自定义音频槽位",
         "type": "integer",
         "default": 1,
         "minimum": 1,
@@ -93,21 +103,24 @@
         }
       },
       "maxVolume": {
-        "title": "\u5141\u8bb8\u7684\u6700\u5927\u97f3\u91cf",
+        "description": "允许摄像头现有音量的上限，不会修改音量设置。",
+        "title": "允许的最大音量",
         "type": "integer",
         "default": 30,
         "minimum": 1,
         "maximum": 100
       },
       "maxAlarmTimes": {
-        "title": "\u5141\u8bb8\u7684\u6700\u5927\u64ad\u653e\u6b21\u6570",
+        "description": "允许摄像头现有播放次数的上限，不会修改该设置。",
+        "title": "允许的最大播放次数",
         "type": "integer",
         "default": 1,
         "minimum": 1,
         "maximum": 50
       },
       "timeoutMs": {
-        "title": "\u8bf7\u6c42\u8d85\u65f6\uff08\u6beb\u79d2\uff09",
+        "description": "每次HTTP请求超时毫秒，不是整个多请求流程总超时。",
+        "title": "请求超时（毫秒）",
         "type": "integer",
         "default": 5000,
         "minimum": 100,
@@ -123,5 +136,30 @@
   "iconKey": "output",
   "summary": "\u901a\u8fc7\u6d77\u5eb7 H8 ISAPI \u64ad\u653e\u5185\u7f6e\u6216\u5df2\u4e0a\u4f20\u97f3\u9891\uff1b\u4e0d\u4fee\u6539\u5168\u5c40\u97f3\u91cf\u548c\u64ad\u653e\u6b21\u6570\uff0c\u4e0d\u81ea\u52a8\u91cd\u8bd5\u3002",
   "minCoreVersion": "0.1.0",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "trigger": {"title": "触发信号", "description": "默认true；false直接成功输出全零/triggered=false且不发送网络请求。"}
+    },
+    "outputs": {
+      "triggered": {"title": "触发已接受", "description": "摄像头明确接受播放触发时true；不是声音实际播放完成。"},
+      "audioId": {"title": "音频编号", "description": "实际播放ID：builtin原ID、custom为12+customAudioId；trigger=false时0。"},
+      "volume": {"title": "音量", "description": "GET读到的摄像头现有audioVolume，不是maxVolume；跳过为0。"},
+      "alarmTimes": {"title": "播放次数", "description": "GET读到的摄像头现有播放次数，不是maxAlarmTimes；跳过为0。"}
+    },
+    "metrics": {
+      "latencyMs": {
+        "title": "算子内部耗时",
+        "description": "正常触发路径包含校验、能力/音频/设置GET及PUT回执的总耗时；trigger=false和错误路径不发布。",
+        "unit": "ms",
+        "group": "duration"
+      }
+    },
+    "diagnostics": {
+      "text": {"title": "摘要", "description": "成功/跳过摘要；成功仅确认触发ACK，不确认可听完成。"},
+      "automaticRetry": {"title": "自动重试", "description": "AudioError分支固定false。"},
+      "outcome": {"title": "结果状态", "description": "E_CAMERA_AUDIO_UNKNOWN时为UNKNOWN，写入结果不能确定。"}
+    },
+    "captureParams": [["audioSource"], ["audioId"], ["customAudioId"], ["maxVolume"], ["maxAlarmTimes"], ["timeoutMs"]]
+  }
 }

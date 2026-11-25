@@ -96,6 +96,55 @@ def testConcurrentReplayCallsInvokeOnlyOnce(manager):
     assert result(manager, identity, replies[0]["executionId"])["outputs"] == {"value": 1}
 
 
+def testDebugCopiesRedactSchemaCredentialsBindingsAndAuthenticatedUrls(manager):
+    spec = manager.admitted["test.probe"]
+    spec["paramSchema"]["properties"].update(
+        alias={"type": "string", "xSensitive": True},
+        endpoint={"type": "string"},
+        accessList={"type": "array", "items": {"type": "string", "xSensitive": True}},
+    )
+    spec["inspectionSchema"] = {"captureParams": [["alias"], ["endpoint"], ["accessList"]]}
+    draft = project()
+    draft["globalVariables"] = {"v": {"name": "Value", "type": "string", "initialValue": "binding-value"}}
+    draft["workflows"]["main"]["nodes"][0]["globalVariableBindings"] = [
+        {"variableId": "v", "parameterPath": ["alias"]},
+    ]
+    opened = manager.call("open", dict(opening(), projectJson=json.dumps(draft)))
+    identity = dict(runtimeInstanceId="runtime", sessionId=opened["sessionId"], generation=1)
+    waitFor(lambda: manager.call("get", identity)["state"] == "READY")
+    params = {
+        "mode": "sensitive", "alias": "draft-value", "accessList": ["array-value"],
+        "endpoint": "rtsp://private-user:private-pass@example.invalid/stream?token=private-query&q=business",
+    }
+    safeUrl = "rtsp://<redacted>@example.invalid/stream?token=<redacted>&q=business"
+    executions = []
+    for mode in ("sensitive", "sensitive_error"):
+        started = manager.call("execute", dict(identity, requestId=mode, inputSetId=prepare(manager, identity),
+                               paramsJson=json.dumps(dict(params, mode=mode))))
+        record = result(manager, identity, started["executionId"])
+        executions.append(record)
+        assert record["sourceIdentity"]["operatorId"] == "test.probe"
+        assert record["sourceIdentity"]["operatorVersion"] == "1"
+        assert record["sourceIdentity"]["generation"] == 1
+        for field in ("rawParams", "effectiveParams"):
+            assert record[field]["alias"] == "<redacted>"
+            assert record[field]["endpoint"] == safeUrl
+            assert record[field]["accessList"] == ["<redacted>"]
+        assert record["bindingSources"] == record["variables"] == {"v": "<redacted>"}
+        assert record["parameterSummary"] == [
+            {"path": ["alias"], "value": "<redacted>", "stage": "call", "source": "variable"},
+            {"path": ["endpoint"], "value": safeUrl, "stage": "call", "source": "prepared"},
+            {"path": ["accessList"], "value": ["<redacted>"], "stage": "call", "source": "prepared"},
+        ]
+    assert executions[0]["outputs"] == {"value": 1}
+    assert executions[0]["diagnostics"]["endpoint"] == safeUrl
+    assert executions[1]["status"] == "FAILED" and safeUrl in executions[1]["message"]
+    display = json.dumps(dict(executions=executions, session=manager.call("get", identity),
+                              events=manager.call("events", identity)))
+    for private in ("binding-value", "draft-value", "array-value", "private-user", "private-pass", "private-query"):
+        assert private not in display
+
+
 @pytest.mark.parametrize("mode,status", [("ok", "SUCCEEDED"), ("error", "FAILED"), ("large", "FAILED"), ("crash", "UNKNOWN")])
 def testRealWorkerResultsAndCrash(manager, mode, status):
     identity = ready(manager)

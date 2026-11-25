@@ -33,6 +33,7 @@ class PluginManifest:
   deviceRequirements: dict[str, DeviceRequirement] = field(default_factory=dict)
   nextCycleParameterPaths: tuple[str, ...] = ()
   runtimeCapabilities: tuple[str, ...] = ()
+  resultSchema: dict[str, object] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)

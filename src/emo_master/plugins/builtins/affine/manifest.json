@@ -19,15 +19,127 @@
   "paramSchema": {
     "type": "object",
     "properties": {
-      "srcPoints": {"title": "源坐标点", "type": "array", "minItems": 3, "maxItems": 3},
-      "dstPoints": {"title": "目标坐标点", "type": "array", "minItems": 3, "maxItems": 3},
-      "outputWidth": {"title": "输出宽度（像素）", "type": "integer", "minimum": 0, "default": 0},
-      "outputHeight": {"title": "输出高度（像素）", "type": "integer", "minimum": 0, "default": 0},
-      "interpolation": {"title": "插值方式", "type": "string", "enum": ["nearest", "linear", "cubic"], "default": "linear"},
-      "padValue": {"title": "填充值", "type": "integer", "minimum": 0, "maximum": 255, "default": 0}
+      "srcPoints": {
+        "description": "3个按顺序对应的二维点；只接受含x,y的对象，点需唯一；源点/目标点各自非共线。",
+        "title": "源坐标点",
+        "type": "array",
+        "minItems": 3,
+        "maxItems": 3,
+        "items": {
+          "title": "控制点",
+          "description": "按数组顺序配对的二维像素坐标点。",
+          "type": "object",
+          "properties": {
+            "x": {
+              "title": "横坐标",
+              "description": "图像横向坐标，单位为像素。",
+              "type": "number"
+            },
+            "y": {
+              "title": "纵坐标",
+              "description": "图像纵向坐标，单位为像素。",
+              "type": "number"
+            }
+          },
+          "required": [
+            "x",
+            "y"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "dstPoints": {
+        "description": "3个按顺序对应的二维点；只接受含x,y的对象，点需唯一；源点/目标点各自非共线。",
+        "title": "目标坐标点",
+        "type": "array",
+        "minItems": 3,
+        "maxItems": 3,
+        "items": {
+          "title": "控制点",
+          "description": "按数组顺序配对的二维像素坐标点。",
+          "type": "object",
+          "properties": {
+            "x": {
+              "title": "横坐标",
+              "description": "图像横向坐标，单位为像素。",
+              "type": "number"
+            },
+            "y": {
+              "title": "纵坐标",
+              "description": "图像纵向坐标，单位为像素。",
+              "type": "number"
+            }
+          },
+          "required": [
+            "x",
+            "y"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "outputWidth": {
+        "description": "输出画布宽度；0表示沿用输入对应尺寸。",
+        "title": "输出宽度（像素）",
+        "type": "integer",
+        "minimum": 0,
+        "default": 0
+      },
+      "outputHeight": {
+        "description": "输出画布高度；0表示沿用输入对应尺寸。",
+        "title": "输出高度（像素）",
+        "type": "integer",
+        "minimum": 0,
+        "default": 0
+      },
+      "interpolation": {
+        "description": "重采样插值方式。最近邻保留离散值，线性或三次插值生成连续过渡。",
+        "title": "插值方式",
+        "type": "string",
+        "enum": [
+          "nearest",
+          "linear",
+          "cubic"
+        ],
+        "default": "linear"
+      },
+      "padValue": {
+        "description": "变换后无有效源像素处使用的填充值，范围 0 至 255。",
+        "title": "填充值",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 255,
+        "default": 0
+      }
     },
-    "required": ["srcPoints", "dstPoints"]
+    "required": [
+      "srcPoints",
+      "dstPoints"
+    ]
   },
   "minCoreVersion": "0.3.0",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "image": {"title": "图像", "description": "待变换uint8灰度/BGR图像。"},
+      "frame": {"title": "坐标框", "description": "有效内容矩形与回源坐标，缺失为全图；先据此生成有效mask。"},
+      "validMask": {"title": "有效掩膜", "description": "可选同尺寸uint8非零有效区，与frame矩形取交集；全部无效时报错。"}
+    },
+    "outputs": {
+      "image": {"title": "图像", "description": "几何变换后的图像，画布大小由当前变换参数确定。"},
+      "frame": {"title": "坐标框", "description": "变换后有效mask的轴对齐外接矩形，带output→input→source复合坐标；矩形本身不代表所有内点都有效。"},
+      "validMask": {"title": "有效掩膜", "description": "使用最近邻变换的0/255有效区；精确有效像素应使用此mask。"}
+    },
+    "metrics": {
+      "latencyMs": {
+        "title": "算子内部耗时",
+        "description": "内部几何变换耗时；从_warpAffineResult开始，参数验证、输入处理、矩阵构造不在计时内。",
+        "unit": "ms",
+        "group": "duration"
+      },
+      "transform": {"title": "变换", "description": "本次transform名称；常量affine，不是性能计数。", "group": "result"}
+    },
+    "diagnostics": {
+      "text": {"title": "摘要", "description": "Geometric transform completed 完成摘要。"}
+    }
+  }
 }

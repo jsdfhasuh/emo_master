@@ -16,11 +16,35 @@
   "paramSchema": {
     "type": "object",
     "properties": {
-      "name": {"title": "计数器名称", "type": "string", "minLength": 1, "maxLength": 128}
+      "name": {
+        "description": "项目范围持久化共享计数器名称，区分大小写/精确字符串，不允许两端空白。",
+        "title": "计数器名称",
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 128
+      }
     },
-    "required": ["name"],
+    "required": [
+      "name"
+    ],
     "additionalProperties": false
   },
   "minCoreVersion": "0.4.0",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "increment": {"title": "增量", "description": "bool true请求原子加1；false或缺失只读；若reset同时true，reset优先。"},
+      "reset": {"title": "重置", "description": "bool true请求归零；与increment同时true仍结果0。"}
+    },
+    "outputs": {
+      "count": {"title": "计数器当前值", "description": "当前项目该名称持久化计数器本次原子操作完成后的非负整数；非本节点局部次数。"}
+    },
+    "metrics": {
+      "latencyMs": {"title": "算子内部耗时", "description": "内部校验和调用状态服务直至回执的耗时。", "unit": "ms", "group": "duration"}
+    },
+    "diagnostics": {
+      "text": {"title": "摘要", "description": "计数器名称与本次返回值摘要。"}
+    },
+    "captureParams": [["name"]]
+  }
 }

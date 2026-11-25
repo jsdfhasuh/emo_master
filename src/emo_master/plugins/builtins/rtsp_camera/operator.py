@@ -26,13 +26,16 @@ class RtspCameraOperator:
         paramSchema={
             "type": "object",
             "properties": {
-                "rtspUrl": {"title": "RTSP\u5730\u5740", "type": "string", "default": ""},
+                "rtspUrl": {
+                    "description": "无内嵌凭据的rtsp/rtsps地址，可含查询；查询可能包含令牌。",
+                    "title": "RTSP\u5730\u5740", "type": "string", "default": ""
+                },
                 **CREDENTIAL_PROPERTIES,
-                "openTimeoutMs": {"title": "\u8fde\u63a5\u8d85\u65f6\uff08\u6beb\u79d2\uff09", "type": "integer",
+                "openTimeoutMs": {"description": "传给FFmpeg OpenCV打开连接超时毫秒。", "title": "\u8fde\u63a5\u8d85\u65f6\uff08\u6beb\u79d2\uff09", "type": "integer",
                                   "minimum": 100, "maximum": 60000, "default": 5000},
-                "readTimeoutMs": {"title": "\u53d6\u5e27\u8d85\u65f6\uff08\u6beb\u79d2\uff09", "type": "integer",
+                "readTimeoutMs": {"description": "传给FFmpeg OpenCV读取帧超时毫秒。", "title": "\u53d6\u5e27\u8d85\u65f6\uff08\u6beb\u79d2\uff09", "type": "integer",
                                   "minimum": 100, "maximum": 60000, "default": 5000},
-                "colorMode": {"title": "\u989c\u8272\u6a21\u5f0f", "type": "string", "default": "color",
+                "colorMode": {"description": "color保留BGR；grayscale转换为单通道。", "title": "\u989c\u8272\u6a21\u5f0f", "type": "string", "default": "color",
                               "enum": ["color", "grayscale"],
                               "xOptionLabels": {"color": "\u5f69\u8272", "grayscale": "\u7070\u5ea6"}},
             },

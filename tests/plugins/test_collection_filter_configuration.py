@@ -83,6 +83,22 @@ def testIndependentDetectionGroupsCombineWithAnd():
         assert operator.executeNode(inputs, {**params, flag: False}, {})["outputs"]["keptCount"] == 1
 
 
+def testEffectiveSummaryUsesSelectedTypeAndOnlyEnabledConditions():
+    operator = CollectionFilterOperator()
+    result = operator.executeNode({"detections": _detections().toPayload()}, {
+        "confidenceEnabled": False, "minConfidence": 0.9, "classIdsEnabled": True, "classIds": [1],
+        "lengthEnabled": True, "minLength": 10,
+    }, {})
+    assert result["status"] == "ok"
+    values = {row["path"][0]: (row["value"], row["source"])
+              for row in result["diagnostics"]["effectiveParameters"]}
+    assert values["collectionType"] == ("detections", "input")
+    assert values["confidenceEnabled"] == (False, "normalized")
+    assert "minConfidence" not in values
+    assert "lengthEnabled" not in values
+    assert values["classIds"] == ([1], "normalized")
+
+
 @pytest.mark.parametrize("flag,group", FILTER_GROUPS.items())
 def testDisabledGroupInvalidValuesArePreservedButNotValidatedOrExecuted(flag, group):
     port = group["types"][0]

@@ -49,6 +49,7 @@
           "bbox"
         ],
         "default": "",
+        "description": "选择符合取点特征的输入对象；留空时由本次唯一提供的业务输入确定。",
         "xOptionLabels": {
           "": "请选择处理对象",
           "circles": "圆",
@@ -79,6 +80,7 @@
         }
       },
       "feature": {
+        "description": "circleCenter圆心；bboxCenter轴对齐框中心；bboxTopLeft左上角；minAreaRectCenter旋转矩形中心；centroid读取已有质心，不计算Blob内心。",
         "title": "取点特征",
         "type": "string",
         "default": "circleCenter",
@@ -105,5 +107,16 @@
   "summary": "提取圆心、指定矩形特征或明确的质心；不推测 Blob 内心。",
   "minCoreVersion": "0.6.1",
   "maxCoreVersion": "1.x",
-  "iconKey": "default"
+  "iconKey": "default",
+  "resultSchema": {
+    "inputs": {
+      "circles": {"title": "圆", "description": "circleCenter模式读取每个圆的已有center；与其他候选端口互斥。"},
+      "measurements": {"title": "形状测量", "description": "按feature从每个ShapeMeasurement读取bbox中心/左上角、minAreaRect中心或centroid。"},
+      "bbox": {"title": "包围框", "description": "单个轴对齐框；仅bboxCenter或bboxTopLeft使用。"}
+    },
+    "outputs": {
+      "points": {"title": "点集", "description": "实际提取的强类型点列表，顺序继承输入对象顺序，保持坐标空间。"},
+      "pointCount": {"title": "点数量", "description": "points长度，空输入集合可返回0。", "unit": "个"}
+    }
+  }
 }

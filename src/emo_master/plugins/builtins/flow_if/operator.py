@@ -23,12 +23,14 @@ class FlowIfOperator:
             "type": "object",
             "properties": {
                 "mode": {
+                    "description": "bool真值判断；equals/not_equals对输入的字符串形式与compareValue作精确相等/不等比较。bool异常时对有size属性的对象改用bool(size)。",
                     "title": "条件模式",
                     "type": "string",
                     "enum": ["bool", "equals", "not_equals"],
                     "default": "bool",
                 },
                 "compareValue": {
+                    "description": "仅equals/not_equals比较用字符串；bool模式不使用该参数。",
                     "title": "比较值",
                     "type": "string",
                     "default": "",

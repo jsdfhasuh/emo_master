@@ -64,20 +64,26 @@ class RotateOperator:
         "type": "object",
         "properties": {
             "angleDegrees": {
+                "description": "围绕像素中心旋转角度，[-180,180)；传入OpenCV的是负angleDegrees。",
                 "title": "旋转角度（度）",
                 "type": "number",
                 "minimum": -180.0,
                 "exclusiveMaximum": 180.0,
                 "default": 0.0,
             },
-            "expand": {"title": "扩展输出画布", "type": "boolean", "default": True},
+            "expand": {
+                "description": "true按旋转包络扩大画布并平移中心；false保持输入宽高。",
+                "title": "扩展输出画布", "type": "boolean", "default": True
+            },
             "interpolation": {
+                "description": "重采样插值方式。最近邻保留离散值，线性或三次插值生成连续过渡。",
                 "title": "插值方式",
                 "type": "string",
                 "enum": ["nearest", "linear", "cubic"],
                 "default": "linear",
             },
             "padValue": {
+                "description": "变换后无有效源像素处使用的填充值，范围 0 至 255。",
                 "title": "填充值",
                 "type": "integer",
                 "minimum": 0,
@@ -169,7 +175,7 @@ class FlipOperator:
                     "vertical": "垂直翻转",
                     "both": "水平和垂直翻转",
                 },
-                "description": "水平翻转交换左右，垂直翻转交换上下。",
+                "description": "horizontal交换左右、vertical交换上下、both同时翻转，mask随图像一起翻。",
             }
         },
     }
@@ -252,21 +258,50 @@ class FlipOperator:
             return errorResult("E_EXEC_FAILED", f"flip failed: {err}")
 
 
+_CONTROL_POINT_SCHEMA = {
+    "title": "控制点",
+    "description": "按数组顺序配对的二维像素坐标点。",
+    "type": "object",
+    "properties": {
+        "x": {"title": "横坐标", "description": "图像横向坐标，单位为像素。", "type": "number"},
+        "y": {"title": "纵坐标", "description": "图像纵向坐标，单位为像素。", "type": "number"},
+    },
+    "required": ["x", "y"],
+    "additionalProperties": False,
+}
+
+
 class AffineOperator:
     _PARAM_SCHEMA = {
         "type": "object",
         "properties": {
-            "srcPoints": {"title": "源坐标点", "type": "array", "minItems": 3, "maxItems": 3},
-            "dstPoints": {"title": "目标坐标点", "type": "array", "minItems": 3, "maxItems": 3},
-            "outputWidth": {"title": "输出宽度（像素）", "type": "integer", "minimum": 0, "default": 0},
-            "outputHeight": {"title": "输出高度（像素）", "type": "integer", "minimum": 0, "default": 0},
+            "srcPoints": {
+                "description": "3个按顺序对应的二维点；只接受含x,y的对象，点需唯一；源点/目标点各自非共线。",
+                "title": "源坐标点", "type": "array", "minItems": 3, "maxItems": 3,
+                "items": _CONTROL_POINT_SCHEMA,
+            },
+            "dstPoints": {
+                "description": "3个按顺序对应的二维点；只接受含x,y的对象，点需唯一；源点/目标点各自非共线。",
+                "title": "目标坐标点", "type": "array", "minItems": 3, "maxItems": 3,
+                "items": _CONTROL_POINT_SCHEMA,
+            },
+            "outputWidth": {
+                "description": "输出画布宽度；0表示沿用输入对应尺寸。",
+                "title": "输出宽度（像素）", "type": "integer", "minimum": 0, "default": 0
+            },
+            "outputHeight": {
+                "description": "输出画布高度；0表示沿用输入对应尺寸。",
+                "title": "输出高度（像素）", "type": "integer", "minimum": 0, "default": 0
+            },
             "interpolation": {
+                "description": "重采样插值方式。最近邻保留离散值，线性或三次插值生成连续过渡。",
                 "title": "插值方式",
                 "type": "string",
                 "enum": ["nearest", "linear", "cubic"],
                 "default": "linear",
             },
             "padValue": {
+                "description": "变换后无有效源像素处使用的填充值，范围 0 至 255。",
                 "title": "填充值",
                 "type": "integer",
                 "minimum": 0,
@@ -339,16 +374,28 @@ class PerspectiveOperator:
     _PARAM_SCHEMA = {
         "type": "object",
         "properties": {
-            "srcPoints": {"title": "源坐标点", "type": "array", "minItems": 4, "maxItems": 4},
-            "outputWidth": {"title": "输出宽度（像素）", "type": "integer", "minimum": 2},
-            "outputHeight": {"title": "输出高度（像素）", "type": "integer", "minimum": 2},
+            "srcPoints": {
+                "description": "4个按顺序对应的二维点；只接受含x,y的对象，点需唯一；源四边形须凸、非自交、面积非零；依次映射到目标左上、右上、右下、左下。",
+                "title": "源坐标点", "type": "array", "minItems": 4, "maxItems": 4,
+                "items": _CONTROL_POINT_SCHEMA,
+            },
+            "outputWidth": {
+                "description": "输出画布宽度；必须至少2像素；目标点边界使用尺寸减1。",
+                "title": "输出宽度（像素）", "type": "integer", "minimum": 2
+            },
+            "outputHeight": {
+                "description": "输出画布高度；必须至少2像素；目标点边界使用尺寸减1。",
+                "title": "输出高度（像素）", "type": "integer", "minimum": 2
+            },
             "interpolation": {
+                "description": "重采样插值方式。最近邻保留离散值，线性或三次插值生成连续过渡。",
                 "title": "插值方式",
                 "type": "string",
                 "enum": ["nearest", "linear", "cubic"],
                 "default": "linear",
             },
             "padValue": {
+                "description": "变换后无有效源像素处使用的填充值，范围 0 至 255。",
                 "title": "填充值",
                 "type": "integer",
                 "minimum": 0,

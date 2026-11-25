@@ -18,5 +18,29 @@
   },
   "paramSchema": {"type": "object", "properties": {}},
   "minCoreVersion": "0.3.0",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "imageA": {"title": "A 图像", "description": "第一幅 uint8 灰度或三通道图像；A/B尺寸和通道必须一致。"},
+      "imageB": {"title": "B 图像", "description": "第二幅 uint8 灰度或三通道图像；A/B尺寸和通道必须一致。"},
+      "frameA": {"title": "A 图像坐标框", "description": "A图像有效矩形及回源坐标空间；缺失时使用全图默认 frame，两者空间必须一致。"},
+      "frameB": {"title": "B 图像坐标框", "description": "B图像有效矩形及回源坐标空间；缺失时使用全图默认 frame，两者空间必须一致。"}
+    },
+    "outputs": {
+      "image": {"title": "图像", "description": "逐像素绝对差图像。"},
+      "frame": {"title": "坐标框", "description": "A/B 有效矩形的交集，保留同一回源坐标空间；不是重新计算图像内容。"}
+    },
+    "metrics": {
+      "latencyMs": {
+        "title": "算子内部耗时",
+        "description": "从 _binaryImage 入口到结果构造的算子内部耗时，包括输入校验及绝对差计算。",
+        "unit": "ms",
+        "group": "duration"
+      },
+      "operation": {"title": "操作", "description": "本次实际执行的操作常量 absdiff，不是性能数值。", "group": "result"}
+    },
+    "diagnostics": {
+      "text": {"title": "摘要", "description": "由实际 operation 拼出的完成摘要。"}
+    }
+  }
 }

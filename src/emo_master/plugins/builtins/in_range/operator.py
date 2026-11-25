@@ -37,21 +37,27 @@ _PARAM_SCHEMA: dict[str, object] = {
                 "HSV": "色调/饱和度/明度（HSV）",
                 "LAB": "亮度/色度（LAB）",
             },
-            "description": "必须与输入图像已有颜色空间一致；本算子不执行颜色转换。",
+            "description": "声明输入色序并决定通道数和HSV色调上限；无cvtColor。",
         },
         "lower": {
             "title": "颜色下限",
             "type": "array",
-            "items": {"type": "integer", "minimum": 0, "maximum": 255},
+            "items": {
+                "title": "列表项", "description": "对应colorSpace通道的下限整数，顺序GRAY/BGR/RGB/HSV/LAB。",
+                "type": "integer", "minimum": 0, "maximum": 255
+            },
             "xExample": [0, 0, 0],
-            "description": "按通道顺序填写下限数组。灰度填 1 项，其他颜色空间填 3 项；HSV 的色调范围为 0～179，其余通道为 0～255。每项下限不得大于对应上限。",
+            "description": "每通道下限；GRAY1项，其他3项，逐项<=upper；HSV第一项<=179。",
         },
         "upper": {
             "title": "颜色上限",
             "type": "array",
-            "items": {"type": "integer", "minimum": 0, "maximum": 255},
+            "items": {
+                "title": "列表项", "description": "对应colorSpace通道的上限整数；HSV H为0..179。",
+                "type": "integer", "minimum": 0, "maximum": 255
+            },
             "xExample": [255, 255, 255],
-            "description": "按通道顺序填写上限数组。灰度示例 [255]，BGR/RGB/LAB 示例 [255, 255, 255]，HSV 示例 [179, 255, 255]。",
+            "description": "每通道上限；同lower长度/范围，包含边界。",
         },
     },
     "required": ["lower", "upper"],

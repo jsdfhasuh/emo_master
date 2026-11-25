@@ -80,3 +80,12 @@
 2026-11-25 北京时间 09:39 查询：合并后源码 CI [45520434988](https://github.com/jsdfhasuh/emo_master/actions/runs/45520434988) 已于 09:37 结束，结论 failure。Linux other 在 `test_draft_pure_preview_context.py::testActualLocalImageButtonWithFreshRuntimeAndUnsavedNode[2.1-vision.preprocess.roi]` 出现原生进程 Aborted；Windows other/runtime、Linux runtime 均成功，Ubuntu 汇总因该失败而失败。[Web 检查](https://github.com/jsdfhasuh/emo_master/actions/runs/45520435031) 成功。
 
 同源码树的合并前完整检查 [45382159632/attempts/2](https://github.com/jsdfhasuh/emo_master/actions/runs/45382159632/attempts/2) 通过。该对照不能证明崩溃根因，也不能将合并后 CI 记为全绿。这不是本次文档修改的验证结果，不阻断 P0；涉及该调试链路实现/验收前做针对性定性。本 Change 不自动承担全仓 CI 整治、全硬件或冻结包验收。
+
+## 实施核对
+
+**Codex（6.2 Sol）** 依据上述审查落地通用链路。P0 基线行号继续作为原始证据。
+
+- F01–F03：`core/plugin/result_schema.py` 校验说明与端口、参数的引用。`OperatorInfo` 的字段 21 传输该声明。内嵌 Runtime 和回环 gRPC 经同一个 RuntimeClient 解析。
+- F04–F05：`ParameterInspection` 在调用边界截取选定的可显示参数，标明准备、变量或资源解析等来源。算子可通过实际指标、诊断或结构化证据提供生效值。设备证据保留设备槽及实际设备类型和 schema 版本。Runner 从已注册 Manifest 取得身份，JSONL 完成记录投影保留身份与受限摘要。
+- F06–F07：调试会话保存可信身份，Worker 等资源准备完成后采集调用值。调试提交、准备参数和绑定值的展示副本使用 schema 标记和已知认证字段脱敏，认证 URL 也处理；业务输出值及输出资产沿用执行结果。
+- F08：复测后台受理、产物登记、FILE_REFERENCE、SQLite 提交回执和取消与真实故障等路径。测试通过情况及基线 CI 证据见 [交付记录](../delivery.md)。

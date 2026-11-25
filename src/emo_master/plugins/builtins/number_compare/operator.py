@@ -21,12 +21,13 @@ _PARAM_SCHEMA: dict[str, object] = {
     "type": "object",
     "properties": {
         "operator": {
+            "description": "比较关系：等于、不等于、小于、小于等于、大于、大于等于；精确float比较，不带容差。",
             "title": "比较运算符",
             "type": "string",
             "enum": ["eq", "ne", "lt", "lte", "gt", "gte"],
             "default": "gte",
         },
-        "rightValue": {"title": "右侧比较值", "type": "number", "default": 0.0},
+        "rightValue": {"description": "右侧输入未提供时的备用阈值。", "title": "右侧比较值", "type": "number", "default": 0.0},
     },
 }
 

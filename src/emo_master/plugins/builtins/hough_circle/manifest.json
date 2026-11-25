@@ -17,14 +17,84 @@
   "paramSchema": {
     "type": "object",
     "properties": {
-      "dp": {"title": "累加器分辨率反比", "type": "number", "exclusiveMinimum": 0.0, "default": 1.0},
-      "minDist": {"title": "最小圆心距离（像素）", "type": "number", "exclusiveMinimum": 0.0, "default": 20.0},
-      "param1": {"title": "Canny 高阈值", "type": "number", "exclusiveMinimum": 0.0, "default": 100.0},
-      "param2": {"title": "圆心累加器阈值", "type": "number", "exclusiveMinimum": 0.0, "default": 30.0},
-      "minRadius": {"title": "最小半径（像素）", "type": "integer", "minimum": 0, "default": 0},
-      "maxRadius": {"title": "最大半径（像素）", "type": "integer", "minimum": 0, "default": 0}
+      "dp": {
+        "description": "霍夫梯度圆检测累加器分辨率反比，正有限数。",
+        "title": "累加器分辨率反比",
+        "type": "number",
+        "exclusiveMinimum": 0.0,
+        "default": 1.0
+      },
+      "minDist": {
+        "description": "圆心最小距离，正数像素。",
+        "title": "最小圆心距离（像素）",
+        "type": "number",
+        "exclusiveMinimum": 0.0,
+        "default": 20.0
+      },
+      "param1": {
+        "description": "HOUGH_GRADIENT内部Canny高阈值。",
+        "title": "Canny 高阈值",
+        "type": "number",
+        "exclusiveMinimum": 0.0,
+        "default": 100.0
+      },
+      "param2": {
+        "description": "HOUGH_GRADIENT圆心累加阈值。",
+        "title": "圆心累加器阈值",
+        "type": "number",
+        "exclusiveMinimum": 0.0,
+        "default": 30.0
+      },
+      "minRadius": {
+        "description": "最小半径>=0像素。",
+        "title": "最小半径（像素）",
+        "type": "integer",
+        "minimum": 0,
+        "default": 0
+      },
+      "maxRadius": {
+        "description": "最大半径>=0像素；0作为OpenCV默认特殊值传入，正数时必须>=minRadius。",
+        "title": "最大半径（像素）",
+        "type": "integer",
+        "minimum": 0,
+        "default": 0
+      }
     }
   },
   "minCoreVersion": "0.3.0",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "image": {"title": "图像", "description": "uint8灰度/BGR图像；BGR先灰度化，再与frame有效区按位与。"},
+      "frame": {"title": "坐标框", "description": "有效内容范围及回源坐标，缺失默认全图。"}
+    },
+    "outputs": {
+      "circles": {
+        "title": "圆",
+        "description": "正半径圆集合，按半径降序、y/x排序；坐标来自输入frame。",
+        "fields": {
+          "items": {
+            "title": "集合条目",
+            "description": "集合条目的有序列表。",
+            "items": {
+              "title": "集合条目",
+              "description": "记录圆、标识。",
+              "fields": {
+                "circle": {"title": "圆", "description": "线段端点/圆心半径在当前frame坐标中。", "unit": "当前坐标单位"},
+                "id": {"title": "标识", "description": "按已排序顺序生成line-N/circle-N。"}
+              }
+            }
+          }
+        }
+      },
+      "frame": {"title": "坐标框", "description": "输入frame透传。"}
+    },
+    "metrics": {
+      "latencyMs": {"title": "算子内部耗时", "description": "入口至集合payload构建和返回的内部耗时。", "unit": "ms", "group": "duration"},
+      "count": {"title": "数量", "description": "实际输出圆数，不是性能计数或业务合格数。", "unit": "个", "group": "business"}
+    },
+    "diagnostics": {
+      "text": {"title": "摘要", "description": "输出circles数量摘要。"}
+    }
+  }
 }

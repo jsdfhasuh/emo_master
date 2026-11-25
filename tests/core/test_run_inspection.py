@@ -88,3 +88,13 @@ def testRemoteAndLegacyDescriptionsAreValidated(raw):
         for batch in (result['inputs'], result['outputs']):
             if batch:
                 assert len(batch['items']) <= MAX_PORTS
+
+
+def testMalformedScalarSummaryDoesNotTurnMissingValueIntoNull():
+    summary = normalizeInspection({'version': 1, 'outputs': {'items': [
+        {'port': 'missing', 'value': {'kind': 'scalar'}},
+        {'port': 'null', 'value': {'kind': 'scalar', 'value': None}},
+    ]}})
+    missing, explicit = summary['outputs']['items']
+    assert missing['value'] == {'kind': 'unavailable', 'reason': '摘要无效'}
+    assert explicit['value'] == {'kind': 'scalar', 'value': None}

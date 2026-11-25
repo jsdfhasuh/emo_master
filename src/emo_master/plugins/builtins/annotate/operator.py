@@ -44,60 +44,121 @@ class OperatorMeta:
 
 
 _BGR_SCHEMA = {
+    "title": "类别颜色（BGR）",
+    "description": "Detection 的 BGR 绘制颜色，缺省回退 detectionColor。",
     "type": "array",
-    "items": {"type": "integer", "minimum": 0, "maximum": 255},
+    "items": {
+        "title": "颜色通道值", "description": "一个 0 至 255 的整数通道值，按 B、G、R 顺序排列。",
+        "type": "integer", "minimum": 0, "maximum": 255
+    },
     "minItems": 3,
     "maxItems": 3,
 }
 _PARAM_SCHEMA: dict[str, object] = {
     "type": "object",
     "properties": {
-        "drawBBoxes": {"title": "绘制包围框", "type": "boolean", "default": True},
-        "drawContours": {"title": "绘制轮廓", "type": "boolean", "default": True},
-        "drawCentroids": {"title": "绘制质心", "type": "boolean", "default": True},
-        "drawLabels": {"title": "绘制标签", "type": "boolean", "default": True},
-        "drawRoi": {"title": "绘制 ROI", "type": "boolean", "default": True},
-        "thickness": {"title": "线条宽度（像素）", "type": "integer", "minimum": 1, "default": 2},
-        "fontScale": {"title": "字体缩放比例", "type": "number", "exclusiveMinimum": 0.0, "default": 0.5},
+        "drawBBoxes": {
+            "description": "仅控制 Blob bbox 与 Detection geometry/bbox；不控制独立 matches/measurements 的绘制。",
+            "title": "绘制包围框", "type": "boolean", "default": True
+        },
+        "drawContours": {
+            "description": "仅控制 Blob 自带 contour；独立 contours 集合始终绘制。",
+            "title": "绘制轮廓", "type": "boolean", "default": True
+        },
+        "drawCentroids": {
+            "description": "仅控制 Blob 质心；measurements 的质心始终绘制。",
+            "title": "绘制质心", "type": "boolean", "default": True
+        },
+        "drawLabels": {
+            "description": "控制 Blob、Detection、Contour、Measurement、Match 标签；Lines/Circles 没有标签分支。",
+            "title": "绘制标签", "type": "boolean", "default": True
+        },
+        "drawRoi": {"description": "是否绘制 roi 输入；关闭时 roi 不计 drawnCount。", "title": "绘制 ROI", "type": "boolean", "default": True},
+        "thickness": {
+            "description": "图形线宽；同时影响质心点、线端点和虚线长度。",
+            "title": "线条宽度（像素）", "type": "integer", "minimum": 1, "default": 2
+        },
+        "fontScale": {
+            "description": "字体大小为 max(1,round(32*fontScale))，采用随插件字体显示中文。",
+            "title": "字体缩放比例", "type": "number", "exclusiveMinimum": 0.0, "default": 0.5
+        },
         "classStyles": {
+            "description": "按 Detection 原始 label 精确匹配的样式映射，其他集合不使用。",
             "title": "类别显示名称与颜色",
             "type": "object",
             "default": {},
             "additionalProperties": {
+                "title": "单个类别样式",
+                "description": "每个动态 key 是检测类别原始 label，值仅允许 displayLabel/color。",
                 "type": "object",
                 "properties": {
-                    "displayLabel": {"type": "string", "minLength": 1},
+                    "displayLabel": {
+                        "title": "显示标签", "description": "仅改变 Detection 显示文字，不修改输入 label 或类别 ID。",
+                        "type": "string", "minLength": 1
+                    },
                     "color": _BGR_SCHEMA,
                 },
                 "additionalProperties": False,
             },
         },
-        "labelBackground": {"title": "绘制标签底色", "type": "boolean", "default": False},
-        "showConfidence": {"title": "显示置信度", "type": "boolean", "default": True},
-        "colorMode": {"title": "输出颜色模式", "type": "string", "enum": ["preserve", "bgr"], "default": "preserve"},
-        "lineColor": {"title": "线段颜色（BGR）", "xOptionalPresence": True, **_BGR_SCHEMA},
-        "lineStyle": {"title": "线段样式", "type": "string", "enum": ["solid", "dashed"], "default": "solid"},
-        "endpointMarker": {"title": "线段端点", "type": "string", "enum": ["none", "dot"], "default": "none"},
+        "labelBackground": {
+            "description": "为标签填背景并根据背景亮度选黑/白文字；仅有标签时生效。",
+            "title": "绘制标签底色", "type": "boolean", "default": False
+        },
+        "showConfidence": {
+            "description": "是否在 Detection 标签后附两位小数 confidence；不改变筛选或业务结果。",
+            "title": "显示置信度", "type": "boolean", "default": True
+        },
+        "colorMode": {
+            "description": "preserve 保持输入灰度/BGR；bgr 将灰度转 BGR 后绘制。",
+            "title": "输出颜色模式", "type": "string", "enum": ["preserve", "bgr"], "default": "preserve"
+        },
+        "lineColor": {
+            **_BGR_SCHEMA,
+            "title": "线段颜色（BGR）",
+            "description": "独立 Lines 集合的颜色；字段省略时动态回退 detectionColor。",
+            "xOptionalPresence": True,
+        },
+        "lineStyle": {
+            "description": "独立 Lines 集合实线/虚线；ROI 中 Line 几何仍实线。",
+            "title": "线段样式", "type": "string", "enum": ["solid", "dashed"], "default": "solid"
+        },
+        "endpointMarker": {
+            "description": "仅独立 Lines 集合端点圆标记。",
+            "title": "线段端点", "type": "string", "enum": ["none", "dot"], "default": "none"
+        },
         "blobColor": {
+            "description": "Blob bbox/contour/centroid/标签颜色。",
             "title": "连通域颜色",
             "type": "array",
-            "items": {"type": "integer", "minimum": 0, "maximum": 255},
+            "items": {
+                "title": "颜色通道值", "description": "一个 0 至 255 的整数通道值，按 B、G、R 顺序排列。",
+                "type": "integer", "minimum": 0, "maximum": 255
+            },
             "minItems": 3,
             "maxItems": 3,
             "default": [0, 255, 0],
         },
         "detectionColor": {
+            "description": "Detection 默认色，且用于 Contour、Measurement、Circle、Match；lineColor 省略时的回退。",
             "title": "检测框颜色",
             "type": "array",
-            "items": {"type": "integer", "minimum": 0, "maximum": 255},
+            "items": {
+                "title": "颜色通道值", "description": "一个 0 至 255 的整数通道值，按 B、G、R 顺序排列。",
+                "type": "integer", "minimum": 0, "maximum": 255
+            },
             "minItems": 3,
             "maxItems": 3,
             "default": [0, 165, 255],
         },
         "roiColor": {
+            "description": "ROI 几何颜色。",
             "title": "ROI 颜色",
             "type": "array",
-            "items": {"type": "integer", "minimum": 0, "maximum": 255},
+            "items": {
+                "title": "颜色通道值", "description": "一个 0 至 255 的整数通道值，按 B、G、R 顺序排列。",
+                "type": "integer", "minimum": 0, "maximum": 255
+            },
             "minItems": 3,
             "maxItems": 3,
             "default": [255, 0, 255],

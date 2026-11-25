@@ -1500,6 +1500,7 @@ class RuntimeJobLogs(QWidget):
         self._detailEntry = entry
         raw = entry.rawRecord()
         context = {}
+        nodeElapsedMs = None
         branch = self.structure.branchForEvent(entry.eventId) if self.structure else None
         if branch is not None:
             timing = branch.executionTime(hasEarlier=bool(self._before))
@@ -1507,7 +1508,9 @@ class RuntimeJobLogs(QWidget):
                 context["实际开始"] = _stamp(timing.startedAtMs)
             if timing.endedAtMs is not None:
                 context["实际结束"] = _stamp(timing.endedAtMs)
-            if timing.elapsedMs is not None:
+            if branch.kind == "node" and entry.eventType in {"node.started", "node.completed", "node.failed", "node.skipped"}:
+                nodeElapsedMs = timing.elapsedMs
+            elif timing.elapsedMs is not None:
                 context["执行时间"] = timing.display()
             if timing.note:
                 context["时间说明"] = timing.note
@@ -1518,7 +1521,7 @@ class RuntimeJobLogs(QWidget):
                            ("durationMs", "聚合经过时间（ms，可跨任务）")):
             if key in entry.payload and (key not in {"durationMs", "occurrences"} or "occurrences" in entry.payload):
                 context[label] = entry.payload[key]
-        self.detail.setEvent(raw, displayMessage=entry.displayMessage(), context=context)
+        self.detail.setEvent(raw, displayMessage=entry.displayMessage(), context=context, nodeElapsedMs=nodeElapsedMs)
         self.readContext.setEnabled(bool(self.structure and self.structure.contextMatches(entry.eventId)))
         self.navigate.setEnabled(bool(self._onNavigate and entry.nodeId))
         self.deviceChoice.clear()

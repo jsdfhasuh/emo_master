@@ -31,5 +31,14 @@
   "iconKey": "calculator",
   "summary": "拆分单个点的 X/Y 原始数值；不改变坐标系或单位，空点和多点报错。",
   "minCoreVersion": "0.6.1",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "points": {"title": "点集", "description": "恰含一个Point2D的列表，空或多点报错，不自动选取。"}
+    },
+    "outputs": {
+      "x": {"title": "横坐标", "description": "该点原coordinateSpace中的X数值。", "unit": "pixel"},
+      "y": {"title": "纵坐标", "description": "该点原coordinateSpace中的Y数值。", "unit": "pixel"}
+    }
+  }
 }

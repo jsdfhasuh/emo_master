@@ -17,19 +17,37 @@
     "type": "object",
     "properties": {
       "mode": {
+        "description": "bool真值判断；equals/not_equals对输入的字符串形式与compareValue作精确相等/不等比较。bool异常时对有size属性的对象改用bool(size)。",
         "title": "条件模式",
         "type": "string",
-        "enum": ["bool", "equals", "not_equals"],
+        "enum": [
+          "bool",
+          "equals",
+          "not_equals"
+        ],
         "default": "bool"
       },
       "compareValue": {
+        "description": "仅equals/not_equals比较用字符串；bool模式不使用该参数。",
         "title": "比较值",
         "type": "string",
         "default": ""
       }
     },
-    "required": ["mode"]
+    "required": [
+      "mode"
+    ]
   },
   "minCoreVersion": "0.1.0",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "value": {"title": "值", "description": "被判断并路由的原对象；equals/not_equals时比较str(value)，bool模式尝试bool(value)。"}
+    },
+    "outputs": {
+      "true": {"title": "真分支", "description": "条件真时唯一返回的原value；另一端口缺失，不填null或false。"},
+      "false": {"title": "假分支", "description": "条件假时唯一返回的原value；不是布尔false常量。"}
+    },
+    "captureParams": [["mode"], ["compareValue"]]
+  }
 }

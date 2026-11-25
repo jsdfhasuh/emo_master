@@ -9,11 +9,11 @@ from typing import Any, cast
 from .geometry2d import (BlobCollection, CircleCollection, ContourCollection,
                         DetectionCollection, LineCollection,
                         ShapeMeasurementCollection, TemplateMatchCollection)
+from .log_safety import isSensitiveLogKey, redactLogText
 
 MAX_IO_BYTES = 4096
 MAX_PORTS = 12
 _SIDE_BYTES = 1792
-_SECRET_PARTS = ('password', 'secret', 'token', 'authorization', 'credential', 'apikey', 'privatekey')
 _COLLECTION_TYPES = (BlobCollection, CircleCollection, ContourCollection, DetectionCollection,
                      LineCollection, ShapeMeasurementCollection, TemplateMatchCollection)
 _COLLECTION_NAMES = {name[0].lower() + name[1:] for name in (kind.__name__ for kind in _COLLECTION_TYPES)}
@@ -37,8 +37,9 @@ def describeValue(value: object) -> dict:
     if kind is float:
         return {'kind': 'scalar', 'value': value} if math.isfinite(cast(float, value)) else {'kind': 'unavailable', 'reason': '非有限数值'}
     if kind is str:
-        text = clipText(cast(str, value))
-        return {'kind': 'scalar', 'value': text, 'truncated': text != value}
+        safe = redactLogText(cast(str, value))
+        text = clipText(safe)
+        return {'kind': 'scalar', 'value': text, 'truncated': text != safe}
     if kind in (list, tuple, set, frozenset):
         return {'kind': 'collection', 'count': len(cast(Sized, value))}
     if kind is dict:
@@ -56,11 +57,6 @@ def describeValue(value: object) -> dict:
     return {'kind': 'unavailable', 'reason': clipText(kind.__name__, 48)}
 
 
-def _secret(name: str) -> bool:
-    normalized = name.lower().replace('_', '').replace('-', '')
-    return any(part in normalized for part in _SECRET_PARTS)
-
-
 def summarizePorts(values: object) -> dict:
     values = cast(dict, values) if type(values) is dict else {}
     items: list[dict] = []
@@ -69,7 +65,7 @@ def summarizePorts(values: object) -> dict:
             break
         if not isinstance(name, str):
             continue
-        row = {'port': clipText(name, 64), 'value': {'kind': 'redacted'} if _secret(name) else describeValue(value)}
+        row = {'port': clipText(name, 64), 'value': {'kind': 'redacted'} if isSensitiveLogKey(name) else describeValue(value)}
         if encodedBytes({'items': [*items, row], 'portCount': len(values), 'omitted': len(values)}) > _SIDE_BYTES:
             break
         items.append(row)
@@ -103,7 +99,7 @@ def normalizeInspection(raw: object, legacyOutputs: object = None) -> dict:
             name = clipText(row['port'], 64)
             description = row.get('value')
             value = _normalizeDescription(description)
-            item = {'port': name, 'value': {'kind': 'redacted'} if _secret(row['port']) else value}
+            item = {'port': name, 'value': {'kind': 'redacted'} if isSensitiveLogKey(row['port']) else value}
             if encodedBytes({'items': [*items, item], 'portCount': 1_000_000, 'omitted': 1_000_000}) > _SIDE_BYTES:
                 break
             items.append(item)
@@ -120,7 +116,9 @@ def _normalizeDescription(value: object) -> dict:
     if not isinstance(kind, str):
         return {'kind': 'unavailable', 'reason': '摘要类型无效'}
     if kind == 'scalar':
-        result = describeValue(value.get('value'))
+        if 'value' not in value:
+            return {'kind': 'unavailable', 'reason': '摘要无效'}
+        result = describeValue(value['value'])
         if value.get('truncated'):
             result['truncated'] = True
         return result

@@ -89,9 +89,15 @@ class AddWeightedOperator:
     _PARAM_SCHEMA = {
         "type": "object",
         "properties": {
-            "alpha": {"title": "第一幅图像权重", "type": "number", "default": 0.5},
-            "beta": {"title": "第二幅图像权重", "type": "number", "default": 0.5},
-            "gamma": {"title": "加权偏移量", "type": "number", "default": 0.0},
+            "alpha": {
+                "description": "A 图像的线性加权系数；结果由 cv2.addWeighted 饱和到输出类型。",
+                "title": "第一幅图像权重", "type": "number", "default": 0.5
+            },
+            "beta": {
+                "description": "B 图像的线性加权系数；不要求与 alpha 相加等于 1。",
+                "title": "第二幅图像权重", "type": "number", "default": 0.5
+            },
+            "gamma": {"description": "加权和的像素偏移量。", "title": "加权偏移量", "type": "number", "default": 0.0},
         },
     }
     meta = OperatorMeta(
@@ -134,8 +140,9 @@ class ApplyMaskOperator:
     _PARAM_SCHEMA = {
         "type": "object",
         "properties": {
-            "invert": {"title": "反转掩膜", "type": "boolean", "default": False},
+            "invert": {"description": "在保留像素前反转归一化掩码。", "title": "反转掩膜", "type": "boolean", "default": False},
             "fillValue": {
+                "description": "掩码外每个通道的固定uint8填充值。",
                 "title": "填充值",
                 "type": "integer",
                 "minimum": 0,

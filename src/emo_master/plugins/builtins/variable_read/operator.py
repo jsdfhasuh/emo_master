@@ -2,7 +2,10 @@ from emo_master.plugins.builtins.global_counter.operator import OperatorMeta
 
 
 SCHEMA: dict[str, object] = {"type": "object", "properties": {
-    "variableId": {"type": "string", "title": "全局变量", "minLength": 1}}, "required": ["variableId"]}
+    "variableId": {
+        "description": "工程变量定义中的稳定ID，不是显示名称；选择的定义确定类型、常量/变量及生命周期。",
+        "type": "string", "title": "全局变量", "minLength": 1
+    }}, "required": ["variableId"]}
 
 
 class ReadVariableOperator:

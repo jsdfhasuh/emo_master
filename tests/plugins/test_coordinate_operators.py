@@ -251,6 +251,20 @@ def testCoordinateCalculatorScalarParameterAndInputOverride() -> None:
         pytest.approx((5.0, -7.5)), pytest.approx((-10.0, 12.5))
     ]
     assert result["outputs"]["resultCount"] == 2
+    assert result["diagnostics"]["effectiveParameters"] == [
+        {"path": ["scalarValue"], "value": 2.5, "source": "input"}
+    ]
+
+
+def testCoordinateCalculatorReportsResolvedPivot():
+    space = defaultFrame(100, 100, sourceId="image-a").coordinateSpace
+    points = [Point2D(1, 3, space).toPayload(), Point2D(5, 7, space).toPayload()]
+    result = CoordinateCalculatorOperator().executeNode(
+        {"points": points}, {"pivot": "centroid", "scaleX": 2}, {},
+    )
+    assert result["status"] == "ok"
+    assert result["diagnostics"]["transformPivot"] == {"mode": "centroid", "x": 3.0, "y": 5.0}
+    assert result["outputs"]["points"][0]["x"] == -1.0
 
 
 def testCoordinateCalculatorSupportsBroadcastPairing() -> None:

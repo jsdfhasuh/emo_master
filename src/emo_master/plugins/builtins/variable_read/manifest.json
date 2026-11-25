@@ -8,7 +8,29 @@
   "summary": "读取项目常量或当前任务可见的全局变量。",
   "inputPorts": {},
   "outputPorts": {"value": {"type": "any", "required": true, "nullable": false}},
-  "paramSchema": {"type": "object", "properties": {"variableId": {"type": "string", "title": "全局变量", "minLength": 1}}, "required": ["variableId"]},
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "variableId": {
+        "description": "工程变量定义中的稳定ID，不是显示名称；选择的定义确定类型、常量/变量及生命周期。",
+        "type": "string",
+        "title": "全局变量",
+        "minLength": 1
+      }
+    },
+    "required": [
+      "variableId"
+    ]
+  },
   "minCoreVersion": "0.6.0",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "outputs": {
+      "value": {
+        "title": "值",
+        "description": "该variableId当前作用域的真实值；常量取initialValue，persistent取项目范围，job取当前job范围。运行时类型由变量定义收窄为boolean/integer/number/string。"
+      }
+    },
+    "captureParams": [["variableId"]]
+  }
 }

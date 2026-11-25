@@ -17,18 +17,33 @@
     "type": "object",
     "properties": {
       "leftValue": {
-        "title": "左侧默认值", "type": "integer", "default": 0,
-        "minimum": -9223372036854775808, "maximum": 9223372036854775807,
-        "description": "未连接对应输入时使用；连接输入后以本次输入为准。"
+        "title": "左侧默认值",
+        "type": "integer",
+        "default": 0,
+        "minimum": -9223372036854775808,
+        "maximum": 9223372036854775807,
+        "description": "对应操作数输入缺失时使用的备用整数，默认值为 0。"
       },
       "rightValue": {
-        "title": "右侧默认值", "type": "integer", "default": 0,
-        "minimum": -9223372036854775808, "maximum": 9223372036854775807,
-        "description": "未连接对应输入时使用；连接输入后以本次输入为准。"
+        "title": "右侧默认值",
+        "type": "integer",
+        "default": 0,
+        "minimum": -9223372036854775808,
+        "maximum": 9223372036854775807,
+        "description": "对应操作数输入缺失时使用的备用整数，默认值为 0。"
       }
     },
     "additionalProperties": false
   },
   "minCoreVersion": "0.6.1",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "left": {"title": "左操作数", "description": "左侧有符号64位整数输入，提供时优先于leftValue。"},
+      "right": {"title": "右操作数", "description": "右侧有符号64位整数输入，提供时优先于rightValue。"}
+    },
+    "outputs": {
+      "value": {"title": "值", "description": "两侧实际整数之和；超出64位有符号范围返回错误。"}
+    }
+  }
 }

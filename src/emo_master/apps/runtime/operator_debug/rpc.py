@@ -6,6 +6,7 @@ from typing import Any
 
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as _pb
 from emo_master.apps.runtime.operator_debug.contracts import DebugError, MAX_REQUEST_BYTES, encode, fail, trustedEntries
+from emo_master.core.contracts.log_safety import redactLogText
 
 pb: Any = _pb
 
@@ -90,7 +91,7 @@ class OperatorDebugRpcMixin:
                 input_set_id=payload.get("inputSetId", ""), snapshot_json=encode(payload, MAX_REQUEST_BYTES))
         except (DebugError, ValueError, TypeError, KeyError, OSError) as error:
             return pb.OperatorDebugReply(ok=False, code=getattr(error, "code", "E_DEBUG_CONTEXT_INVALID"),
-                message=str(error)[:2048], runtime_instance_id=runtime.runtimeInstanceId)
+                message=redactLogText(str(error))[:2048], runtime_instance_id=runtime.runtimeInstanceId)
 
     def GetOperatorDebugCapabilities(self, request, context):
         return self._operatorDebugRpc("capabilities", request, context)

@@ -31,11 +31,11 @@ class DetectionArchiveOperator:
             "type": "object", "properties": {
                 "outputPath": {
                     "title": "\u8f93\u51fa\u8def\u5f84\u6a21\u677f",
-                    "description": "\u4f7f\u7528\u6b64\u8def\u5f84\u7684\u6240\u5728\u76ee\u5f55\u548c\u6587\u4ef6\u540d\u524d\u7f00\uff1b\u81ea\u52a8\u6dfb\u52a0 UTC \u65f6\u95f4\u548c\u5e8f\u53f7\uff0c\u4e0d\u8986\u76d6\u5386\u53f2\u56fe\u7247\u3002\u88c1\u526a\u56fe PNG\uff0c\u6807\u6ce8\u56fe JPG\u3002",
+                    "description": "输出模板的目录和stem；实际加UTC时间、实例session、序号，crop固定png，overlay固定jpg。",
                     "type": "string", "default": "outputs/captures/capture.jpg",
                     "xWidget": "file", "xFileMode": "save", "xFilter": "JPEG (*.jpg)",
                 },
-                "minIntervalMs": {"title": "\u6700\u5c0f\u4fdd\u5b58\u95f4\u9694\uff08\u6beb\u79d2\uff09",
+                "minIntervalMs": {"description": "完整成功保存后的冷却间隔毫秒，使用monotonic；跨While保持、跨Job重置。", "title": "\u6700\u5c0f\u4fdd\u5b58\u95f4\u9694\uff08\u6beb\u79d2\uff09",
                                   "type": "integer", "minimum": 0, "default": 2000},
             }, "required": ["outputPath"],
         },

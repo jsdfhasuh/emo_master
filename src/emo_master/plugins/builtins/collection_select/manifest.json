@@ -43,6 +43,7 @@
           "matches"
         ],
         "default": "",
+        "description": "选择唯一的处理对象。留空时由本次唯一提供的业务输入确定。",
         "xOptionLabels": {
           "": "请选择处理对象",
           "detections": "检测结果",
@@ -55,6 +56,7 @@
         }
       },
       "mode": {
+        "description": "first/last选当前顺序首/末项；index选0起索引；topK选当前顺序前count项，本算子不先排序。",
         "title": "选择模式",
         "type": "string",
         "enum": [
@@ -67,10 +69,10 @@
       },
       "index": {
         "title": "元素索引",
-        "description": "按索引选择时使用；连接 index 输入后，以本次输入为准。",
         "type": "integer",
         "minimum": 0,
         "default": 0,
+        "description": "仅mode=index使用的0起索引；运行输入index优先于此备用参数。",
         "xVisibleWhen": {
           "mode": [
             "index"
@@ -83,6 +85,7 @@
         }
       },
       "count": {
+        "description": "仅topK使用的前K项数量，超出集合长度时返回现有项。",
         "title": "数量",
         "type": "integer",
         "minimum": 1,
@@ -99,6 +102,7 @@
         }
       },
       "onOutOfRange": {
+        "description": "仅index模式越界时：empty返回空同类型集合；error返回E_PARAM_INVALID。",
         "title": "索引越界处理",
         "type": "string",
         "enum": [
@@ -121,5 +125,46 @@
     "xModeOperator": "vision.collection.select"
   },
   "minCoreVersion": "0.3.0",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "blobs": {"title": "连通域", "description": "连通域强类型集合；七种集合端口中本次只能有一种，保留其items、对象ID及coordinateSpace。"},
+      "detections": {"title": "检测结果", "description": "检测对象强类型集合；七种集合端口中本次只能有一种，保留其items、对象ID及coordinateSpace。"},
+      "contours": {"title": "轮廓", "description": "轮廓强类型集合；七种集合端口中本次只能有一种，保留其items、对象ID及coordinateSpace。"},
+      "measurements": {"title": "形状测量", "description": "形状测量强类型集合；七种集合端口中本次只能有一种，保留其items、对象ID及coordinateSpace。"},
+      "lines": {"title": "线段", "description": "线段强类型集合；七种集合端口中本次只能有一种，保留其items、对象ID及coordinateSpace。"},
+      "circles": {"title": "圆", "description": "圆强类型集合；七种集合端口中本次只能有一种，保留其items、对象ID及coordinateSpace。"},
+      "matches": {"title": "模板匹配", "description": "模板匹配对象强类型集合；七种集合端口中本次只能有一种，保留其items、对象ID及coordinateSpace。"},
+      "index": {"title": "序号", "description": "动态0起索引，仅mode=index可连接；优先于参数index。"}
+    },
+    "outputs": {
+      "selectedBlobs": {"title": "选中的连通域", "description": "选中的连通域集合；只返回与本次唯一输入类型对应的端口，原坐标空间和对象内容保留。"},
+      "selectedDetections": {"title": "选中的检测结果", "description": "选中的检测对象集合；只返回与本次唯一输入类型对应的端口，原坐标空间和对象内容保留。"},
+      "selectedContours": {"title": "选中的轮廓", "description": "选中的轮廓集合；只返回与本次唯一输入类型对应的端口，原坐标空间和对象内容保留。"},
+      "selectedMeasurements": {"title": "选中的形状测量", "description": "选中的形状测量集合；只返回与本次唯一输入类型对应的端口，原坐标空间和对象内容保留。"},
+      "selectedLines": {"title": "选中的线段", "description": "选中的线段集合；只返回与本次唯一输入类型对应的端口，原坐标空间和对象内容保留。"},
+      "selectedCircles": {"title": "选中的圆", "description": "选中的圆集合；只返回与本次唯一输入类型对应的端口，原坐标空间和对象内容保留。"},
+      "selectedMatches": {"title": "选中的模板匹配", "description": "选中的模板匹配对象集合；只返回与本次唯一输入类型对应的端口，原坐标空间和对象内容保留。"},
+      "selectedCount": {"title": "选中的数量", "description": "本次选中对象数，和对应输出集合长度一致。"}
+    },
+    "metrics": {
+      "latencyMs": {
+        "title": "算子内部耗时",
+        "description": "算子executeNode入口计时到构造成功返回的内部耗时，含本算子校验/集合处理，不含框架排队及下游。",
+        "unit": "ms",
+        "group": "duration"
+      },
+      "collectionKind": {
+        "title": "集合类型",
+        "description": "实际解析的集合种类（blob/detection/contour/measurement/line/circle/match），不是性能指标。",
+        "group": "result"
+      },
+      "selectedCount": {"title": "选中的数量", "description": "与outputs.selectedCount相同的选择数量。", "unit": "个", "group": "business"}
+    },
+    "diagnostics": {
+      "text": {"title": "摘要", "description": "本次选择数量和实际模式的文字摘要。"},
+      "effectiveParameters": {"title": "实际生效参数", "description": "索引模式实际使用的索引和取值来源。"}
+    },
+    "captureParams": [["mode"], ["count"], ["onOutOfRange"]]
+  }
 }

@@ -23,19 +23,85 @@
     "type": "object",
     "properties": {
       "videoPath": {
-        "title": "\u89c6\u9891\u6587\u4ef6", "type": "string", "default": "",
-        "xWidget": "file", "xFileMode": "open",
-        "xFilter": "\u89c6\u9891\u6587\u4ef6 (*.mp4 *.avi *.mkv *.mov *.wmv *.m4v *.webm *.mpg *.mpeg);;\u6240\u6709\u6587\u4ef6 (*)"
+        "description": "视频文件路径；上游videoPath输入优先；strip/expanduser/resolve。",
+        "title": "视频文件",
+        "type": "string",
+        "default": "",
+        "xWidget": "file",
+        "xFileMode": "open",
+        "xFilter": "视频文件 (*.mp4 *.avi *.mkv *.mov *.wmv *.m4v *.webm *.mpg *.mpeg);;所有文件 (*)"
       },
       "intervalSec": {
-        "title": "\u53d6\u5e27\u95f4\u9694\uff08\u79d2\uff09", "type": "number", "exclusiveMinimum": 0.0, "default": 1.0
+        "description": "以0为锚点的视频时间采样间隔秒；取达到下一时间网格的首帧。",
+        "title": "取帧间隔（秒）",
+        "type": "number",
+        "exclusiveMinimum": 0.0,
+        "default": 1.0
       },
       "colorMode": {
-        "title": "\u989c\u8272\u6a21\u5f0f", "type": "string", "enum": ["color", "grayscale"], "default": "color"
+        "description": "彩色BGR或灰度；不影响源时间戳。",
+        "title": "颜色模式",
+        "type": "string",
+        "enum": [
+          "color",
+          "grayscale"
+        ],
+        "default": "color"
       }
     },
-    "required": ["videoPath"]
+    "required": [
+      "videoPath"
+    ]
   },
   "minCoreVersion": "0.1.0",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "videoPath": {"title": "视频路径", "description": "可选上游视频绝对路径，连接时覆盖params.videoPath；必须是Runtime机器上的绝对路径。"},
+      "reset": {"title": "重置", "description": "true释放当前视频/序列并从头重新采样。"}
+    },
+    "outputs": {
+      "image": {"title": "图像", "description": "当前视频采样帧；color=BGR，grayscale转换GRAY。"},
+      "frame": {
+        "title": "坐标框",
+        "description": "默认图像bbox，sourceId为绝对视频路径#frame=源帧索引。",
+        "fields": {
+          "type": {"title": "类型", "description": "固定bbox2d图像有效内容矩形类型。"},
+          "schemaVersion": {"title": "结构版本", "description": "坐标契约版本；这些图像来源构建仿射坐标系。"},
+          "x": {"title": "横坐标", "description": "有效内容矩形左上角x，来源图像为0。", "unit": "pixel"},
+          "y": {"title": "纵坐标", "description": "有效内容矩形左上角y，来源图像为0。", "unit": "pixel"},
+          "width": {"title": "宽度", "description": "本次真实图像宽度。", "unit": "pixel"},
+          "height": {"title": "高度", "description": "本次真实图像高度。", "unit": "pixel"},
+          "coordinateSpace": {
+            "title": "坐标空间",
+            "description": "记录原点、X 轴方向、Y 轴方向、单位、参考空间、来源标识、图像宽度、图像高度、回源变换矩阵。",
+            "fields": {
+              "origin": {"title": "原点", "description": "固定topLeft，坐标原点在左上角。"},
+              "xAxis": {"title": "X 轴方向", "description": "固定right，横轴向右。"},
+              "yAxis": {"title": "Y 轴方向", "description": "固定down，纵轴向下。"},
+              "unit": {"title": "单位", "description": "固定pixel，未进行物理单位标定。"},
+              "reference": {"title": "参考空间", "description": "本坐标系参考标签，具体来源见该算子frame输出说明。"},
+              "sourceId": {"title": "来源标识", "description": "实际视频绝对路径加#frame=源帧序号，用于区分采样帧。"},
+              "imageWidth": {"title": "图像宽度", "description": "坐标空间图像宽度；声明未知时不输出。", "unit": "pixel"},
+              "imageHeight": {"title": "图像高度", "description": "坐标空间图像高度；声明未知时不输出。", "unit": "pixel"},
+              "transformToSource": {"title": "回源变换矩阵", "description": "仿射数组[a,b,c,d,e,f]，x′=a*x+c*y+e，y′=b*x+d*y+f。本算子创建单位变换。"}
+            }
+          }
+        }
+      },
+      "videoPath": {"title": "视频路径", "description": "本次实际读取视频的规范绝对路径。"},
+      "index": {"title": "序号", "description": "输出采样序列的零基序号。"},
+      "frameIndex": {"title": "源帧序号", "description": "原始视频grab过的零基帧索引，不等于采样index。"},
+      "timestampSec": {"title": "视频时间戳", "description": "OpenCV源视频时间秒；无可用时间戳时用frameIndex/FPS推导。", "unit": "s"},
+      "hasNext": {"title": "还有后续数据", "description": "一帧前瞻结果；最后一张真实采样帧返回false。"}
+    },
+    "metrics": {
+      "latencyMs": {"title": "算子内部耗时", "description": "本次执行耗时，含必要初始化与下一采样帧前瞻，不等于单张解码耗时。", "unit": "ms", "group": "duration"}
+    },
+    "diagnostics": {
+      "text": {"title": "摘要", "description": "一基采样序号、视频timestamp与原始frameIndex的英文摘要。"},
+      "effectiveParameters": {"title": "实际生效参数", "description": "实际打开的视频路径，以及路径来自输入端口或节点参数。"}
+    },
+    "captureParams": [["videoPath"], ["intervalSec"], ["colorMode"]]
+  }
 }

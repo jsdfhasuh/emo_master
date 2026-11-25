@@ -27,19 +27,24 @@ _PARAM_SCHEMA: dict[str, object] = {
     "type": "object",
     "properties": {
         "operation": {
+            "description": "erode腐蚀、dilate膨胀、open开运算、close闭运算、gradient梯度、tophat顶帽、blackhat黑帽。",
             "title": "操作类型",
             "type": "string",
             "enum": list(_OPERATIONS),
             "default": "open",
         },
         "kernelShape": {
+            "description": "rect矩形、ellipse椭圆、cross十字结构元素。",
             "title": "结构元素形状",
             "type": "string",
             "enum": list(_KERNEL_SHAPES),
             "default": "rect",
         },
-        "kernelSize": {"title": "结构元素大小", "type": "integer", "minimum": 1, "default": 3},
-        "iterations": {"title": "迭代次数", "type": "integer", "minimum": 1, "default": 1},
+        "kernelSize": {
+            "description": "方形结构元素边长，必须奇数>=1。",
+            "title": "结构元素大小", "type": "integer", "minimum": 1, "default": 3
+        },
+        "iterations": {"description": "OpenCV形态操作的迭代次数，整数>=1。", "title": "迭代次数", "type": "integer", "minimum": 1, "default": 1},
     },
 }
 

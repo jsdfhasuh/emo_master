@@ -48,6 +48,7 @@
     ],
     "properties": {
       "frameEncoding": {
+        "description": "MC 3E 二进制或 ASCII 帧编码。",
         "title": "通信格式",
         "type": "string",
         "enum": [
@@ -61,11 +62,13 @@
         }
       },
       "host": {
+        "description": "直接执行路径的 SLMP 目标地址。托管执行时使用绑定设备的连接配置。",
         "title": "主机地址",
         "type": "string",
         "default": "127.0.0.1"
       },
       "port": {
+        "description": "直接执行路径的 SLMP 目标端口。托管执行时使用绑定设备的连接配置。",
         "title": "端口",
         "type": "integer",
         "minimum": 1,
@@ -73,6 +76,7 @@
         "default": 10001
       },
       "device": {
+        "description": "读写软元件D/M；标准化为大写。",
         "title": "PLC 软元件",
         "type": "string",
         "enum": [
@@ -84,6 +88,7 @@
         "default": "D"
       },
       "startAddress": {
+        "description": "起始软元件地址，受编码和地址跨度校验。",
         "title": "起始地址",
         "type": "integer",
         "minimum": 0,
@@ -91,6 +96,7 @@
         "default": 0
       },
       "connectTimeoutMs": {
+        "description": "连接阶段超时，转换为秒传递给 SLMP 客户端。",
         "title": "连接超时（毫秒）",
         "type": "integer",
         "minimum": 1,
@@ -98,6 +104,7 @@
         "default": 2000
       },
       "responseTimeoutMs": {
+        "description": "协议响应超时，转换为秒传递。",
         "title": "响应超时（毫秒）",
         "type": "integer",
         "minimum": 1,
@@ -105,6 +112,7 @@
         "default": 2000
       },
       "retryCount": {
+        "description": "直接路径通信异常重试上限；托管路径不使用该节点值。",
         "title": "异常重试次数",
         "type": "integer",
         "minimum": 0,
@@ -112,6 +120,7 @@
         "default": 0
       },
       "retryDelayMs": {
+        "description": "直接路径重试间隔毫秒；托管路径不使用该节点值。",
         "title": "重试间隔（毫秒）",
         "type": "integer",
         "minimum": 0,
@@ -119,6 +128,7 @@
         "default": 0
       },
       "networkNo": {
+        "description": "SLMP请求网络号。",
         "title": "网络编号",
         "type": "integer",
         "minimum": 0,
@@ -126,6 +136,7 @@
         "default": 0
       },
       "pcNo": {
+        "description": "SLMP请求PC号。",
         "title": "PC 编号",
         "type": "integer",
         "minimum": 0,
@@ -133,6 +144,7 @@
         "default": 255
       },
       "moduleIoNo": {
+        "description": "SLMP请求模块I/O号。",
         "title": "模块 I/O 编号",
         "type": "integer",
         "minimum": 0,
@@ -140,6 +152,7 @@
         "default": 1023
       },
       "moduleStationNo": {
+        "description": "SLMP请求模块站号。",
         "title": "模块站号",
         "type": "integer",
         "minimum": 0,
@@ -147,6 +160,7 @@
         "default": 0
       },
       "monitoringTimer": {
+        "description": "SLMP监视定时器，单位250毫秒。",
         "title": "监视定时器（250 毫秒单位）",
         "type": "integer",
         "minimum": 0,
@@ -154,6 +168,7 @@
         "default": 0
       },
       "dataType": {
+        "description": "PLC编码类型，16位值占1个word、32位整数/float32占2个word并按低字在前组合；32位仅D区。本写算子不支持bit类型。",
         "title": "数据类型",
         "type": "string",
         "enum": [
@@ -166,9 +181,12 @@
         "default": "uint16"
       },
       "values": {
+        "description": "固定写入值数组，与 data/value/values 输入互斥。",
         "title": "写入值",
         "type": "array",
         "items": {
+          "title": "单个写入值",
+          "description": "按数组顺序编码到 PLC。取值范围取决于选择的数据类型。",
           "type": "number"
         },
         "default": []
@@ -185,5 +203,66 @@
     "controllerEntry": "emo_master.plugins.builtins._plc_editor:PlcEditorController",
     "fallback": "schemaForm",
     "previewMode": "none"
+  },
+  "resultSchema": {
+    "inputs": {
+      "data": {
+        "title": "数据",
+        "description": "带 device/startAddress/dataType/values 的 PlcValueCollection；决定写入地址类型；bit集合禁止走word写入。"
+      },
+      "value": {"title": "值", "description": "写入单个数值，与其他写入来源互斥。"},
+      "values": {"title": "值列表", "description": "写入数值数组，与其他写入来源互斥。"}
+    },
+    "outputs": {
+      "receipt": {
+        "title": "回执",
+        "description": "PlcWriteReceipt：device/startAddress/dataType/valueCount/wordCount/attempts 等协议写入回执；不代表物理动作完成。",
+        "fields": {
+          "type": {"title": "类型", "description": "固定plcWriteReceipt类型标识。"},
+          "schemaVersion": {"title": "结构版本", "description": "固定1.0通信载荷契约版本。"},
+          "protocol": {"title": "协议", "description": "固定mitsubishiSlmp3e协议标识。"},
+          "device": {"title": "设备", "description": "本次写入的D/M软元件区；data输入存在时取该载荷。"},
+          "startAddress": {"title": "起始地址", "description": "本次写入起始地址；data输入存在时取该载荷。"},
+          "dataType": {"title": "数据类型", "description": "本次写入数值编码类型；不允许bit写入。"},
+          "valueCount": {"title": "值数量", "description": "本次提交的逻辑值数量。", "unit": "value"},
+          "wordCount": {"title": "字数", "description": "实际编码并提交的16位字数量。", "unit": "word"},
+          "attempts": {"title": "尝试次数", "description": "直接路径为runSlmpWithRetry实际业务尝试数；托管路径固定1，不包含设备建连恢复次数。", "unit": "attempt"}
+        }
+      }
+    },
+    "metrics": {
+      "latencyMs": {
+        "title": "算子内部耗时",
+        "description": "本次算子通信路径耗时；直接路径含校验/连接/重试及编解码，托管路径含动作排队/调用/编解码。",
+        "unit": "ms",
+        "group": "duration"
+      },
+      "attempts": {
+        "title": "尝试次数",
+        "description": "直接路径 runSlmpWithRetry 返回实际尝试数；托管路径恒1，仅一次动作，不计设备建连恢复次数。",
+        "unit": "次",
+        "group": "business"
+      },
+      "valueCount": {"title": "值数量", "description": "读取逻辑值数量/写入输入值数量。", "unit": "个", "group": "result"},
+      "wordCount": {"title": "字数", "description": "编码/解码实际SLMP word数量；32位值通常2 words。", "unit": "16位word", "group": "business"}
+    },
+    "diagnostics": {
+      "text": {"title": "摘要", "description": "仅直接路径：Read/Wrote 数量、数据类型、软元件与起始地址的英文摘要。"},
+      "deviceOperation": {
+        "title": "设备动作回执",
+        "description": "绑定 PLC 设备的实际动作和回执。成功时还提供使用的软元件地址和数据类型。连接配置与操作策略归属绑定设备。",
+        "fields": {
+          "action": {"title": "动作", "description": "托管路径 read/write。"},
+          "outcome": {"title": "结果状态", "description": "托管驱动实际结果：COMPLETED/REJECTED/UNKNOWN/NOT_EXECUTED；异常按已有错误outcome传递。"},
+          "connectionGeneration": {"title": "连接代次", "description": "托管成功路径底层SLMP连接代号，不是本次值序号。"},
+          "slot": {"title": "设备槽", "description": "本次动作绑定的设备槽。"},
+          "deviceTypeId": {"title": "设备类型", "description": "已绑定并完成准入的设备类型标识。"},
+          "schemaVersion": {"title": "设备定义版本", "description": "本次解析使用的设备定义结构版本。"},
+          "device": {"title": "软元件类型", "description": "托管动作实际请求的软元件类型。"},
+          "startAddress": {"title": "起始地址", "description": "托管动作实际请求的起始软元件地址。"},
+          "dataType": {"title": "数据类型", "description": "本次字数据编码或解码采用的数据类型。"}
+        }
+      }
+    }
   }
 }

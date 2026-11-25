@@ -11,14 +11,54 @@
   "paramSchema": {
     "type": "object",
     "properties": {
-      "folderPath": {"title": "文件夹", "type": "string", "default": "", "xWidget": "file", "xFileMode": "directory"},
-      "patterns": {"title": "文件类型", "type": "array", "default": ["*"], "minItems": 1,
-        "items": {"type": "string", "minLength": 1}, "xWidget": "file-patterns",
-        "description": "选择视频或图片格式；特殊文件名可使用自定义规则。"},
-      "recursive": {"title": "包含子文件夹", "type": "boolean", "default": false}
+      "folderPath": {
+        "description": "文件夹路径，经strip/expanduser/resolve后枚举；相对值以进程当前路径解释（上层可先解析资源）。",
+        "title": "文件夹",
+        "type": "string",
+        "default": "",
+        "xWidget": "file",
+        "xFileMode": "directory"
+      },
+      "patterns": {
+        "title": "文件类型",
+        "type": "array",
+        "default": [
+          "*"
+        ],
+        "minItems": 1,
+        "items": {
+          "title": "列表项",
+          "description": "单项文件名规则，如*.png，至少一项。",
+          "type": "string",
+          "minLength": 1
+        },
+        "xWidget": "file-patterns",
+        "description": "文件名glob模式列表；只匹配文件名，不允许目录分隔符，按casefold匹配。"
+      },
+      "recursive": {
+        "description": "true递归rglob，否则仅根目录iterdir。",
+        "title": "包含子文件夹",
+        "type": "boolean",
+        "default": false
+      }
     },
-    "required": ["folderPath"]
+    "required": [
+      "folderPath"
+    ]
   },
   "minCoreVersion": "0.1.0",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "outputs": {
+      "paths": {"title": "路径列表", "description": "Runtime文件夹内匹配的文件绝对路径，按相对路径自然排序；路径名按casefold匹配模式。"},
+      "count": {"title": "数量", "description": "本次实际列出的文件数；允许0。"}
+    },
+    "metrics": {
+      "latencyMs": {"title": "算子内部耗时", "description": "含参数校验、目录枚举与排序的算子总耗时。", "unit": "ms", "group": "duration"}
+    },
+    "diagnostics": {
+      "text": {"title": "摘要", "description": "文件数量和实际根目录的英文摘要。"}
+    },
+    "captureParams": [["folderPath"], ["patterns"], ["recursive"]]
+  }
 }

@@ -34,5 +34,14 @@
   "summary": "按同一来源的变换映射点到目标图像空间，不进行单位转换。",
   "minCoreVersion": "0.6.1",
   "maxCoreVersion": "1.x",
-  "iconKey": "default"
+  "iconKey": "default",
+  "resultSchema": {
+    "inputs": {
+      "points": {"title": "点集", "description": "待转换的强类型点列表；每点与目标frame须有同sourceId及同unit。"},
+      "frame": {"title": "坐标框", "description": "目标图像空间的bbox；此算子使用它的coordinateSpace，bbox位置/宽高本身不作为偏移量。"}
+    },
+    "outputs": {
+      "points": {"title": "点集", "description": "先通过每点matrixToSource映射回来源，再用目标matrixToSource逆矩阵映到目标空间的点列表。"}
+    }
+  }
 }

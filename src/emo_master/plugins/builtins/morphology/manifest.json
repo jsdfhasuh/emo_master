@@ -28,21 +28,65 @@
     "type": "object",
     "properties": {
       "operation": {
+        "description": "erode腐蚀、dilate膨胀、open开运算、close闭运算、gradient梯度、tophat顶帽、blackhat黑帽。",
         "title": "操作类型",
         "type": "string",
-        "enum": ["erode", "dilate", "open", "close", "gradient", "tophat", "blackhat"],
+        "enum": [
+          "erode",
+          "dilate",
+          "open",
+          "close",
+          "gradient",
+          "tophat",
+          "blackhat"
+        ],
         "default": "open"
       },
       "kernelShape": {
+        "description": "rect矩形、ellipse椭圆、cross十字结构元素。",
         "title": "结构元素形状",
         "type": "string",
-        "enum": ["rect", "ellipse", "cross"],
+        "enum": [
+          "rect",
+          "ellipse",
+          "cross"
+        ],
         "default": "rect"
       },
-      "kernelSize": {"title": "结构元素大小", "type": "integer", "minimum": 1, "default": 3},
-      "iterations": {"title": "迭代次数", "type": "integer", "minimum": 1, "default": 1}
+      "kernelSize": {
+        "description": "方形结构元素边长，必须奇数>=1。",
+        "title": "结构元素大小",
+        "type": "integer",
+        "minimum": 1,
+        "default": 3
+      },
+      "iterations": {
+        "description": "OpenCV形态操作的迭代次数，整数>=1。",
+        "title": "迭代次数",
+        "type": "integer",
+        "minimum": 1,
+        "default": 1
+      }
     }
   },
   "minCoreVersion": "0.2.0",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "mask": {"title": "掩膜", "description": "非空二维uint8mask；非零统一为255。"},
+      "frame": {"title": "坐标框", "description": "输入图像有效内容矩形与回源坐标；缺失默认全图。"}
+    },
+    "outputs": {
+      "mask": {"title": "掩膜", "description": "指定结构元素和迭代次数下形态学处理后的0/255掩码。"},
+      "frame": {"title": "坐标框", "description": "输入frame透传，不重算前景包围框。"}
+    },
+    "metrics": {
+      "latencyMs": {"title": "算子内部耗时", "description": "入口至形态处理完成的内部耗时，不含随后前景计数。", "unit": "ms", "group": "duration"},
+      "operation": {"title": "操作", "description": "实际形态操作名。", "group": "parameter"},
+      "foregroundPixels": {"title": "前景像素数", "description": "结果mask全图非零像素数。", "unit": "像素", "group": "business"}
+    },
+    "diagnostics": {
+      "text": {"title": "摘要", "description": "实际形态操作摘要。"}
+    }
+  }
 }

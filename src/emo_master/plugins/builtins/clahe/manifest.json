@@ -48,5 +48,26 @@
     }
   },
   "minCoreVersion": "0.3.0",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "image": {"title": "图像", "description": "uint8 灰度/BGR图像；彩色只增强LAB的L通道再转回BGR。"},
+      "frame": {"title": "坐标框", "description": "可选有效矩形和回源坐标；缺失全图默认。"}
+    },
+    "outputs": {
+      "image": {"title": "图像", "description": "CLAHE后的同尺寸图像。"},
+      "frame": {"title": "坐标框", "description": "原规范化输入frame透传。"}
+    },
+    "metrics": {
+      "latencyMs": {
+        "title": "算子内部耗时",
+        "description": "从 _enhance 开始到返回的耗时；CLAHE对象创建与参数验证不在此计时内。",
+        "unit": "ms",
+        "group": "duration"
+      }
+    },
+    "diagnostics": {
+      "text": {"title": "摘要", "description": "CLAHE完成摘要。"}
+    }
+  }
 }

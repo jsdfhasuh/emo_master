@@ -26,5 +26,13 @@
   "iconKey": "calculator",
   "summary": "只转换本身为整数的有限数值；含小数报错，不截断或四舍五入。",
   "minCoreVersion": "0.6.1",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "value": {"title": "值", "description": "非布尔的有限int或float原数值。"}
+    },
+    "outputs": {
+      "value": {"title": "值", "description": "仅当数值本来无小数时转Python int；不容差吸附、不截断、不四舍五入。"}
+    }
+  }
 }

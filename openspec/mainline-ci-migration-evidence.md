@@ -28,3 +28,17 @@ Baseline verified on 2026-11-24 UTC. This is a record of the new implementation,
 
 - Run 45567025964: full Capture pytest failed with a later Windows native termination in the device usability chain. The Capture witness payload was present and its independent validator passed. No completed JUnit report; 6,259 passing call phase records and no failed call-phase records were recorded before termination. These are partial phase counts, not a full suite verdict. Both V2 archives were downloaded and verified inside the existing private boundary (receipt run 45578764771, job 139083197068). No rerun.
 - Run 45566601554: Designer and Runtime BuildOnly jobs passed the build and their target-specific validation; two package archives and two diagnostic archives were uploaded encrypted. GitHub outer SHA-256 metadata recorded; independent package recovery pending. No publish.
+
+## Parallel migration results
+
+| Scope | Product / workflow revision | Public run | Verified outcome |
+|---|---|---|---|
+| Native Display contract | e1c19fc / 4750950 | [45592225981](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45592225981) | 72 passed, no failures or skips; V2 private receipt verified. |
+| Device wizard focused | ca57a56 / 2fa1c47 | [45592495954](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45592495954) | Two passed (C1–C6 and Capture witness), no failures or skips; V2 verified; not full Capture. |
+| Windows BuildOnly | e1c19fc / ea69fc5 / c2d39e7 packager workflow / e0204fe tool source | [45566601554](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45566601554) | Two jobs passed. Private receipt 45592091858 matched four outer archive digests and four internal binary hashes to build manifests. |
+| Linux and Windows Source | ca57a56 / 46445fc | [45593167042](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45593167042) | Four original hosted shards started; private combined shard-scope validation pending. |
+
+- Private receipt 45593075267 verified 3 ciphertexts and JUnit for Display and the wizard. Different tested product revisions are deliberately distinct.
+- The wizard test-only patch relocates the existing narrowly scoped Windows offscreen fixture; it does not change production code or native dialog behavior. A new full Capture run must be selected only after the combined baseline, not as repeated ad hoc diagnostics.
+- On tested product commit e1c19fc, actual non-required `dot/windows-buildonly-v2-shadow` status ID 59858221698 was written and independently read back, then confirmed by idempotent private workflow 45593296845. The official push/PR/manual dispatcher and required gate remain disabled and not proven. GitHub's creator-bearing status history endpoint is used for readback; 17 local Source broker/decision tests passed.
+- Remaining: formal event dispatch and pinned worker registration, Source V2 cross-shard verification, unified acceptance of all 12 workflows, exact evidence/failure semantics, Release/rollback/visibility handoff. No default gate or Release opened.

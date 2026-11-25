@@ -44,7 +44,7 @@ class SourceBroker:
         self.workflow_path = ".github/workflows/" + worker_file
         self._auth, self._transport = "Bearer " + token, transport
 
-    def _api(self, path, *, payload=None, expected=200):
+    def _api(self, path, *, payload=None, expected=200, result_type=dict):
         fixed = (PRODUCT_PATH, WORKER_PATH)
         require(path == "/user" or any(path.startswith(prefix + "/") or path == prefix for prefix in fixed),
                 "unapproved broker endpoint")
@@ -56,7 +56,7 @@ class SourceBroker:
         require(status == expected and isinstance(raw, bytes) and len(raw) <= MAX_RESPONSE,
                 "GitHub response not confirmed; do not blindly repeat writes")
         value = json.loads(raw)
-        require(isinstance(value, dict), "expected GitHub API object")
+        require(isinstance(value, result_type), "unexpected GitHub API response type")
         return value
 
     def _confirm_worker_pin(self):
@@ -121,13 +121,12 @@ class SourceBroker:
 
     def _status(self, check, context):
         require(context in SHADOW_CONTEXTS.values(), "not a non-required Source context")
-        data = self._api(f"{PRODUCT_PATH}/commits/{sha(check)}/status?per_page=100")
-        rows = data.get("statuses")
-        require(data.get("sha") == check and isinstance(rows, list) and data.get("total_count") == len(rows)
-                and len(rows) <= 100, "could not inspect status predecessor")
-        matches = [row for row in rows if str(row.get("context", "")).casefold() == context.casefold()]
-        require(len(matches) <= 1, "ambiguous current context")
-        return matches[0] if matches else None
+        rows = self._api(f"{PRODUCT_PATH}/commits/{sha(check)}/statuses?per_page=100", result_type=list)
+        require(len(rows) < 100 and all(isinstance(row, dict) for row in rows),
+                "could not inspect complete status history")
+        # GitHub orders status history most recent first. Unlike the combined
+        # endpoint, this endpoint includes creator and older predecessors.
+        return next((row for row in rows if str(row.get("context", "")).casefold() == context.casefold()), None)
 
     def _post_shadow(self, check, payload):
         require(payload.get("context") in SHADOW_CONTEXTS.values(), "not a non-required Source context")

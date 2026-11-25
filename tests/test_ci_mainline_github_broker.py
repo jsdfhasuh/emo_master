@@ -97,12 +97,12 @@ class BrokerTest(unittest.TestCase):
                     value = work
                 elif path == WORKER_PATH + "/actions/runs/51/attempts/1/jobs":
                     value = dict(total_count=len(staged["jobs"]), jobs=staged["jobs"])
-                elif path == f'{PRODUCT_PATH}/commits/{current["check_sha"]}/status':
-                    value = dict(sha=current["check_sha"], total_count=len(records), statuses=records)
+                elif path == f'{PRODUCT_PATH}/commits/{current["check_sha"]}/statuses':
+                    value = records
                 elif path == f'{PRODUCT_PATH}/statuses/{current["check_sha"]}':
                     value = {**json.loads(req.data), "id": len(posts) + 20, "creator": {"id": 8}}
                     posts.append(value)
-                    records[:] = [value]
+                    records.insert(0, value)
                     return 201, json.dumps(value).encode()
                 else:
                     self.fail(path)

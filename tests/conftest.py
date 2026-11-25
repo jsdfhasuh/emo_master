@@ -45,6 +45,26 @@ def retainedQtApplication():
 
 
 @pytest.fixture
+def windowsOffscreenConnectionTestFeedback(retainedQtApplication, monkeypatch):
+    """Allow opted-in functional tests to check feedback without native rendering."""
+    if retainedQtApplication is None:
+        return
+    from PySide2.QtWidgets import QMessageBox
+
+    if os.name == 'nt' and retainedQtApplication.platformName() == 'offscreen':
+        originalOpen = QMessageBox.open
+
+        def openMessage(box, *args):
+            # Windows offscreen crashes while rendering QMessageBox. Dedicated
+            # connection-result layout tests use the native windows platform.
+            if box.objectName() == 'deviceConnectionTestResult':
+                return
+            return originalOpen(box, *args)
+
+        monkeypatch.setattr(QMessageBox, 'open', openMessage)
+
+
+@pytest.fixture
 def ownedFlowScene(retainedQtApplication):
     """Standalone scenes need a GUI teardown; they are not top-level widgets."""
     from tests.qt_scene_owner import OwnedFlowScenes

@@ -44,10 +44,10 @@ def targetParameters(document, target):
     return node.params
 
 
-def validateDependencies(document, *, referencesOnly=False):
+def validateDependencies(document, *, workflows=(), referencesOnly=False):
     plan = ResourcePlan.model_validate(document.resources.model_dump(mode="json"))
     used = {binding.resourceId for binding in plan.parameterBindings}
-    used.update(selected[0] for workflow in document.workflows.values() for node in workflow.nodes
+    used.update(selected[0] for workflow in workflows for node in workflow.nodes
                 if (selected := nodeInputResource(document, workflow, node)) is not None)
     if used != set(plan.items):
         raise ValueError("workflow package resources must exactly match referenced dependencies")
@@ -156,8 +156,9 @@ def applyImportedPaths(store, plan, resourceIds, document, workflowIds, nodeIds)
         else:
             params = next(node["params"] for node in store.get(target.workflowId).nodes if node["nodeId"] == target.nodeId)
         _setPath(params, target.parameterPath, plan.items[binding.resourceId].path)
-    for wid, workflow in document.workflows.items():
-        imported = {node["nodeId"]: node for node in store.get(workflowIds[wid]).nodes}
+    for wid, importedId in workflowIds.items():
+        workflow = document.workflows[wid]
+        imported = {node["nodeId"]: node for node in store.get(importedId).nodes}
         for node in workflow.nodes:
             selected = nodeInputResource(document, workflow, node)
             if selected is not None:

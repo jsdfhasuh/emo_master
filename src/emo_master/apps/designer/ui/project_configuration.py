@@ -1187,7 +1187,7 @@ class ProjectConfigurationDialog(QDialog):
         else:
             candidate, selected = self.validatedFileWrite
             self._submit("write", lambda: self.client.writeProjectConfiguration(
-                self.snapshot, candidate, selected, requestId, **options))
+                self.snapshot, candidate, selected, requestId, validate=False, **options))
 
     def _publishSelected(self, snapshot, local, paths, requestId, stage, options, directory):
         candidate, selected = selectedFilePublication(snapshot['payload'], local, paths, directory)

@@ -4,6 +4,7 @@ from dataclasses import replace
 import pytest
 
 from emo_master.apps.runtime.events.jsonl_writer import RuntimeJsonlLogWriter
+from emo_master.apps.designer.state.workflow_store import WorkflowStore
 from emo_master.apps.runtime.events.models import RuntimeEvent
 from emo_master.apps.runtime.context.global_variables import ReadOnlyVariables
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
@@ -28,6 +29,36 @@ def execute(document, registry, inputs=None):
 
 def item(summary, side, name):
     return next(row['value'] for row in summary[side]['items'] if row['port'] == name)
+
+
+def testIntegerAddRecordsOnlyUsedFallbacksAndTheirResolvedSources(tmp_path):
+    service = RuntimeService(dbPath=tmp_path / "registry.db")
+    try:
+        registry = service.pluginScanResult.activeOperators
+        payload = WorkflowStore().toPayload()
+        payload["globalVariables"] = {"v": {"name": "Increment", "type": "integer", "kind": "constant", "initialValue": 1}}
+        workflow = payload["workflows"]["main"]
+        workflow["nodes"].extend([
+            {"nodeId": "first", "operatorId": "vision.math.integer_add",
+             "params": {"leftValue": 10, "rightValue": 9},
+             "globalVariableBindings": [{"variableId": "v", "parameterPath": ["rightValue"]}]},
+            {"nodeId": "next", "operatorId": "vision.math.integer_add", "params": {"leftValue": 99, "rightValue": 8}},
+        ])
+        workflow["edges"].append({"fromNode": "first", "fromPort": "value", "toNode": "next", "toPort": "left"})
+        runner, events = execute(ProjectDocument.model_validate(payload), registry)
+        runner.run("main", {}, RunContext.root("integer-job", "main"), CancellationToken())
+    finally:
+        service.close()
+    records = {e["context"].callerNodeId: e["payload"] for e in events if e["eventType"] == "node.completed"}
+    assert records["first"]["parameterSummary"] == [
+        {"path": ["leftValue"], "value": 10, "stage": "effective", "source": "prepared"},
+        {"path": ["rightValue"], "value": 1, "stage": "effective", "source": "variable"},
+    ]
+    assert item(records["next"]["ioSummary"], "inputs", "left")["value"] == 11
+    assert records["next"]["parameterSummary"] == [
+        {"path": ["rightValue"], "value": 8, "stage": "effective", "source": "prepared"},
+    ]
+    assert item(records["next"]["ioSummary"], "outputs", "value")["value"] == 19
 
 
 def testRealLocalImageCountCompareAndJsonlShareInvocation(tmp_path):

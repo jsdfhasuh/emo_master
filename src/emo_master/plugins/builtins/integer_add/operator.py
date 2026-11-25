@@ -47,5 +47,15 @@ class IntegerAddOperator:
         try:
             validateValue(value, "integer")
         except VariableError:
-            return dict(status="error", error=dict(code="E_RESULT_INVALID", message="整数相加结果超出 64 位有符号整数范围。"))
-        return dict(status="ok", outputs=dict(value=value))
+            result = dict(status="error", error=dict(code="E_RESULT_INVALID", message="整数相加结果超出 64 位有符号整数范围。"))
+        else:
+            result = dict(status="ok", outputs=dict(value=value))
+        fallbacks = []
+        for port, operand in (("left", left), ("right", right)):
+            if port not in inputs:
+                name = port + "Value"
+                fallbacks.append({"path": [name], "value": operand,
+                                  "source": "prepared" if name in params else "automatic"})
+        if fallbacks:
+            result["diagnostics"] = {"effectiveParameters": fallbacks}
+        return result

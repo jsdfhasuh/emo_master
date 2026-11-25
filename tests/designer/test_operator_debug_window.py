@@ -84,6 +84,13 @@ def testDebugDetailUsesRealExecutionSourceIdentity(runtime, designerApplication,
         detail.setDebugResult(record, sessionId=session["sessionId"], generation=session["generation"])
         assert calls == [(operatorId, definition.version)]
         root = detail.readable.invisibleRootItem()
+        overview = child(root, "运行概览")
+        assert child(overview, "结果（result）").text(1) == "true"
+        assert "左操作数（left）" not in [overview.child(i).text(0) for i in range(overview.childCount())]
+        inputs = child(root, "输入摘要")
+        assert child(inputs, "左操作数（left）").text(1) == "0"
+        assert child(inputs, "右操作数（right）").text(1) == "-1"
+        assert child(root, "输入来源")
         assert child(child(root, "已返回输出"), "结果（result）").text(1) == "true"
         elapsed = child(child(root, "运行概览"), "算子内部耗时（latencyMs）")
         assert elapsed.text(1).endswith(" ms") and "内部校验和比较耗时" in elapsed.toolTip(0)

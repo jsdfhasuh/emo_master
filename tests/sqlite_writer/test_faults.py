@@ -17,7 +17,11 @@ def faultProbe(root: str, mode: str, pipe):
     directory = Path(root)
     business = makeDb(directory / 'business.sqlite3')
     payload = project()
-    payload['workflows']['main']['nodes'][0]['params'].update(databasePath=str(business), failurePolicy='continue')
+    params = payload['workflows']['main']['nodes'][0]['params']
+    params.update(databasePath=str(business), failurePolicy='continue')
+    force = mode in {'force', 'background-force'}
+    if mode == 'background-force':
+        params['writeMode'] = 'background'
     (directory / 'project.json').write_text(json.dumps(payload), encoding='utf-8')
     if mode != 'lock':
         with sqlite3.connect(business) as connection:
@@ -36,11 +40,12 @@ def faultProbe(root: str, mode: str, pipe):
             assert reply.ok, reply.message
             jobs.append(reply.job_id)
         deadline = time.monotonic() + 6
-        while not any(e.eventType == 'sqlite.write.started' for e in service.eventStore.readMerged(jobs[0])):
+        readyEvent = 'node.completed' if mode == 'background-force' else 'sqlite.write.started'
+        while not any(e.nodeId == 'writer' and e.eventType == readyEvent for e in service.eventStore.readMerged(jobs[0])):
             assert time.monotonic() < deadline
             time.sleep(.01)
-        if mode in {'cancel', 'force'}:
-            service.StopJob(pb.StopJobRequest(job_id=jobs[0], mode='force' if mode == 'force' else 'graceful'), None)
+        if mode == 'cancel' or force:
+            service.StopJob(pb.StopJobRequest(job_id=jobs[0], mode='force' if force else 'graceful'), None)
         records = [waitForTerminal(service, job, timeoutSeconds=9) for job in jobs]
         receipts = []
         for job in jobs:
@@ -49,10 +54,20 @@ def faultProbe(root: str, mode: str, pipe):
                 receipt = json.loads(event.payloadJson).get('receipt') if event.eventType == 'sqlite.write.finished' else json.loads(event.payloadJson).get('diagnostics', {}).get('sqliteReceipt')
                 if receipt:
                     receipts.append(receipt)
-            if mode == 'force':
+            if force:
                 unknown = next(e for e in events if e.code == 'E_SQLITE_UNKNOWN')
                 terminal = next(e for e in events if e.eventType == 'job.aborted')
                 assert unknown.sequence < terminal.sequence
+                if mode == 'background-force':
+                    [accepted] = [e for e in events if e.nodeId == 'writer' and e.eventType == 'node.completed']
+                    queued = json.loads(accepted.payloadJson)['diagnostics']['sqliteReceipt']
+                    final = json.loads(unknown.payloadJson)
+                    assert queued['status'] == 'QUEUED'
+                    assert accepted.sequence < unknown.sequence and accepted.nodeRunId == unknown.nodeRunId
+                    assert unknown.eventType == 'sqlite.write.finished' and final['background'] is True
+                    assert final['receipt']['writeId'] == queued['writeId']
+                else:
+                    assert unknown.eventType == 'node.failed'
         with sqlite3.connect(business) as connection:
             count = connection.execute('SELECT COUNT(*) FROM records').fetchone()[0]
         if mode == 'timeout':
@@ -62,7 +77,7 @@ def faultProbe(root: str, mode: str, pipe):
         elif mode == 'cancel':
             assert records[0].status == 'ABORTED'
             assert count == 0
-        elif mode == 'force':
+        elif force:
             assert records[0].status == 'ABORTED'
             assert any(r['status'] == 'UNKNOWN' for r in receipts)
         else:
@@ -80,7 +95,7 @@ def faultProbe(root: str, mode: str, pipe):
         pipe.close()
 
 
-@pytest.mark.parametrize('mode', ['timeout', 'cancel', 'force', 'lock'])
+@pytest.mark.parametrize('mode', ['timeout', 'cancel', 'force', 'background-force', 'lock'])
 def testSupervisedRealSpawnTimeoutCancelForceAndTwoJobContention(tmp_path, mode):
     context = multiprocessing.get_context('spawn')
     receive, send = context.Pipe(duplex=False)

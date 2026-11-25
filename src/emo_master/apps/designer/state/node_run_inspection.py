@@ -49,6 +49,15 @@ class NodeRunInspection:
         eventType = event.get('eventType')
         if not isinstance(eventType, str):
             return False
+        if eventType == 'sqlite.write.finished':
+            workflowId = event.get('workflowId')
+            nodeId = event.get('nodeId')
+            if isinstance(workflowId, str) and isinstance(nodeId, str):
+                key = (workflowId, nodeId)
+                record = self._nodes.get(key)
+                if record and applySqliteCompletion(record, event):
+                    self._nodeBytes[key] = encodedBytes(record)
+            return True
         status = {'node.started': 'RUNNING', 'node.completed': 'COMPLETED',
                   'node.failed': 'FAILED', 'node.skipped': 'SKIPPED'}.get(eventType)
         if not status:
@@ -105,26 +114,8 @@ class NodeRunInspection:
         for field in ('jobId', 'workflowId', 'nodeId', 'nodeRunId', 'workflowRunId'):
             record[field] = clipText(record[field], 128)
         record['iterationPath'] = [n for n in record['iterationPath'] if type(n) is int and 0 <= n <= 1_000_000]
-        size = encodedBytes(record)
-        if size > MAX_NODE_BYTES:
-            record['metrics'] = {'items': [], 'portCount': record['metrics']['portCount'], 'omitted': record['metrics']['portCount']}
-            record['diagnostic'] = ''
-            size = encodedBytes(record)
-        if size > MAX_NODE_BYTES:
-            record['message'] = ''
-            size = encodedBytes(record)
-        if size > MAX_NODE_BYTES:
-            # JSON escaping can expand even short strings. Retain identity/status
-            # and an explicit unavailable marker rather than exceed the budget.
-            record['io'] = {'version': 1, 'inputs': None, 'outputs': None, 'legacy': False,
-                            'unavailableReason': '摘要超过界面额度，未保留端口值'}
-            size = encodedBytes(record)
-        if size > MAX_NODE_BYTES:
-            record.pop('sqliteReceipt', None)
-            record.pop('imageOutputMessages', None)
-            size = encodedBytes(record)
         self._nodes[key] = record
-        self._nodeBytes[key] = size
+        self._nodeBytes[key] = _limitRecord(record)
         self._nodes.move_to_end(key)
         while len(self._nodes) > MAX_INSPECTED_NODES:
             self.discardOldest()
@@ -137,3 +128,43 @@ class NodeRunInspection:
 
 def _text(value: object, limit: int) -> str:
     return clipText(value, limit) if isinstance(value, str) else ''
+
+
+def applySqliteCompletion(record, event):
+    from emo_master.core.contracts.sqlite_writer import receiptSummary
+
+    payload = event.get('payload')
+    pending = record.get('sqliteReceipt', {})
+    if not isinstance(payload, dict) or payload.get('background') is not True or pending.get('status') != 'QUEUED':
+        return False
+    identity = {key: record[key] for key in ('jobId', 'workflowId', 'nodeId', 'nodeRunId', 'workflowRunId')}
+    if any(event.get(key) != value for key, value in identity.items()):
+        return False
+    receipt = receiptSummary(payload.get('receipt'), identity)
+    if receipt is None or receipt['writeId'] != pending['writeId'] or receipt['status'] == 'QUEUED':
+        return False
+    record['sqliteReceipt'] = receipt
+    _limitRecord(record)
+    return True
+
+
+def _limitRecord(record):
+    size = encodedBytes(record)
+    if size > MAX_NODE_BYTES:
+        record['metrics'] = {'items': [], 'portCount': record['metrics']['portCount'], 'omitted': record['metrics']['portCount']}
+        record['diagnostic'] = ''
+        size = encodedBytes(record)
+    if size > MAX_NODE_BYTES:
+        record['message'] = ''
+        size = encodedBytes(record)
+    if size > MAX_NODE_BYTES:
+        # JSON escaping can expand even short strings. Retain identity/status
+        # and an explicit unavailable marker rather than exceed the budget.
+        record['io'] = {'version': 1, 'inputs': None, 'outputs': None, 'legacy': False,
+                        'unavailableReason': '摘要超过界面额度，未保留端口值'}
+        size = encodedBytes(record)
+    if size > MAX_NODE_BYTES:
+        record.pop('sqliteReceipt', None)
+        record.pop('imageOutputMessages', None)
+        size = encodedBytes(record)
+    return size

@@ -1,4 +1,7 @@
 import json
+from pathlib import Path
+
+import numpy as np
 
 from PySide2.QtCore import Qt
 from PySide2.QtTest import QTest
@@ -9,11 +12,102 @@ from emo_master.apps.designer.ui.log_dialog import StructuredLogEntry
 from emo_master.apps.designer.ui.log_json_tree import LogJsonTree
 from emo_master.apps.designer.ui.log_record_detail import LogRecordDetail
 from emo_master.plugins.builtins.annotate.operator import AnnotateOperator
+from emo_master.core.contracts.run_inspection import startInspection, finishInspection
+from emo_master.plugins.builtins.patchcore_inference.operator import PatchCoreInferenceOperator
+from emo_master.plugins.builtins.sqlite_writer.operator import SqliteWriterOperator
+from tests.plugins.patchcore_fixture import makeDeployment
+from tests.sqlite_writer.test_dependencies import config
 
 
 def child(parent, name):
     return next(parent.child(index) for index in range(parent.childCount())
                 if parent.child(index).text(0) == name)
+
+
+def builtinDefinition(folder):
+    manifest = Path(__file__).resolve().parents[2] / "src/emo_master/plugins/builtins" / folder / "manifest.json"
+    return json.loads(manifest.read_text(encoding="utf-8"))
+
+
+def testBusinessOverviewUsesRecordedScalarOutputsAndSQLiteReceipt(designerApplication, tmp_path):
+    def overview(folder, inputs, result):
+        assert result["status"] == "ok", result
+        definition = builtinDefinition(folder)
+        record = {"eventType": "node.completed", "payload": {
+            "operatorId": definition["operatorId"], "operatorVersion": definition["version"],
+            "status": "COMPLETED", "diagnostics": result["diagnostics"], "metrics": result.get("metrics", {}),
+            "ioSummary": finishInspection(startInspection(inputs), result["outputs"]),
+        }}
+        detail = LogRecordDetail(operatorLookup=lambda *_: definition)
+        detail.setEvent(record)
+        root = detail.readable.invisibleRootItem()
+        assert child(root, "状态").text(1) == "已完成"
+        section = child(root, "运行概览")
+        assert json.loads(detail.rawTree.toPlainText()) == record
+        return {section.child(i).text(0): section.child(i).text(1) for i in range(section.childCount())}
+
+    model = makeDeployment(tmp_path / "model", score=1.)
+    inputs = {"image": np.zeros((8, 12, 3), np.uint8)}
+    patchcore = PatchCoreInferenceOperator()
+    try:
+        result = patchcore.executeNode(inputs, {"modelPath": str(model), "drawOverlay": False, "drawHeatmap": False}, {})
+        rows = overview("patchcore_inference", inputs, result)
+        assert {key: rows[key] for key in ("得分（score）", "阈值（threshold）", "异常判定（isAnomaly）", "标签（label）")} == {
+            "得分（score）": "1.0", "阈值（threshold）": "2.5", "异常判定（isAnomaly）": "false", "标签（label）": "OK",
+        }
+        assert rows["算子内部耗时（latencyMs）"].endswith(" ms")
+    finally:
+        patchcore.disposeOperator()
+
+    # A missing mapped input with failurePolicy=continue completes the node but cannot commit a row.
+    result = SqliteWriterOperator().executeNode({}, config(tmp_path / "business.sqlite3", failure="continue"), {})
+    assert result["outputs"]["receipt"]["status"] == "FAILED"
+    rows = overview("sqlite_writer", {}, result)
+    assert rows["数据库写入状态（sqliteReceipt.status）"] == "FAILED"
+    assert rows["影响行数（sqliteReceipt.rowsAffected）"] == "0"
+
+
+def testBackgroundSqliteReceiptsKeepSubmissionAndFinalOutcomeDistinct(designerApplication):
+    definition = builtinDefinition("sqlite_writer")
+    detail = LogRecordDetail(operatorLookup=lambda *_: definition)
+    identity = {"operatorId": definition["operatorId"], "operatorVersion": definition["version"]}
+    run = {"jobId": "job", "workflowId": "main", "workflowRunId": "flow", "nodeId": "db", "nodeRunId": "run"}
+    queued = {"writeId": "same-write", "execution": run, "status": "QUEUED", "rowsAffected": None}
+    final = {**queued, "status": "FAILED", "rowsAffected": 0, "future": {"flag": False}}
+    event = {**run, "eventType": "sqlite.write.finished", "payload": {"background": True, "receipt": final, "extra": 0}}
+    detail.setEvent(event)
+    root = detail.readable.invisibleRootItem()
+    assert detail.title.text() == "SQLite 后台写入结果"
+    receipt = child(root, "后台最终回执（receipt）")
+    assert child(receipt, "写入标识（writeId）").text(1) == "same-write"
+    assert child(receipt, "数据库写入状态（status）").text(1) == "FAILED"
+    assert child(receipt, "影响行数（rowsAffected）").text(1) == "0"
+    child(receipt, "future").setExpanded(True)
+    assert child(child(receipt, "future"), "flag").text(1) == "false"
+    assert child(child(root, "记录数据"), "extra").text(1) == "0"
+    assert json.loads(detail.rawTree.toPlainText()) == event
+
+    unmatched = {**event, "nodeRunId": "other"}
+    detail.setEvent(unmatched)
+    assert detail.title.text() == "sqlite.write.finished"
+    assert json.loads(detail.rawTree.toPlainText()) == unmatched
+
+    debug = {"sourceIdentity": identity, "executionId": "run", "outputs": {"receipt": queued},
+             "diagnostics": {"sqliteReceipt": final}, "status": "SUCCEEDED"}
+    detail.setDebugResult(debug, sessionId="debug", generation=1)
+    accepted = child(root, "提交时输出（已入队）").child(0)
+    accepted.setExpanded(True)
+    assert child(accepted, "数据库写入状态（status）").text(1) == "QUEUED"
+    assert child(accepted, "影响行数（rowsAffected）").text(1) == "null"
+    section = child(root, "后台最终回执")
+    assert child(section, "数据库写入状态（sqliteReceipt.status）").text(1) == "FAILED"
+    assert child(section, "影响行数（sqliteReceipt.rowsAffected）").text(1) == "0"
+    assert json.loads(detail.rawTree.toPlainText()) == debug
+
+    other = {**debug, "diagnostics": {"sqliteReceipt": {**final, "writeId": "other-write"}}}
+    detail.setDebugResult(other, sessionId="debug", generation=1)
+    assert child(root, "已返回输出") and child(root, "运行概览")
+    assert json.loads(detail.rawTree.toPlainText()) == other
 
 
 def testJsonTreePreservesTypesAndExpandsNestedData(designerApplication):
@@ -175,13 +269,15 @@ def testWorkbenchReadsReceivedIoSummaryMetricsAndReasons(designerApplication):
 
 
 def testCompletedModelShowsRecordedBindingAndLoadedPathBeforePorts(designerApplication):
+    definition = builtinDefinition("yolo_inference")
+    identity = {"operatorId": definition["operatorId"], "operatorVersion": definition["version"]}
     digest = "42" * 32
     loaded = rf"C:\runtime\configuration-resources\station\{digest}.onnx"
     source = {"path": "assets/三标签.onnx", "resourceId": "labels", "sha256": digest,
-              "configuredPath": "D:/models/previous.onnx"}
-    record = {"eventType": "node.completed", "payload": {
+              "configuredPath": "D:/models/previous.onnx", "future": {"empty": None}}
+    record = {"eventType": "node.completed", "payload": {**identity,
         "diagnostics": {"modelPath": loaded, "modelSource": source, "provider": "CPU"}}}
-    detail = LogRecordDetail()
+    detail = LogRecordDetail(operatorLookup=lambda *_: definition)
     detail.setEvent(record)
     root = detail.readable.invisibleRootItem()
     model = child(root, "使用的模型")
@@ -192,10 +288,16 @@ def testCompletedModelShowsRecordedBindingAndLoadedPathBeforePorts(designerAppli
     assert child(model, "填写路径（未生效）").text(1) == source["configuredPath"]
     assert child(model, "资源 ID").text(1) == "labels"
     assert child(model, "SHA-256").text(1) == digest
-    assert child(root, "诊断").childCount() == 1 and child(child(root, "诊断"), "provider").text(1) == "CPU"
+    diagnostics = child(root, "诊断")
+    assert diagnostics.childCount() == 2 and child(diagnostics, "执行提供程序（provider）").text(1) == "CPU"
+    leftover = child(diagnostics, "modelSource")
+    leftover.setExpanded(True)
+    future = child(leftover, "future")
+    future.setExpanded(True)
+    assert child(future, "empty").text(1) == "null"
     assert json.loads(detail.rawTree.toPlainText()) == record
 
-    detail.setEvent({"eventType": "node.completed", "payload": {"diagnostics": {
+    detail.setEvent({"eventType": "node.completed", "payload": {**identity, "diagnostics": {
         "modelPath": loaded, "modelSource": {"path": "models/当前模型.onnx", "sha256": digest}}}})
     model = child(root, "使用的模型")
     assert model.text(1) == "当前模型.onnx · 节点选定文件"
@@ -204,7 +306,7 @@ def testCompletedModelShowsRecordedBindingAndLoadedPathBeforePorts(designerAppli
     assert child(model, "SHA-256").text(1) == digest
 
     # Historical records may identify only the Runtime copy. This event has no source filename.
-    detail.setEvent({"eventType": "node.completed", "payload": {"diagnostics": {"modelPath": loaded}}})
+    detail.setEvent({"eventType": "node.completed", "payload": {**identity, "diagnostics": {"modelPath": loaded}}})
     model = child(root, "使用的模型")
     assert model.text(1) == "来源未记录" and model.childCount() == 2
     assert child(model, "SHA-256").text(1) == digest
@@ -212,11 +314,22 @@ def testCompletedModelShowsRecordedBindingAndLoadedPathBeforePorts(designerAppli
 
     # A digest-like name elsewhere is just a filename unless a fingerprint was recorded.
     direct = f"D:/models/{digest}.onnx"
-    detail.setEvent({"eventType": "node.completed", "payload": {"diagnostics": {
+    detail.setEvent({"eventType": "node.completed", "payload": {**identity, "diagnostics": {
         "modelPath": direct, "modelSource": {"path": direct}}}})
     model = child(root, "使用的模型")
     assert model.text(1).endswith(" · 直接文件") and model.childCount() == 1
     assert child(model, "实际加载路径").text(1) == direct
+
+    for unresolved in ({}, {**identity, "operatorVersion": "other"}):
+        event = {"eventType": "node.completed", "payload": {**unresolved, "diagnostics": record["payload"]["diagnostics"]}}
+        detail.setEvent(event)
+        assert "使用的模型" not in [root.child(i).text(0) for i in range(root.childCount())]
+        diagnostics = child(root, "诊断")
+        assert child(diagnostics, "modelPath").text(1) == loaded
+        original = child(diagnostics, "modelSource")
+        original.setExpanded(True)
+        assert child(original, "path").text(1) == source["path"]
+        assert json.loads(detail.rawTree.toPlainText()) == event
 
 
 def testFrameworkPresentationTranslatesOnlyKnownFieldsAndCopiesOriginalValues(designerApplication, monkeypatch):

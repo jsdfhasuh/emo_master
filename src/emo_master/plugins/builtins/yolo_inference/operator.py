@@ -17,6 +17,8 @@ from emo_master.core.contracts.geometry2d import (
     DetectionCollection,
     PayloadValidationError,
 )
+from emo_master.core.contracts.log_safety import redactLogText
+from emo_master.core.contracts.run_inspection import clipText
 from emo_master.plugins.builtins._image_frame import frameForInput
 from emo_master.plugins.builtins._operator_modes import modeSchema
 from emo_master.plugins.builtins.crop.operator import CropOperator
@@ -360,6 +362,20 @@ class YoloInferenceOperator:
         else:
             imageOutputMessages["overlay"] = "此次执行未启用“绘制叠加图”，未生成 overlay。"
         elapsedMs = (perf_counter() - startedAt) * 1000.0
+        diagnostics = {
+            "text": f"YOLO detected {len(detections)} object(s)",
+            "modelPath": str(modelPath),
+            "backend": "onnxruntime",
+            "provider": getattr(rawResult, "provider", "CPUExecutionProvider"),
+            "inputShape": list(getattr(rawResult, "inputShape", ())),
+            "imageOutputMessages": imageOutputMessages,
+        }
+        if detections:
+            first = detections[0]  # Final detections are in descending confidence order.
+            label = redactLogText(first.label)
+            preview = clipText(label)
+            diagnostics["topDetectionLabel"] = preview if preview == label else preview + "…"
+            diagnostics["topDetectionConfidence"] = first.confidence
         return {
             "status": "ok",
             "outputs": outputs,
@@ -367,14 +383,7 @@ class YoloInferenceOperator:
                 "latencyMs": round(elapsedMs, 3),
                 "detectionCount": len(detections),
             },
-            "diagnostics": {
-                "text": f"YOLO detected {len(detections)} object(s)",
-                "modelPath": str(modelPath),
-                "backend": "onnxruntime",
-                "provider": getattr(rawResult, "provider", "CPUExecutionProvider"),
-                "inputShape": list(getattr(rawResult, "inputShape", ())),
-                "imageOutputMessages": imageOutputMessages,
-            },
+            "diagnostics": diagnostics,
         }
 
     @classmethod

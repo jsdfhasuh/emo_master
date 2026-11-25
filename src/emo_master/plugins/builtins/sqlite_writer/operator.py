@@ -1,9 +1,11 @@
 """Explicit business-database writer; field sources are compiled dependencies."""
 from collections import Counter
+from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any
 from pathlib import Path
 from datetime import datetime, timezone
+import json
 import sqlite3
 import time
 from uuid import uuid4
@@ -57,7 +59,7 @@ _MAPPING_SCHEMA = {
                 },
                 "port": {
                     "title": "来源端口", "type": "string",
-                    "description": "仅 node_output 使用，指定来源节点实际声明的输出端口。",
+                    "description": "仅 node_output 使用，填写同一流程中来源节点的完整输出端口名。存储类型为 FILE_REFERENCE 时，只能选择图片保存算子（vision.io.image_saver）的 result 端口。",
                 },
                 "key": {
                     "title": "执行上下文字段", "type": "string",
@@ -94,13 +96,62 @@ PARAM_SCHEMA: dict[str, Any] = {"type": "object", "properties": {
         "description": "1至64行列映射；按行对应runtime mappedOutputs，JSON schema只有object骨架，真正契约在parseConfig。",
         "title": "要保存的内容", "type": "array", "items": _MAPPING_SCHEMA, "default": []
     },
+    "writeMode": {"title": "写入方式",
+                  "description": "sync 等待本次写入结果。background 在后台任务入队后继续流程，最终回执按同一 writeId 记录在节点的 sqlite.write.finished 日志中。",
+                  "type": "string", "enum": ["sync", "background"], "default": "sync",
+                  "xOptionLabels": {"sync": "同步写入", "background": "后台写入"}},
     "fileReferencePathMode": {"title": "图片引用路径", "description": "absolute保留实际持久路径；project_relative只保存原工程目录内的相对路径。",
                               "type": "string", "enum": ["absolute", "project_relative"], "default": "absolute",
                               "xOptionLabels": {"absolute": "绝对路径", "project_relative": "工程相对路径"}},
     "failurePolicy": {
-        "description": "stop使节点错误；continue继续并保留FAILED/UNKNOWN/清理错误回执，不能把status=ok说成写入成功。",
+        "description": "stop 在收到写入错误时停止，continue 记录错误后继续。后台错误按最终回执处理；节点已入队时仍需查看最终结果。",
         "title": "处理方式", "type": "string", "enum": ["stop", "continue"], "default": "stop"
     }}}
+
+
+def _recordError(receipt, error):
+    cleanup = getattr(error, "sqliteCleanupError", None)
+    if cleanup is not None:
+        receipt["cleanupError"] = cleanup
+    code = getattr(error, "code", None)
+    if not code:
+        if isinstance(error, sqlite3.IntegrityError):
+            code = "E_SQLITE_CONSTRAINT"
+        elif isinstance(error, sqlite3.OperationalError) and "locked" in str(error):
+            code = "E_SQLITE_LOCKED"
+        else:
+            code = "E_SQLITE_WRITE"
+    unknown = code == "E_SQLITE_UNKNOWN"
+    receipt.update(status="UNKNOWN" if unknown else "FAILED", rowsAffected=None if unknown else 0,
+                   error={"code": code, "message": str(error), "mappingRow": getattr(error, "row", None)})
+
+
+def _recordCommittedCleanup(receipt, error):
+    receipt.update(status="COMMITTED", rowsAffected=1, primaryKey=error.primaryKey,
+                   cleanupError={"code": error.code, "message": str(error)})
+
+
+def _backgroundInsert(control, insert, path, config, values, receipt, cancelled, begin):
+    def stopped():
+        try:
+            control.raiseIfCancelled()
+        except Exception as error:
+            if getattr(error, "code", None) == "E_CANCELLED":
+                return True
+            raise
+        return cancelled()
+
+    try:
+        primary = insert(path, config, values, receipt["writeId"], stopped)
+        receipt.update(status="COMMITTED", rowsAffected=1, primaryKey=primary)
+    except SqliteCommittedCleanupError as error:
+        _recordCommittedCleanup(receipt, error)
+    except Exception as error:
+        _recordError(receipt, error)
+        if receipt["error"]["code"] == "E_CANCELLED":
+            receipt["status"] = "CANCELLED"
+    receipt["elapsedMs"] = (time.monotonic() - begin) * 1000
+    return receipt
 
 
 class SqliteWriterOperator:
@@ -125,12 +176,15 @@ class SqliteWriterOperator:
                    "execution": {k: context.get(k) for k in ("jobId", "projectId", "workflowId", "workflowRunId", "nodeId", "nodeRunId", "iterationPath")},
                    "elapsedMs": 0.0, "error": None}
         logger = getOperatorLogger(context)
-        publish = context.get("publishSqliteWrite", lambda *_args: None)
-        def isCancelled():
-            return bool(context.get("isCancellationRequested", False))
+        publish = context.get("publishSqliteWrite", lambda *_args, **_kwargs: None)
         # Runtime supplies a live cancellation predicate separately from the
         # legacy boolean snapshot used by existing operators.
-        cancelled = context.get("sqliteCancelled", isCancelled)
+        cancelled = context.get("sqliteCancelled")
+        if cancelled is None:
+            cancellationSnapshot = bool(context.get("isCancellationRequested", False))
+
+            def cancelled():
+                return cancellationSnapshot
         check = context.get("raiseIfCancellationRequested", lambda: None)
         config = None
         mappingSummary = {}
@@ -175,13 +229,31 @@ class SqliteWriterOperator:
                 insert = context.get("sqliteInsert")
                 if not callable(insert):
                     raise SqliteWriterError("E_SQLITE_UNSUPPORTED", "执行器不支持正式 SQLite 写入能力")
+                if config.get("writeMode") == "background":
+                    tasks = context.get("backgroundTasks")
+                    register = context.get("registerBackgroundSqlite")
+                    if tasks is None or not callable(register):
+                        raise SqliteWriterError("E_SQLITE_UNSUPPORTED", "执行器不支持 SQLite 后台写入及回执")
+                    # parseConfig owns its mappings. Each mapped value is already a SQLite scalar.
+                    size = len(json.dumps((values, config), ensure_ascii=False).encode("utf-8"))
+                    publish("sqlite.write.started", receipt.copy(), background=True)
+                    task = tasks.submit(_backgroundInsert, insert, path, config, values, deepcopy(receipt),
+                                        cancelled, begin, taskName="sqlite.insert", estimatedBytes=size)
+                    receipt.update(status="QUEUED", rowsAffected=None, elapsedMs=(time.monotonic() - begin) * 1000)
+                    try:
+                        register(task.id, receipt, config["failurePolicy"])
+                    except Exception as error:
+                        # The worker may already have committed the accepted write.
+                        raise SqliteWriterError("E_SQLITE_UNKNOWN", f"后台写入已受理，登记回执失败：{error}") from error
+                    return {"status": "ok", "outputs": {"receipt": receipt},
+                            "diagnostics": {"sqliteReceipt": receipt, **mappingSummary}}
                 publish("sqlite.write.started", receipt)
                 primary = insert(path, config, values, writeId, cancelled)
                 receipt.update(status="COMMITTED", rowsAffected=1, primaryKey=primary)
         except SqliteCommittedCleanupError as error:
-            cleanup = {"code": error.code, "message": str(error)}
-            receipt.update(status="COMMITTED", rowsAffected=1, primaryKey=error.primaryKey,
-                           cleanupError=cleanup, elapsedMs=(time.monotonic() - begin) * 1000)
+            _recordCommittedCleanup(receipt, error)
+            cleanup = receipt["cleanupError"]
+            receipt["elapsedMs"] = (time.monotonic() - begin) * 1000
             diagnostics = {"sqliteReceipt": receipt, "sqliteCleanup": cleanup, "severity": "ERROR", **mappingSummary}
             publish("sqlite.write.finished", receipt)
             logger.error(str(error), code=error.code, payload={"receipt": receipt})
@@ -196,14 +268,8 @@ class SqliteWriterOperator:
                 return {"status": "error", "error": cleanup, "diagnostics": diagnostics}
             return {"status": "ok", "outputs": {"receipt": receipt}, "diagnostics": diagnostics}
         except Exception as error:
-            if getattr(error, 'sqliteCleanupError', None) is not None:
-                receipt['cleanupError'] = getattr(error, 'sqliteCleanupError')
-            code = getattr(error, "code", "")
-            if not code:
-                code = "E_SQLITE_CONSTRAINT" if isinstance(error, sqlite3.IntegrityError) else "E_SQLITE_LOCKED" if isinstance(error, sqlite3.OperationalError) and "locked" in str(error) else "E_SQLITE_WRITE"
-            receipt.update(status="UNKNOWN" if code == "E_SQLITE_UNKNOWN" else "FAILED",
-                           rowsAffected=None if code == "E_SQLITE_UNKNOWN" else 0,
-                           error={"code": code, "message": str(error), "mappingRow": getattr(error, "row", None)})
+            _recordError(receipt, error)
+            code = receipt["error"]["code"]
             receipt["elapsedMs"] = (time.monotonic() - begin) * 1000
             publish("sqlite.write.finished", receipt)
             logger.error("SQLite 数据库写入" + receipt["status"] + "：" + str(error), code=code, payload={"receipt": receipt})

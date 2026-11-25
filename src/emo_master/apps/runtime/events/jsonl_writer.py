@@ -386,6 +386,12 @@ def _isPriorityEvent(event: RuntimeEvent) -> bool:
 def _isOperationalEvent(event: RuntimeEvent) -> bool:
     if event.eventType == "runtime.logfile.failed":
         return False
+    if event.eventType == "sqlite.write.finished":
+        try:
+            payload = json.loads(event.payloadJson)
+        except (TypeError, ValueError):
+            return False
+        return isinstance(payload, dict) and payload.get("background") is True
     return (
         event.eventType == "node.log"
         or event.eventType == "artifact.created"

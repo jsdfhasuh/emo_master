@@ -112,10 +112,10 @@
       "frame": {"title": "坐标框", "description": "结果原图坐标空间/有效内容标识；缺失按图生成。"}
     },
     "outputs": {
-      "score": {"title": "得分", "description": "模型 pred_score[0] 原始 PatchCore DINOv2 L2 最近邻最大异常分数，未转概率。"},
-      "threshold": {"title": "阈值", "description": "部署包绑定的图像判定阈值；与 score 同量纲，不来自 highlightThreshold。"},
-      "isAnomaly": {"title": "异常判定", "description": "score>=部署 threshold 为 true，含相等边界。"},
-      "label": {"title": "标签", "description": "异常为 NG，非异常为 OK。"},
+      "score": {"title": "得分", "description": "模型 pred_score[0] 原始 PatchCore DINOv2 L2 最近邻最大异常分数，未转概率。", "group": "result"},
+      "threshold": {"title": "阈值", "description": "部署包绑定的图像判定阈值；与 score 同量纲，不来自 highlightThreshold。", "group": "parameter"},
+      "isAnomaly": {"title": "异常判定", "description": "score>=部署 threshold 为 true，含相等边界。", "group": "result"},
+      "label": {"title": "标签", "description": "异常为 NG，非异常为 OK。", "group": "result"},
       "heatmap": {"title": "热力图", "description": "drawHeatmap 开启时：去 padding 并还原至原图大小，每图 min-max 归一化后 JET 彩色显示；非像素级缺陷判定。"},
       "overlay": {
         "title": "叠加图",

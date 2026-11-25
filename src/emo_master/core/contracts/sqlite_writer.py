@@ -63,7 +63,7 @@ def parseConfig(params: Mapping[str, Any]) -> dict[str, Any]:
     if type(params.get("configVersion")) is not int or params["configVersion"] != 1:
         raise SqliteWriterError("E_SQLITE_CONFIG", "不支持的 SQLite 配置版本")
     if set(params) - {"configVersion", "databasePath", "debugDatabasePath", "table", "mappings", "failurePolicy",
-                      "fileReferencePathMode", "_fileReferenceProjectRoot"}:
+                      "fileReferencePathMode", "_fileReferenceProjectRoot", "writeMode"}:
         raise SqliteWriterError("E_SQLITE_CONFIG", "存在不支持的 SQLite 参数")
     path = params.get("databasePath")
     if not isinstance(path, str) or not path.strip():
@@ -74,6 +74,8 @@ def parseConfig(params: Mapping[str, Any]) -> dict[str, Any]:
     failure = params.get("failurePolicy", "stop")
     if failure not in {"stop", "continue"}:
         raise SqliteWriterError("E_SQLITE_CONFIG", "失败策略必须为停止或继续")
+    if params.get("writeMode", "sync") not in ("sync", "background"):
+        raise SqliteWriterError("E_SQLITE_CONFIG", "写入方式必须为同步写入或后台写入")
     referenceMode = params.get("fileReferencePathMode", "absolute")
     if referenceMode not in {"absolute", "project_relative"}:
         raise SqliteWriterError("E_SQLITE_CONFIG", "图片引用路径必须为绝对路径或工程相对路径")
@@ -116,6 +118,8 @@ def parseConfig(params: Mapping[str, Any]) -> dict[str, Any]:
             raise SqliteWriterError(error.code, str(error), index) from error
     result = {"configVersion": 1, "databasePath": path, "table": table,
               "mappings": deepcopy(rows), "failurePolicy": failure}
+    if "writeMode" in params:
+        result["writeMode"] = params["writeMode"]
     if "fileReferencePathMode" in params:
         result["fileReferencePathMode"] = referenceMode
     if "_fileReferenceProjectRoot" in params:
@@ -260,7 +264,8 @@ def rebindParams(params: Mapping[str, Any], nodeIdMap: Mapping[str, str]) -> dic
 
 def receiptSummary(value, identity):
     """Bounded real receipt for the existing node inspector, not a data source."""
-    if not isinstance(value, dict) or not isinstance(value.get('status'), str) or value['status'] not in {'COMMITTED', 'SKIPPED', 'FAILED', 'UNKNOWN'}:
+    rowsByStatus = {'QUEUED': None, 'COMMITTED': 1, 'SKIPPED': 0, 'CANCELLED': 0, 'FAILED': 0, 'UNKNOWN': None}
+    if not isinstance(value, dict) or not isinstance(value.get('status'), str) or value['status'] not in rowsByStatus:
         return None
     execution = value.get('execution')
     if not isinstance(execution, dict) or any(execution.get(key) != expected for key, expected in identity.items()):
@@ -276,7 +281,7 @@ def receiptSummary(value, identity):
     rows = value.get('rowsAffected')
     if rows is not None and (type(rows) is not int or rows not in {0, 1}):
         return None
-    if rows != {'COMMITTED': 1, 'SKIPPED': 0, 'FAILED': 0, 'UNKNOWN': None}[value['status']]:
+    if rows != rowsByStatus[value['status']]:
         return None
     primary = value.get('primaryKey')
     if primary is not None and (type(primary) is not int or not -(2**63) <= primary < 2**63):

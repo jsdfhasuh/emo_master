@@ -19,6 +19,7 @@ from emo_master.core.contracts.port_types import normalizePortType
 from emo_master.core.contracts.sqlite_writer import (
     CONTEXT_TYPES, MAX_FIELDS, STORAGE_TYPES, SqliteWriterError, acceptsSource, jsonValue,
 )
+from .operator import PARAM_SCHEMA
 
 
 def _combo(items, value=None):
@@ -251,8 +252,11 @@ class SqliteWriterEditorController:
         note.setWordWrap(True)
         fieldsLayout.addWidget(note)
         mappingLayout.addWidget(fields, 1)
-        rules = QGroupBox('保存失败时怎么处理')
+        rules = QGroupBox('写入设置')
         rulesLayout = QFormLayout(rules)
+        self.writeMode = _combo([('同步写入（提交后继续）', 'sync'), ('后台写入（入队后继续）', 'background')])
+        self.writeMode.setObjectName('sqliteWriteMode')
+        rulesLayout.addRow('写入方式', self.writeMode)
         self.failure = _combo([('停止任务，提示错误（推荐）', 'stop'), ('记录错误，继续后续步骤', 'continue')])
         rulesLayout.addRow('失败策略', self.failure)
         for paramLayout, rowControl, inputControl, name in (
@@ -260,10 +264,12 @@ class SqliteWriterEditorController:
             (form, self.table, self.table, 'table'),
             (form, self.testPath, self.testPath, 'debugDatabasePath'),
             (form, self.fileReferenceMode, self.fileReferenceMode, 'fileReferencePathMode'),
+            (rulesLayout, self.writeMode, self.writeMode, 'writeMode'),
             (rulesLayout, self.failure, self.failure, 'failurePolicy'),
         ):
+            schema = context.paramSchema if name in context.paramSchema.get('properties', {}) else PARAM_SCHEMA
             applyParameterLabel(
-                paramLayout.labelForField(rowControl), inputControl, name, context.paramSchema,
+                paramLayout.labelForField(rowControl), inputControl, name, schema,
             )
         mappingSchema = context.paramSchema.get('properties', {}).get('mappings', {})
         fields.setToolTip(parameterToolTip('mappings', mappingSchema))
@@ -283,6 +289,7 @@ class SqliteWriterEditorController:
         self.path.textChanged.connect(self._changed)
         self.table.currentTextChanged.connect(self._changed)
         self.testPath.textChanged.connect(self._changed)
+        self.writeMode.currentIndexChanged.connect(self._changed)
         self.failure.currentIndexChanged.connect(self._changed)
         self.fileReferenceMode.currentIndexChanged.connect(self._changed)
         self.fields.itemChanged.connect(self._changed)
@@ -533,6 +540,8 @@ class SqliteWriterEditorController:
             self.path.setText(params.get('databasePath', ''))
             self.testPath.setText(params.get('debugDatabasePath', ''))
             self.table.setCurrentText(params.get('table', 'records'))
+            self._hadWriteMode = 'writeMode' in params
+            self.writeMode.setCurrentIndex(max(0, self.writeMode.findData(params.get('writeMode', 'sync'))))
             self.failure.setCurrentIndex(max(0, self.failure.findData(params.get('failurePolicy', 'stop'))))
             self.fileReferenceMode.setCurrentIndex(max(0, self.fileReferenceMode.findData(params.get('fileReferencePathMode', 'absolute'))))
             self._loadRows(params.get('mappings', []))
@@ -547,6 +556,8 @@ class SqliteWriterEditorController:
     def collectParams(self):
         params = {'configVersion': 1, 'databasePath': self.path.text().strip(), 'table': self.table.currentText().strip(),
                   'mappings': self._rows(), 'failurePolicy': self.failure.currentData()}
+        if self._hadWriteMode or self.writeMode.currentData() != 'sync':
+            params['writeMode'] = self.writeMode.currentData()
         if self.testPath.text().strip():
             params['debugDatabasePath'] = self.testPath.text().strip()
         if self.fileReferenceMode.currentData() != 'absolute':

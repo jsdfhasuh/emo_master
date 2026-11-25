@@ -112,6 +112,7 @@ def testSessionUsesLocalOrMatchingRuntimeRootAndNeverRemoteClientDirectory(runti
             assert debug.snapshot()["session"]["resourceRoot"] == expected
         else:
             assert record["code"] == "E_PARAM_INVALID"
+            assert "ioSummary" not in record
         assert payload == before
     finally:
         debug.close()

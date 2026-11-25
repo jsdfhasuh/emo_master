@@ -11,7 +11,7 @@ from emo_master.core.project.snapshots import parameterValidationApplies
 
 _MAX_ROWS = 24
 _MAX_VALUE_ITEMS = 32
-_EFFECTIVE_SOURCES = {"automatic", "input", "normalized", "device"}
+_EFFECTIVE_SOURCES = {"automatic", "input", "normalized", "device", "prepared"}
 
 
 class ParameterInspection:
@@ -22,13 +22,13 @@ class ParameterInspection:
         self.schema = schema
         self.paths = resultSchema.get("captureParams", ())
         self.effectiveDeclared = "effectiveParameters" in resultSchema.get("diagnostics", {})
-        self.sources = sources or {}
+        self.sources = dict(sources or {})
         self.rows: list[dict] = []
         self._bytes = 2
 
     def captureCall(self, params: Mapping, bindings: Sequence[Mapping]) -> None:
-        sources = {tuple(binding["parameterPath"]): "variable" for binding in bindings}
-        sources.update(self.sources)
+        for binding in bindings:
+            self.sources.setdefault(tuple(binding["parameterPath"]), "variable")
         for path in self.paths:
             value, schema = params, self.schema
             for part in path:
@@ -37,7 +37,7 @@ class ParameterInspection:
                     break
                 value, schema = value[part], child
             else:
-                self._append(path, value, schema, "call", sources.get(tuple(path), "prepared"))
+                self._append(path, value, schema, "call", self.sources.get(tuple(path), "prepared"))
 
     def captureEffective(self, diagnostics: dict) -> dict:
         if not self.effectiveDeclared or not isinstance(diagnostics.get("effectiveParameters"), list):
@@ -56,6 +56,8 @@ class ParameterInspection:
             if schema is None:
                 remaining.append(entry)
                 continue
+            if source == "prepared":
+                source = self.sources.get(tuple(path), source)
             self._append(path, entry["value"], schema, "effective", source)
         result = {key: value for key, value in diagnostics.items() if key != "effectiveParameters"}
         if remaining:

@@ -37,6 +37,12 @@ Codex（6.2 Sol）已落实 82 个内置算子的元数据，涵盖数据和控�
 
 产品运行与待独立走查的范围见 [交付记录](../delivery.md)。
 
+### SQLite 后台写入增量审查
+
+main 提交 `5f337cb515af00468e508f6979323170fd990474` 为 `vision.io.sqlite_writer` 增加了写入方式，算子版本沿用 1.1.0。上表数字和逐算子索引保留 ChatGPT Web 在 `ed98a021` 的 P0 口径。Codex 在 SQLite 条目追加了 `writeMode`，参数审查记录从 419 条增至 420 条。字段依据和覆盖旧语义的决定见 [SQLite 增量记录所在的逐字段 JSON](operator-field-audit.json)。
+
+同步模式默认启用。后台模式的节点输出是 `QUEUED`，行数和主键均待定。正式运行以同一节点执行和 `writeId` 的 `sqlite.write.finished` 核对最终入库结果。单算子调试可同时查看入队输出和隔离库中的最终诊断回执。已确认取消且未提交时行数为 0，提交情况未知时行数为 null。入队耗时和包含排队的最终耗时分别随对应回执记录。工作进程退出后补记的 `UNKNOWN` 沿用开始事件的耗时占位。[后台写入实现](https://github.com/jsdfhasuh/emo_master/blob/5f337cb515af00468e508f6979323170fd990474/src/emo_master/plugins/builtins/sqlite_writer/operator.py#L163-L178) · [最终回执归集](https://github.com/jsdfhasuh/emo_master/blob/5f337cb515af00468e508f6979323170fd990474/src/emo_master/apps/runtime/business_sqlite/background_receipts.py#L43-L82) · [工作进程退出补记](https://github.com/jsdfhasuh/emo_master/blob/5f337cb515af00468e508f6979323170fd990474/src/emo_master/apps/runtime/business_sqlite/outcomes.py#L23-L41)
+
 在仓库根目录使用项目 Python 环境复查审查记录与注册结果。
 
 ```powershell

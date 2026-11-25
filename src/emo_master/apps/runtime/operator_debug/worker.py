@@ -52,6 +52,7 @@ def runOperatorDebug(specJson, commands, events, cancellation, stop, heartbeat):
     from emo_master.apps.runtime.workflow.context import RunContext
     from emo_master.core.workflow.models import CompiledNode
     from emo_master.core.contracts.log_safety import redactLogText, redactLogValue
+    from emo_master.core.contracts.run_inspection import startInspection
     from emo_master.apps.runtime.operator_debug.assets import DebugAssets, freezeOutputs
     from emo_master.apps.runtime.operator_debug.data import materialize
     from emo_master.apps.runtime.operator_debug.state import DebugVariables, DebugCounters
@@ -133,6 +134,9 @@ def runOperatorDebug(specJson, commands, events, cancellation, stop, heartbeat):
                 params, values, mapped, notes = resources.prepare(command["params"],
                     materialize(command["inputs"], DebugAssets(spec["workspacePath"])), context, token,
                     projectInputPath=command.get("projectInputPath"))
+                # Capture before executeNode can mutate its inputs. Sending this separately
+                # preserves the result budget and retains the inputs if the worker exits.
+                send(dict(kind="callInputs", executionId=command["executionId"], ioSummary=startInspection(values)))
                 sources = {tuple(binding["parameterPath"]): "variable"
                            for binding in spec.get("variableBindings", ())}
                 sources.update({(key,): "resource" for key in spec.get("boundResourceParams", {})})
@@ -156,6 +160,9 @@ def runOperatorDebug(specJson, commands, events, cancellation, stop, heartbeat):
                                                                  parameterInspection=parameters)
                 if backgroundTasks is not None:
                     backgroundTasks.close()
+                    receipts = executor.sqliteReceipts.poll(backgroundTasks)
+                    if receipts:
+                        diagnostics = dict(diagnostics, sqliteReceipt=receipts[0])
                     backgroundTasks.raiseUnobservedFailure()
                 diagnostics = {**diagnostics, **notes}
                 inline, references = freezeOutputs(outputs, outputAssets,
@@ -175,6 +182,9 @@ def runOperatorDebug(specJson, commands, events, cancellation, stop, heartbeat):
             finally:
                 if backgroundTasks is not None:
                     backgroundTasks.close(drain=False, waitForActive=token.is_cancelled())
+                    receipts = executor.sqliteReceipts.poll(backgroundTasks, raiseOnError=False)
+                    if receipts:
+                        result["diagnostics"]["sqliteReceipt"] = redactLogValue(receipts[0])
                     executor.backgroundTasks = None
             if parameters is not None and parameters.rows:
                 result["parameterSummary"] = parameters.rows

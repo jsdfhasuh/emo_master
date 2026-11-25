@@ -82,6 +82,16 @@ def testSlowConsumerGetsLatestFrameAndOriginalReceiveTime(driver):
     before = time()
     second = capture(d)
     assert np.all(first.image == 1) and np.all(second.image == 20)
+    options = dict(zip(native.calls[0][4][::2], native.calls[0][4][1::2]))
+    timeouts = first.metadata['decoderTimeouts']
+    assert timeouts == {
+        'openTimeoutLimitMs': d.definition.connection['openTimeoutMs'],
+        'openTimeoutMs': options[cv2.CAP_PROP_OPEN_TIMEOUT_MSEC],
+        'readTimeoutMs': options[cv2.CAP_PROP_READ_TIMEOUT_MSEC],
+    }
+    assert 0 < timeouts['openTimeoutMs'] <= 1000
+    assert timeouts['readTimeoutMs'] == d.definition.connection['readTimeoutMs']
+    assert second.metadata['decoderTimeouts'] == timeouts
     assert second.metadata['sequence'] == 20
     assert second.metadata['capturedAt'] < before
     assert second.metadata['receivedAgeMs'] >= 20
@@ -90,6 +100,7 @@ def testSlowConsumerGetsLatestFrameAndOriginalReceiveTime(driver):
     with pytest.raises(DeviceError) as caught:
         capture(d, timeout=.04)
     assert caught.value.code == 'E_CAMERA_FRAME_TIMEOUT'
+    assert caught.value.diagnostics['decoderTimeouts'] == timeouts
 
 
 def testStaleUnconsumedFrameIsNotReturned(driver):
@@ -228,6 +239,9 @@ def testOpenFailureIsActionableAndDoesNotLeakUrl(monkeypatch, opened):
         with pytest.raises(DeviceError) as caught:
             d.connect({}, lambda: False, monotonic() + 1)
         assert caught.value.code == 'E_CAMERA_CONNECT'
+        timeouts = caught.value.diagnostics['decoderTimeouts']
+        assert 0 < timeouts['openTimeoutMs'] <= min(1000, timeouts['openTimeoutLimitMs'])
+        assert timeouts['readTimeoutMs'] == d.definition.connection['readTimeoutMs']
         assert 'fixture-password' not in str(caught.value)
         assert native.released.wait(1)
     finally:

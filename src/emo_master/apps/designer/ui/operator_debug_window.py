@@ -16,6 +16,7 @@ from emo_master.apps.designer.presenters.node_run_presenter import executionStat
 from emo_master.apps.runtime.operator_debug.assets import VALUE_BYTES
 from emo_master.apps.runtime.operator_debug.contracts import digest, parse
 from emo_master.apps.runtime.operator_debug.data import companionPort
+from emo_master.core.contracts.log_safety import displayOutputUrls
 from emo_master.core.contracts.port_types import normalizePortType
 from emo_master.core.project.global_variables import definitions, variablePorts
 from .debug_values import InputRow, ValueTree, tool, imagePortTitle
@@ -135,6 +136,9 @@ class OperatorDebugWindow(QDialog):
         self.artifacts = DebugArtifactTools(self, lambda: dict(projectId=self.editor.key.projectId,
             workflowId=self.editor.key.workflowId, nodeId=self.editor.key.nodeId, operatorId=self.editor.context.operatorId),
             self.editor.collectParams, self.exportSelection)
+        self.artifacts.export.setText('导出脱敏结果包…')
+        self.artifacts.export.setToolTip('保存输出与调用身份，JSON 中已识别的 URL 认证信息会隐藏。')
+        self.artifacts.raw.setToolTip('保存原始附件或当前内联值。原始 JSON 附件可能包含 URL 认证信息。')
         # Static tools belong to the input page even before open finishes or
         # when the operator has no input ports. Dynamic rows never own them.
         inputLayout.insertWidget(0, self.artifacts.panel)
@@ -724,7 +728,7 @@ class OperatorDebugWindow(QDialog):
                     self.pixmap.loadFromData(value["content"], "PNG")
                     self.scaleImage()
                 else:
-                    self.outputTree.setValue(parse(value["content"].decode(), VALUE_BYTES))
+                    self.outputTree.setValue(displayOutputUrls(parse(value["content"].decode(), VALUE_BYTES)))
         elif name.startswith('artifact:'):
             try:
                 self.artifacts.completed(name, value)

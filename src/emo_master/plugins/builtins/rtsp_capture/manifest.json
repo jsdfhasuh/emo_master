@@ -55,6 +55,16 @@
       "capturedAt": {"title": "采集时刻", "description": "该帧read完成的Unix墙钟秒，不是请求完成时间或摄像头硬件timestamp。", "unit": "s"}
     },
     "diagnostics": {
+      "decoderTimeouts": {
+        "title": "RTSP 解码器超时设置",
+        "description": "本次出错的连接尝试或采集所用解码器的超时设置。",
+        "group": "parameter",
+        "fields": {
+          "openTimeoutLimitMs": {"title": "设备配置的打开超时上限", "description": "来自绑定设备连接设置的 openTimeoutMs。", "unit": "ms"},
+          "openTimeoutMs": {"title": "解码器打开超时", "description": "打开这条连接时实际传给 FFmpeg 的上限，受设备设置和当时剩余连接时间共同限制。", "unit": "ms"},
+          "readTimeoutMs": {"title": "解码器读取超时", "description": "来自绑定设备连接设置，传给 FFmpeg 作为读取上限。", "unit": "ms"}
+        }
+      },
       "deviceFrame": {
         "title": "采集帧信息",
         "description": "记录帧标识、名称、形状、数据类型、存储字节数、周期标识、代次、请求标识、执行计划修订、采集信息。",
@@ -78,6 +88,16 @@
               "capturedAt": {"title": "采集时刻", "description": "解码read返回后的Unix墙钟秒。", "unit": "s"},
               "sequence": {"title": "序列号", "description": "该驱动解码序号；仅交付尚未交付的新序号。"},
               "receivedAgeMs": {"title": "接收帧龄", "description": "选择时monotonic距read返回的年龄ms。", "unit": "ms"},
+              "decoderTimeouts": {
+                "title": "RTSP 解码器超时设置",
+                "description": "当前帧所属连接采用的设置，复用连接时沿用该次打开的值。",
+                "group": "parameter",
+                "fields": {
+                  "openTimeoutLimitMs": {"title": "设备配置的打开超时上限", "description": "来自绑定设备连接设置的 openTimeoutMs。", "unit": "ms"},
+                  "openTimeoutMs": {"title": "解码器打开超时", "description": "打开这条连接时实际传给 FFmpeg 的上限，受设备设置和当时剩余连接时间共同限制。", "unit": "ms"},
+                  "readTimeoutMs": {"title": "解码器读取超时", "description": "来自绑定设备连接设置，传给 FFmpeg 作为读取上限。", "unit": "ms"}
+                }
+              },
               "sourceId": {"title": "来源标识", "description": "规范endpoint的SHA256物理身份，不含凭据明文。"}
             }
           }

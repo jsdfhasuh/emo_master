@@ -16,9 +16,11 @@
 
 ## 本次复审补充
 
-主要实现与既有验证已经交付。本次只关闭三个已复现缺口：R1 调试详情读取实际 sourceIdentity；R2 调试 outputs 外发安全副本处理已知认证 URL，并保留内部 output_ref 原值；R3 共享树消费 paramSchema 中已有的 additionalProperties 对象说明。
+首轮补充关闭了三个已复现缺口：R1 调试详情读取实际 sourceIdentity；R2 调试 outputs 外发安全副本处理已知认证 URL，并保留内部 output_ref 原值；R3 共享树消费 paramSchema 中已有的 additionalProperties 对象说明。
 
 三项各补一个共享机制回归，更新原任务状态、交付记录与 PR 正文，随后由 ChatGPT Web 或人工完成 P3.5。没有新增产品能力、布局改版、历史兼容或全量测试矩阵。问题证据见 [独立复审](reference/pr20-review-20261125.md)。
+
+后续实施审计在 `cd7058bd` 上检查工程师能否从记录解释实际输入、参数及业务结果。本轮补齐这些实际使用路径，逐项结果见 [交付记录](delivery.md)。
 
 ## What Changes
 

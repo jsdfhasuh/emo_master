@@ -47,11 +47,11 @@
       "right": {"title": "右操作数", "description": "可选有限数值，执行时转换为float并覆盖rightValue。"}
     },
     "outputs": {
-      "result": {"title": "结果", "description": "按eq/ne/lt/lte/gt/gte比较两侧实际float得到的布尔；false是合法业务结果，不能当作节点失败。"}
+      "result": {"title": "结果", "description": "按eq/ne/lt/lte/gt/gte比较两侧实际float得到的布尔；false是合法业务结果，不能当作节点失败。", "group": "result"}
     },
     "metrics": {
       "latencyMs": {"title": "算子内部耗时", "description": "算子内部校验和比较耗时。", "unit": "ms", "group": "duration"},
-      "left": {"title": "左操作数", "description": "实际转换float后的左操作数，属于计算输入而非性能指标。", "group": "result"},
+      "left": {"title": "左操作数", "description": "实际转换float后的左操作数，属于计算输入而非性能指标。", "group": "parameter"},
       "right": {"title": "右操作数", "description": "实际转换float后的右操作数，已反映input覆盖。", "group": "parameter"}
     },
     "diagnostics": {

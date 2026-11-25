@@ -86,3 +86,12 @@ def redactLogValue(value: object, schema: Mapping | None = None) -> object:
     if isinstance(value, (list, tuple)):
         return [redactLogValue(item, schema.get("items", {})) for item in value]
     return value
+
+
+def displayOutputUrls(value: object) -> object:
+    """Copy JSON business data, masking authentication only within recognized URLs."""
+    if isinstance(value, dict):
+        return {key: displayOutputUrls(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [displayOutputUrls(item) for item in value]
+    return redactLogText(value) if isinstance(value, str) else value

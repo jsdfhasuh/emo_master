@@ -5,6 +5,7 @@ from copy import deepcopy
 from typing import TYPE_CHECKING, Any, Callable, Mapping, Sequence
 
 from emo_master.apps.runtime.context.coordinate_snapshots import CoordinateSnapshots
+from emo_master.apps.runtime.business_sqlite.background_receipts import BackgroundSqliteReceipts
 from emo_master.apps.runtime.context.global_variables import ReadOnlyVariables
 from emo_master.apps.runtime.events.operator_logger import OperatorLogger, OperatorLogManager
 from emo_master.apps.runtime.execution.errors import WorkflowExecutionError
@@ -43,6 +44,7 @@ class OperatorExecutor:
         self.communication = communication
         self.devices = devices
         self.backgroundTasks = backgroundTasks
+        self.sqliteReceipts = BackgroundSqliteReceipts(self.publish)
         # Class-only debug workers receive declarations from Runtime's trustedEntries.
         self.runtimeCapabilities = runtimeCapabilities or {}
         self.coordinateSnapshots = coordinateSnapshots if coordinateSnapshots is not None else CoordinateSnapshots()
@@ -227,8 +229,16 @@ class OperatorExecutor:
             from emo_master.apps.runtime.business_sqlite.backend import insert
             runtimeContext["sqliteInsert"] = insert
             runtimeContext["sqliteCancelled"] = lambda: cancellation.isCancellationRequested
-            runtimeContext["publishSqliteWrite"] = lambda event, receipt: self.publish(
-                event, context, str(receipt.get("status", "")), payload={"receipt": deepcopy(receipt)})
+            def publishSqliteWrite(event, receipt, *, background=False):
+                payload = {"receipt": deepcopy(receipt)}
+                if background:
+                    payload["background"] = True
+                self.publish(event, context, str(receipt.get("status", "")), payload=payload)
+
+            runtimeContext["publishSqliteWrite"] = publishSqliteWrite
+            if "backgroundTasks" in runtimeContext:
+                runtimeContext["registerBackgroundSqlite"] = lambda taskId, receipt, policy: self.sqliteReceipts.register(
+                    self.backgroundTasks, context, taskId, receipt, policy)
         try:
             if parameterInspection is not None:
                 parameterInspection.captureCall(params, node.globalVariableBindings)

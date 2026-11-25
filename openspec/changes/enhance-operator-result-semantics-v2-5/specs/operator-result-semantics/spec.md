@@ -73,6 +73,12 @@
 - **AND** 可信内部输出及实际 output_ref 解析得到的执行值 SHALL 保持原值，查询与序列化不得原地污染内部记录
 - **AND** 系统 SHALL 复用已有认证字段和 URL 规则，不增加任意字符串秘密识别、全工程扫描或新的存储/RPC
 
+#### Scenario: Preview and share an attached JSON debug result
+
+- **WHEN** 单算子输出的 JSON 通过附件传递，用户预览该端口或导出脱敏结果包
+- **THEN** 预览及包内 JSON 使用与内联输出相同的认证 URL 处理，包内长度和摘要对应实际导出的字节
+- **AND** 保存原始附件与后续 `output_ref` 取值仍使用原始数据，界面标明原始附件的导出边界
+
 ### Requirement: Metrics and diagnostics are semantically described
 
 metrics 和 diagnostics 的固定字段、已知嵌套结构及动态键形成规则 SHALL 有明确用途、单位、统计口径和来源说明（适用时）。新增字段 SHALL 依据源码审查决定：有价值且可可靠取得的数据应补齐；已有权威输出、重复信息、无法可靠测量或没有业务价值的字段不要求新增，并记录理由。占位常量不得表述为测量结果。

@@ -48,7 +48,7 @@ _BGR_SCHEMA = {
     "description": "Detection 的 BGR 绘制颜色，缺省回退 detectionColor。",
     "type": "array",
     "items": {
-        "title": "颜色通道值", "description": "一个 0 至 255 的整数通道值，按 B、G、R 顺序排列。",
+        "title": "颜色通道值", "description": "按 B、G、R 顺序填写三个 0 至 255 的整数。保留灰度输出时，绘制亮度取三个分量的最大值。",
         "type": "integer", "minimum": 0, "maximum": 255
     },
     "minItems": 3,
@@ -110,7 +110,7 @@ _PARAM_SCHEMA: dict[str, object] = {
             "title": "显示置信度", "type": "boolean", "default": True
         },
         "colorMode": {
-            "description": "preserve 保持输入灰度/BGR；bgr 将灰度转 BGR 后绘制。",
+            "description": "preserve 保留输入的灰度或 BGR 格式，灰度图上的绘制亮度取颜色三个分量的最大值。bgr 将灰度图转为 BGR 后绘制。",
             "title": "输出颜色模式", "type": "string", "enum": ["preserve", "bgr"], "default": "preserve"
         },
         "lineColor": {
@@ -132,7 +132,7 @@ _PARAM_SCHEMA: dict[str, object] = {
             "title": "连通域颜色",
             "type": "array",
             "items": {
-                "title": "颜色通道值", "description": "一个 0 至 255 的整数通道值，按 B、G、R 顺序排列。",
+                "title": "颜色通道值", "description": "按 B、G、R 顺序填写三个 0 至 255 的整数。保留灰度输出时，绘制亮度取三个分量的最大值。",
                 "type": "integer", "minimum": 0, "maximum": 255
             },
             "minItems": 3,
@@ -144,7 +144,7 @@ _PARAM_SCHEMA: dict[str, object] = {
             "title": "检测框颜色",
             "type": "array",
             "items": {
-                "title": "颜色通道值", "description": "一个 0 至 255 的整数通道值，按 B、G、R 顺序排列。",
+                "title": "颜色通道值", "description": "按 B、G、R 顺序填写三个 0 至 255 的整数。保留灰度输出时，绘制亮度取三个分量的最大值。",
                 "type": "integer", "minimum": 0, "maximum": 255
             },
             "minItems": 3,
@@ -156,7 +156,7 @@ _PARAM_SCHEMA: dict[str, object] = {
             "title": "ROI 颜色",
             "type": "array",
             "items": {
-                "title": "颜色通道值", "description": "一个 0 至 255 的整数通道值，按 B、G、R 顺序排列。",
+                "title": "颜色通道值", "description": "按 B、G、R 顺序填写三个 0 至 255 的整数。保留灰度输出时，绘制亮度取三个分量的最大值。",
                 "type": "integer", "minimum": 0, "maximum": 255
             },
             "minItems": 3,

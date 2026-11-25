@@ -158,6 +158,23 @@ def testRealWorkerResultsAndCrash(manager, mode, status):
         assert manager.call("get", identity)["state"] == "FAULTED"
 
 
+@pytest.mark.parametrize("mode,status", [("ok", "SUCCEEDED"), ("error", "FAILED"), ("large", "FAILED")])
+def testCallInputsSummarizedBeforeMutationAndRetainedOnFailure(manager, mode, status):
+    manager.admitted["test.probe"]["inputPorts"] = {"items": "list", "url": "string"}
+    identity = ready(manager)
+    url = "rtsp://u:p@camera.invalid/live?token=fixture&q=business"
+    safe = "rtsp://<redacted>@camera.invalid/live?token=<redacted>&q=business"
+    prepared = manager.call("prepare", dict(identity, requestId="inputs", inputs={
+        "items": {"inlineJson": "[1,2,3]"}, "url": {"inlineJson": json.dumps(url)}}))
+    invocation = execute(manager, identity, prepared["inputSetId"], mode=mode)
+    record = result(manager, identity, invocation["executionId"])
+    assert record["status"] == status
+    assert record["ioSummary"] == {"version": 1, "inputs": {"items": [
+        {"port": "items", "value": {"kind": "collection", "count": 3}},
+        {"port": "url", "value": {"kind": "scalar", "value": safe, "truncated": False}},
+    ], "portCount": 2, "omitted": 0}, "outputs": None}
+
+
 @pytest.mark.parametrize("mode,timeout,status", [("wait", False, "CANCELLED"), ("wait", True, "TIMED_OUT"),
                                                ("ignore", False, "UNKNOWN"), ("ignore", True, "UNKNOWN")])
 def testCancellationAndDeadlinesRetireUncooperativeWorkers(manager, mode, timeout, status):

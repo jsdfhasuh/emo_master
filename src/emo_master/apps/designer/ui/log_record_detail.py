@@ -1,6 +1,7 @@
 """Read the selected log or debug record without retrieving any other execution."""
 from collections.abc import Mapping
 from datetime import datetime
+from itertools import chain, islice
 from pathlib import PureWindowsPath
 import re
 
@@ -14,7 +15,9 @@ from emo_master.apps.designer.presenters.node_run_presenter import (
     describePort, executionStatusTitle, frameworkLogMessage,
 )
 from emo_master.core.contracts.run_inspection import normalizeInspection
+from emo_master.core.contracts.sqlite_writer import OPERATOR_ID as SQLITE_WRITER_ID, receiptSummary
 from emo_master.core.plugin.result_schema import parameterSchemaAtPath
+from emo_master.core.project.node_input_files import NODE_INPUT_FILES
 from .log_json_tree import LogJsonTree, _VALUE_ROLE, _copyText, _json
 from .widgets import OptionalWrapLabel, WrapLabel
 
@@ -66,6 +69,43 @@ _PARAMETER_SOURCES = {
 
 def _mapping(value):
     return value if isinstance(value, Mapping) else {}
+
+
+def _backgroundSqliteReceipt(event):
+    payload = _mapping(event.get("payload"))
+    if event.get("eventType") != "sqlite.write.finished" or payload.get("background") is not True:
+        return None
+    receipt = payload.get("receipt")
+    identity = {key: event[key] for key in ("jobId", "workflowId", "workflowRunId", "nodeId", "nodeRunId")
+                if key in event}
+    summary = receiptSummary(receipt, identity)
+    return receipt if summary is not None and summary["status"] != "QUEUED" else None
+
+
+def _debugSqliteReceiptPair(record, definition):
+    if definition.get("operatorId") != SQLITE_WRITER_ID:
+        return False
+    submitted = _mapping(record.get("outputs")).get("receipt")
+    if _mapping(submitted).get("status") != "QUEUED" or not record.get("executionId"):
+        return False
+    queued = receiptSummary(submitted, {"nodeRunId": record["executionId"]})
+    if queued is None:
+        return False
+    final = receiptSummary(_mapping(record.get("diagnostics")).get("sqliteReceipt"), submitted["execution"])
+    return final is not None and final["writeId"] == queued["writeId"] and final["status"] != "QUEUED"
+
+
+def _groupedFields(fields, values, groups, prefix=""):
+    values = _mapping(values)
+    for key, descriptor in _mapping(fields).items():
+        if key not in values:
+            continue
+        value = values[key]
+        path = prefix + key
+        if descriptor.get("group") in groups:
+            yield path, value, descriptor
+        elif isinstance(value, Mapping) and descriptor.get("fields"):
+            yield from _groupedFields(descriptor["fields"], value, groups, path + ".")
 
 
 def _timeText(value):
@@ -266,6 +306,9 @@ class LogRecordDetail(QWidget):
     def _showEvent(self, raw, event, *, displayMessage=None, context=None, includeTime=False, nodeElapsedMs=None):
         kind = event.get("eventType", "")
         title = _NODE_TITLES.get(kind) or _FRAMEWORK_TITLES.get(kind) or kind or "日志记录"
+        finalReceipt = _backgroundSqliteReceipt(event)
+        if finalReceipt is not None:
+            title = "SQLite 后台写入结果"
         message = event.get("message", "")
         readable = _eventMessage(event) if displayMessage is None else displayMessage
         if kind in _FRAMEWORK_TITLES and readable == title and message != readable:
@@ -279,6 +322,12 @@ class LogRecordDetail(QWidget):
             self.readable.field("日志代码", event["code"])
         payload = event.get("payload")
         definition = self._definition(payload)
+        if finalReceipt is not None:
+            self._section("后台最终回执（receipt）", finalReceipt, {
+                "writeId": {"title": "写入标识"}, "status": {"title": "数据库写入状态"},
+                "rowsAffected": {"title": "影响行数"}, "elapsedMs": {"title": "写入耗时", "unit": "ms"},
+            })
+            payload = {key: value for key, value in payload.items() if key not in ("receipt", "background")}
         if isinstance(payload, dict):
             self._eventPayload(kind, payload, definition, nodeElapsedMs)
         elif "payload" in event:
@@ -329,7 +378,13 @@ class LogRecordDetail(QWidget):
                 self.readable.field("节点总耗时", nodeElapsedMs, description=f"{nodeElapsedMs} ms · 节点起止事件")
             metrics = remaining.pop("metrics", _MISSING)
             metricFields = _mapping(resultSchema.get("metrics"))
-            self._overview(metrics, metricFields)
+            source = remaining.pop("ioSummary", None)
+            summary = normalizeInspection(source)
+            scalarOutputs = {
+                row["port"]: row["value"]["value"] for row in _mapping(summary["outputs"]).get("items", ())
+                if row["value"]["kind"] == "scalar" and not row["value"].get("truncated")
+            }
+            self._overview(resultSchema, scalarOutputs, metrics, remaining.get("diagnostics"))
             for key, label in (("message", "跳过原因" if kind == "node.skipped" else "原因"),
                                ("code", "记录代码"), ("reason", "原因"), ("missingInputs", "缺少输入"),
                                ("blockedByBranches", "未选中的上游分支")):
@@ -337,10 +392,9 @@ class LogRecordDetail(QWidget):
                     self.readable.field(label, remaining.pop(key))
             diagnostics = remaining.get("diagnostics")
             diagnosticFields = _mapping(resultSchema.get("diagnostics"))
-            if kind == "node.completed" and isinstance(diagnostics, dict):
+            if (kind == "node.completed" and isinstance(diagnostics, dict) and diagnosticFields.get("modelPath")
+                    and NODE_INPUT_FILES.get(definition.get("operatorId")) == "modelPath"):
                 remaining["diagnostics"] = self._modelDetails(diagnostics)
-            source = remaining.pop("ioSummary", None)
-            summary = normalizeInspection(source)
             reason = source.get("unavailableReason") if isinstance(source, dict) else None
             self._ioSide("输入摘要", summary["inputs"], reason, _mapping(resultSchema.get("inputs")))
             self._parameters(remaining.pop("parameterSummary", _MISSING), definition, metrics, diagnostics)
@@ -363,16 +417,22 @@ class LogRecordDetail(QWidget):
             label = "附加字段" if kind in _NODE_TITLES else "记录数据"
             self.readable.field(label, remaining, expand=kind not in _NODE_TITLES)
 
-    def _overview(self, metrics, fields):
-        if not isinstance(metrics, dict):
-            return
-        visible = [key for key in metrics if _mapping(fields.get(key)).get("group") in ("business", "result")][:4]
-        if "latencyMs" in metrics and _mapping(fields.get("latencyMs")).get("group") == "duration":
-            visible.insert(0, "latencyMs")
+    def _overview(self, schema, outputs, metrics, diagnostics, *, title="运行概览"):
+        # Prefer the reported business outcome. Timing has its own slot.
+        groups = ("business", "result")
+        candidates = chain(
+            _groupedFields(schema.get("outputs"), outputs, (*groups, "parameter")),
+            _groupedFields(schema.get("diagnostics"), diagnostics, groups),
+            _groupedFields(schema.get("metrics"), metrics, groups),
+        )
+        visible = list(islice(candidates, 4))
+        duration = _mapping(schema.get("metrics")).get("latencyMs", {})
+        if "latencyMs" in _mapping(metrics) and duration.get("group") == "duration":
+            visible.append(("latencyMs", metrics["latencyMs"], duration))
         if visible:
-            parent = QTreeWidgetItem(self.readable, ["运行概览"])
-            for key in visible:
-                self.readable.field(key, metrics[key], semantics=fields[key], parent=parent)
+            parent = QTreeWidgetItem(self.readable, [title])
+            for key, value, descriptor in visible:
+                self.readable.field(key, value, semantics=descriptor, parent=parent)
             parent.setExpanded(True)
 
     def _section(self, label, value, fields=None, *, expand=True, summarized=False):
@@ -412,10 +472,8 @@ class LogRecordDetail(QWidget):
         evidence = []
         schema = _mapping(definition.get("resultSchema"))
         for section, payload, source in (("metrics", metrics, "指标"), ("diagnostics", diagnostics, "诊断")):
-            fields = _mapping(schema.get(section))
-            for key, fieldValue in _mapping(payload).items():
-                if _mapping(fields.get(key)).get("group") == "parameter":
-                    evidence.append((key, fieldValue, fields[key], source))
+            for key, fieldValue, descriptor in _groupedFields(schema.get(section), payload, ("parameter",)):
+                evidence.append((key, fieldValue, descriptor, source))
         if value is not _MISSING and (not isinstance(value, list) or not value):
             self.readable.field("参数摘要", value)
         groups = {"call": [], "effective": []}
@@ -465,7 +523,12 @@ class LogRecordDetail(QWidget):
         resourceId = source.get("resourceId")
         digest = source.get("sha256")
         if sourcePath:
-            remaining.pop("modelSource")
+            known = {"path", "configuredPath", "resourceId", "sha256"}
+            unused = {key: value for key, value in source.items() if key not in known or not value}
+            if unused:
+                remaining["modelSource"] = unused
+            else:
+                remaining.pop("modelSource")
             name = PureWindowsPath(sourcePath).name
             if resourceId:
                 summary = f"{name} · 工程资源"
@@ -562,13 +625,20 @@ class LogRecordDetail(QWidget):
         metrics = remaining.pop("metrics", _MISSING)
         diagnostics = remaining.pop("diagnostics", _MISSING)
         metricFields = _mapping(resultSchema.get("metrics"))
-        self._overview(metrics, metricFields)
+        pairedReceipts = _debugSqliteReceiptPair(record, definition)
+        self._overview(resultSchema, remaining.get("outputs"), metrics, diagnostics,
+                       title="后台最终回执" if pairedReceipts else "运行概览")
+        if "ioSummary" in remaining:
+            summary = normalizeInspection(remaining.pop("ioSummary"))
+            self._ioSide("输入摘要", summary["inputs"], None, _mapping(resultSchema.get("inputs")))
         if "inputSources" in remaining:
             self._section("输入来源", remaining.pop("inputSources"), resultSchema.get("inputs"),
                           expand=False, summarized=True)
         self._parameters(remaining.pop("parameterSummary", _MISSING), definition, metrics, diagnostics)
         for key, label in (("outputs", "已返回输出"), ("outputAssets", "输出资产")):
             if key in remaining:
+                if key == "outputs" and pairedReceipts:
+                    label = "提交时输出（已入队）"
                 self._section(label, remaining.pop(key), resultSchema.get("outputs"), expand=key == "outputs",
                               summarized=key == "outputAssets")
         if metrics is not _MISSING:

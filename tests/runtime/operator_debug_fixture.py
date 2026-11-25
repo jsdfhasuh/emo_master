@@ -19,6 +19,8 @@ class Probe:
         mode = params.get("mode", "ok")
         self.disposeMode = mode
         runtime["logger"].info("invoked")
+        if "items" in inputs:
+            inputs["items"].clear()
         if mode == "crash":
             os._exit(17)
         if mode in {"wait", "ignore"}:

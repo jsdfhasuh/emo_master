@@ -44,6 +44,9 @@
     },
     "outputs": {
       "value": {"title": "值", "description": "两侧实际整数之和；超出64位有符号范围返回错误。"}
+    },
+    "diagnostics": {
+      "effectiveParameters": {"title": "生效的备用操作数", "description": "仅列出未接输入时实际用于相加的备用整数及其来源。"}
     }
   }
 }

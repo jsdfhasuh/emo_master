@@ -14,6 +14,19 @@
 
 - **WHEN** 工程师打开 YOLO 检测完成记录
 - **THEN** 可以直接理解检测数量、可用类别/置信度摘要、模型和推理后端信息及耗时；没有完整历史集合时不得伪造目标明细
+- **AND** 新执行检出目标时，历史完成记录保留最终集合首个最高分目标的类别摘要和实际置信度。空集合仅报告数量零。
+
+#### Scenario: Read a business decision from the overview
+
+- **WHEN** 数值比较、PatchCore 或 SQLite 的完成记录包含已声明的业务结论
+- **THEN** 概览优先显示实际比较布尔值、异常判定或事务回执状态，节点状态和内部耗时各自保留
+- **AND** 无法匹配算子版本时，模型路径及附加来源字段按收到的原始结构展示
+
+#### Scenario: Distinguish SQLite submission from final database outcome
+
+- **WHEN** 正式 Job 使用后台写入，节点返回排队回执，后续收到后台终态事件
+- **THEN** 节点记录保留当时的 QUEUED，后台事件显示本次 writeId、实际事务状态和影响行数
+- **AND** 单算子调试在同一 writeId 出现排队输出与终态诊断时，两者都可辨认并分别核对原值
 
 ### Requirement: Distinguish node duration from operator duration
 
@@ -32,6 +45,12 @@
 
 - **WHEN** 正式 Job 事件只保存集合摘要
 - **THEN** UI 展示真实数量和摘要，并说明完整内容不可从当前记录取得
+
+#### Scenario: Inspect inputs of a previous debug execution
+
+- **WHEN** 用户回看一次已经准备好资源并进入调用阶段的单算子调试
+- **THEN** 输入摘要属于所选执行，保留当时的安全标量、图像形状或集合数量，并与输入来源一同展示
+- **AND** 准备失败且尚未取得调用输入时，记录保留此前已经确定的信息
 
 ### Requirement: Display effective parameters with their sources
 

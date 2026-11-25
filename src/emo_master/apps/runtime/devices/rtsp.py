@@ -24,6 +24,7 @@ class ManagedRtsp(DeviceDriver):
         self.connected = False
         self.decoding = False
         self.latest = None
+        self.decoderTimeouts: dict[str, int] = {}
         self.sequence = 0
         self.delivered = 0
         self.error = None
@@ -83,11 +84,16 @@ class ManagedRtsp(DeviceDriver):
             if user or password:
                 authority = f'{quote(user, safe="")}:{quote(password, safe="")}@{authority}'
             url = urlunsplit((parsed.scheme, authority, parsed.path, parsed.query, ''))
-            timeout = max(1, min(self.definition.connection['openTimeoutMs'], int((deadline - monotonic()) * 1000)))
+            openLimit = self.definition.connection['openTimeoutMs']
+            self.decoderTimeouts = {
+                'openTimeoutLimitMs': openLimit,
+                'openTimeoutMs': max(1, min(openLimit, int((deadline - monotonic()) * 1000))),
+                'readTimeoutMs': self.definition.connection['readTimeoutMs'],
+            }
             self.stop.clear()
             self.error, self.latest = None, None
             self.decoding = False
-            self.thread = Thread(target=self._read, args=(url, timeout), name='rtsp-reader', daemon=True)
+            self.thread = Thread(target=self._read, args=(url, self.decoderTimeouts), name='rtsp-reader', daemon=True)
             self.thread.start()
             try:
                 while not self.connected:
@@ -98,20 +104,21 @@ class ManagedRtsp(DeviceDriver):
                         raise DeviceError('E_DEVICE_CANCELLED', 'RTSP connection stopped')
                     self.condition.wait(min(.02, max(0, deadline - monotonic())))
                 self._check(cancelled, deadline, connecting=True)
-            except DeviceError:
+            except DeviceError as error:
+                error.diagnostics['decoderTimeouts'] = dict(self.decoderTimeouts)
                 self.stop.set()
                 self.condition.notify_all()
                 raise
 
-    def _read(self, url, openTimeout):
+    def _read(self, url, timeouts):
         capture = None
         phase = 'connect'
         failure = None
         try:
             capture = cv2.VideoCapture()
             opened = capture.open(url, cv2.CAP_FFMPEG, [
-                cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, openTimeout,
-                cv2.CAP_PROP_READ_TIMEOUT_MSEC, self.definition.connection['readTimeoutMs'],
+                cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, timeouts['openTimeoutMs'],
+                cv2.CAP_PROP_READ_TIMEOUT_MSEC, timeouts['readTimeoutMs'],
             ])
             if self.stop.is_set():
                 return
@@ -191,6 +198,8 @@ class ManagedRtsp(DeviceDriver):
                 self.recovery.update(state='CONNECTED', lastError='')
                 return result
             except DeviceError as error:
+                if self.decoderTimeouts:
+                    error.diagnostics.setdefault('decoderTimeouts', dict(self.decoderTimeouts))
                 if (not retries or error.code not in retryCodes or error.outcome != 'NOT_EXECUTED'
                         or not attempt and self.stop.is_set()):
                     raise
@@ -230,12 +239,14 @@ class ManagedRtsp(DeviceDriver):
                     age = monotonic() - received
                     if sequence > self.delivered and age * 1000 <= params['maxFrameAgeMs']:
                         self.delivered = sequence
+                        decoderTimeouts = dict(self.decoderTimeouts)
                         break
                 self.condition.wait(min(.02, max(0, deadline - monotonic())))
         image = (cv2.cvtColor(image, cv2.COLOR_BGR2GRAY) if params['colorMode'] == 'grayscale' else image.copy())
         self._check(cancelled, deadline)
         return DeviceCaptureResult(image, dict(capturedAt=capturedAt, sequence=sequence,
-            receivedAgeMs=round(age * 1000, 3), sourceId=self.physicalIdentity(self.definition)))
+            receivedAgeMs=round(age * 1000, 3), sourceId=self.physicalIdentity(self.definition),
+            decoderTimeouts=decoderTimeouts))
 
     def requestStop(self, reason):
         with self.condition:
@@ -253,6 +264,7 @@ class ManagedRtsp(DeviceDriver):
                 raise DeviceError('E_DEVICE_RELEASE_PENDING', 'RTSP reader has not released its decoder yet',
                                   outcome='UNKNOWN', unhealthy=True)
             self.thread = None
+            self.decoderTimeouts = {}
             self.connected = self.decoding = False
             self.error = self.latest = None
 

@@ -17697,6 +17697,31 @@
       "reviewStatus": "reviewed",
       "reviewGroup": "io",
       "manifestPath": "src/emo_master/plugins/builtins/sqlite_writer/manifest.json",
+      "incrementalReview": {
+        "sourceCommit": "5f337cb515af00468e508f6979323170fd990474",
+        "reviewer": "Codex",
+        "scope": "main 新增 SQLite 后台写入。沿用 1.1.0 和原端口，新增 writeMode 参数。从本提交起，回执按下列阶段解释。",
+        "decisions": [
+          {
+            "field": "outputs.receipt / diagnostics.sqliteReceipt",
+            "action": "区分入队与最终回执",
+            "reason": "后台任务受理后，节点输出 QUEUED。正式运行用相同 nodeRunId 和 writeId 关联 sqlite.write.finished 中的最终回执。单算子调试可同时有入队输出和 diagnostics.sqliteReceipt 中的最终结果。",
+            "evidence": ["src/emo_master/plugins/builtins/sqlite_writer/operator.py:163-178", "src/emo_master/apps/runtime/business_sqlite/background_receipts.py:43-62", "tests/sqlite_writer/test_background_job_receipts.py:158-177"]
+          },
+          {
+            "field": "receipt.status / rowsAffected / primaryKey",
+            "action": "补排队、取消与确认状态的含义",
+            "reason": "QUEUED 和 UNKNOWN 的影响行数为 null，前者仍待写入，后者表示提交情况无从确认。COMMITTED 为 1，SKIPPED、FAILED 和已确认未提交的 CANCELLED 为 0。排队回执的主键为 null。已确认提交后遇到清理异常，回执保留 COMMITTED 和 cleanupError。",
+            "evidence": ["src/emo_master/core/contracts/sqlite_writer.py:264-296", "src/emo_master/plugins/builtins/sqlite_writer/operator.py:63-87,163-178", "src/emo_master/apps/runtime/business_sqlite/background_receipts.py:71-82"]
+          },
+          {
+            "field": "receipt.elapsedMs / failurePolicy",
+            "action": "按回执阶段解释耗时与停止时机",
+            "reason": "入队耗时从节点开始计到后台受理，正常最终回执从同一起点计到写入处理结束，包含排队。后台任务无 SQLite 返回值时，用入队耗时加登记后的等待时间。工作进程退出时补记的 UNKNOWN 只能沿用开始事件中的耗时占位。后台错误按原节点的 stop/continue 处理，stop 在执行线程收到错误后生效。",
+            "evidence": ["src/emo_master/plugins/builtins/sqlite_writer/operator.py:67-87,104-110,170-178", "src/emo_master/apps/runtime/business_sqlite/background_receipts.py:43-82", "src/emo_master/apps/runtime/business_sqlite/outcomes.py:23-41"]
+          }
+        ]
+      },
       "implementationRefs": [
         "src/emo_master/plugins/builtins/sqlite_writer/operator.py:28-152 (PARAM_SCHEMA/SqliteWriterOperator.executeNode)",
         "src/emo_master/core/contracts/sqlite_writer.py:62-247 (parseConfig/toStorage/projectRelativeFileReference)",
@@ -17829,6 +17854,14 @@
           "source": "parseConfig验证后的params；databasePath/_fileReferenceProjectRoot在准入冻结；调试databasePath替换为隔离库",
           "sensitive": false,
           "evidence": ["src/emo_master/core/contracts/sqlite_writer.py:62-247 (parseConfig/toStorage/projectRelativeFileReference)"]
+        },
+        {
+          "path": "writeMode",
+          "meaning": "sync 同步写入，background 在任务入队后继续。省略时按 sync 执行。",
+          "source": "已准备的算子参数。captureParams 可记录本次实际传入字段，旧工程省略时保留缺省。",
+          "sourceCommit": "5f337cb515af00468e508f6979323170fd990474",
+          "sensitive": false,
+          "evidence": ["src/emo_master/core/contracts/sqlite_writer.py:77-78,121-122", "src/emo_master/plugins/builtins/sqlite_writer/operator.py:36-38,163-178"]
         },
         {
           "path": "fileReferencePathMode",

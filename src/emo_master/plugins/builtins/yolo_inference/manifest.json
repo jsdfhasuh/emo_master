@@ -262,6 +262,8 @@
     },
     "diagnostics": {
       "text": {"title": "摘要", "description": "最终检测数量英文摘要。"},
+      "topDetectionLabel": {"title": "最高分目标类别", "description": "本次最终检测集合中置信度最高的目标类别，同分时取排序后的第一个。超长类别名以省略号结尾。仅在检出目标时提供。", "group": "result"},
+      "topDetectionConfidence": {"title": "最高分目标置信度", "description": "上述目标实际得到的模型分数，范围为 0 到 1。仅在检出目标时提供；筛选阈值见本次调用参数。", "group": "result"},
       "modelPath": {"title": "模型路径", "description": "实际已解析绝对模型路径；真实解析路径可供复制与排障。", "group": "parameter"},
       "backend": {"title": "推理后端", "description": "固定 onnxruntime。"},
       "provider": {"title": "执行提供程序", "description": "取 OnnxInferenceResult.provider，正常实现固定 CPUExecutionProvider。"},

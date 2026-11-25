@@ -12,7 +12,7 @@
 
 布线是启发式避障，不承诺每次都产生相同数量的公共段；同源信号只有路径重合的部分才会共用干线。需要时在测试副本中移动节点以构造更多分支，不能把“没有可合并段”当作画布丢失边。
 
-生成器为 `generate.py`，从仓库现有算子 manifest 读取端口和默认参数，运行后确定性生成工程。密集压力图（100 节点/300 边）的固定几何由 `scripts/validate_flow_edge_readability.py` 的 `populate(stress=True)` 生成，仅为显示层自动化夹具，不冒充可执行业务流程。
+`generate.py` 用来复现已提交的 2.1 兼容性测试工程。端口来自现有算子 manifest，节点参数说明和默认值采用该示例的固定快照。密集压力图（100 节点/300 边）的固定几何由 `scripts/validate_flow_edge_readability.py` 的 `populate(stress=True)` 生成，仅用于显示层自动化。
 
 dot 的步骤、证据格式与停止条件见 [桌面验收清单](../../docs/testing/2026-10-12-dot-flow-edge-readability.md)。共享干线点击后选择具体支路；菜单 hover 只预览，只有点击才改变选择。删除、撤销和保存重开必须在独立副本中进行。
 

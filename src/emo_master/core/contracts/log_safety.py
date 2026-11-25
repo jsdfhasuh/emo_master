@@ -51,6 +51,12 @@ def redactLogText(text: str) -> str:
         if url[:7].casefold() == "file://":
             return url
         url = _URL_USER_INFO.sub(r"\g<scheme><redacted>@", url, count=1)
+        if url.casefold().startswith(("rtsp://", "rtsps://")) and "?" in url:
+            path, _, tail = url.partition("?")
+            query, separator, fragment = tail.partition("#")
+            # Cameras may authenticate using an opaque query component with no name.
+            query = "&".join(REDACTED if part and "=" not in part else part for part in query.split("&"))
+            url = path + "?" + query + separator + fragment
 
         def redactQuery(query: re.Match[str]) -> str:
             key = unquote_plus(query.group(2)).casefold()

@@ -77,17 +77,19 @@ def testRealLocalImageCountCompareAndJsonlShareInvocation(tmp_path):
     assert count['nodeRunId'] == done['count']['context'].nodeRunId
 
 
-def testParameterFactsAreSafeFromRawEventThroughQueryAndExport(tmp_path):
+@pytest.mark.parametrize("scheme", ("rtsp", "rtsps"))
+def testParameterFactsAreSafeFromRawEventThroughQueryAndExport(tmp_path, scheme):
     logDirectory = tmp_path / "logs"
     service = RuntimeService(dbPath=tmp_path / "runtime.db", logDirectory=logDirectory)
-    configured = "rtsp://fixture-user:fixture-password@example.invalid/stream?access%5ftoken=fixture-token&mode=preview"
-    safeUrl = "rtsp://<redacted>@example.invalid/stream?access%5ftoken=<redacted>&mode=preview"
+    configured = f"{scheme}://fixture-user:fixture-password@example.invalid/stream?fixture-opaque&access%5ftoken=fixture-token&mode=preview"
+    safeUrl = f"{scheme}://<redacted>@example.invalid/stream?<redacted>&access%5ftoken=<redacted>&mode=preview"
+    businessUrl = "https://example.invalid/report?report-name&mode=preview"
 
     class Probe:
         def executeNode(self, inputs, params, context):
             assert params["authName"] == "fixture-identity" and params["url"] == configured
             return {"status": "ok", "outputs": {"applied": inputs["value"]},
-                    "diagnostics": {"endpoint": configured, "tokenCount": 3,
+                    "diagnostics": {"endpoint": configured, "report": businessUrl, "tokenCount": 3,
                                     "session": {"leaseId": "fixture-lease"},
                                     "effectiveParameters": [{"path": ["value"], "source": "input", "value": inputs["value"]}]}}
 
@@ -141,7 +143,7 @@ def testParameterFactsAreSafeFromRawEventThroughQueryAndExport(tmp_path):
         assert rawPayload["operatorId"] == operatorId and rawPayload["operatorVersion"] == manifest.version
         assert rawPayload["outputs"] == {"applied": 8}
         assert rawPayload["parameterSummary"] == expected
-        assert rawPayload["diagnostics"] == {"endpoint": safeUrl, "tokenCount": 3,
+        assert rawPayload["diagnostics"] == {"endpoint": safeUrl, "report": businessUrl, "tokenCount": 3,
                                               "session": {"leaseId": "<redacted>"}}
         persisted = next(row for row in service.sqliteStore.listJobEventsAfter("job") if row.sequence == raw.sequence)
         assert persisted.payloadJson == raw.payloadJson
@@ -163,7 +165,7 @@ def testParameterFactsAreSafeFromRawEventThroughQueryAndExport(tmp_path):
     logged = next(json.loads(line) for line in lines
                   if json.loads(line)["eventType"] == "node.completed" and json.loads(line)["nodeId"] == "probe")
     assert logged["payload"] == queried
-    for private in ("fixture-identity", "fixture-user", "fixture-password", "fixture-token", "fixture-lease"):
+    for private in ("fixture-identity", "fixture-user", "fixture-password", "fixture-opaque", "fixture-token", "fixture-lease"):
         assert private not in raw.payloadJson + row.payload_json + exported + "\n".join(lines)
 
 

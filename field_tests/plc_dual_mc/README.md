@@ -100,7 +100,7 @@ $env:QT_QPA_PLATFORM='offscreen'
 & 'C:\Users\dd109\.conda\envs\emo_master\python.exe' -m pytest -q tests/runtime/test_dual_plc_field_project.py tests/plugins/test_communication_operators.py tests/plugins/test_slmp_debug_transport.py tests/runtime/test_plc_debug.py tests/runtime/test_plc_operator_debug.py tests/runtime/test_builtin_communication_operator_workflows.py tests/designer/test_plc_editor.py tests/designer/test_plc_wheel_safety.py
 ```
 
-`build_project.py` 可重新生成两个模板工程，但会覆盖手工编辑过的模板；不会连接设备。生成后由回归检查与提交版本的一致性。`simulation/session/` 是被忽略的临时工程，不用于保存正式测试修改。
+`build_project.py` 复现两个已提交的 2.7 兼容性模板，重建时使用 [固定的历史参数声明](legacy_param_schemas.json)。生成过程会覆盖同路径的模板文件，全程离线。回归同时检查生成结果与已提交模板完全一致，以及当前 Runtime 能够编译这些模板。`simulation/session/` 是被忽略的临时工程。
 
 本工程覆盖正常路径和列出的边界场景，不代表所有 PLC 型号、设备故障或现场工况已验收。真机 32 位、浮点、批量及 M 区操作尚未授权，不能用模拟通过替代现场验收。
 

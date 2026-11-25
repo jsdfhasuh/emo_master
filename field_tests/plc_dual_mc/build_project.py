@@ -1,4 +1,4 @@
-"""Generate separate field and loopback PLC projects; never contact hardware."""
+"""Reproduce the legacy 2.7 PLC field and loopback fixtures without hardware."""
 from __future__ import annotations
 
 import json
@@ -34,13 +34,16 @@ def builtin_registry():
 def designer_metadata(payload):
     from emo_master.core.contracts.port_types import normalizePortType
     registry = builtin_registry()
+    # The 2.7 fixtures store Designer's historical parameter metadata per node.
+    # Current Runtime validation still uses the live registered contracts.
+    legacy_schemas = json.loads((HERE / "legacy_param_schemas.json").read_text(encoding="utf-8"))
     for flow in payload["workflows"].values():
         for node in flow["nodes"]:
             kind = node["kind"]
             if kind == "operator":
                 manifest = registry[node["operatorId"]].manifest
                 inputs, outputs = manifest.inputPorts, manifest.outputPorts
-                node["paramSchema"] = deepcopy(manifest.paramSchema)
+                node["paramSchema"] = deepcopy(legacy_schemas[node["operatorId"]])
             elif kind == "subflow":
                 target = payload["workflows"][node["targetWorkflowId"]]
                 inputs, outputs = target["inputs"], target["outputs"]

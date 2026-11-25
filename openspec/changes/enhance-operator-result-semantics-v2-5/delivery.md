@@ -105,3 +105,25 @@ OPENSPEC_TELEMETRY=0 DO_NOT_TRACK=1 OPENSPEC_NO_UPDATE_CHECK=1 \
 | Designer 源码自动化 | 141 通过。Windows/PySide2 offscreen 下验证本地与回环 gRPC 目录、正式 Job / 单算子调试详情、原始 JSON、导出及未知字段展示。 |
 | Linux 原生异常的相关入口 | 现工作区在 Windows 原生 Qt 下执行基线报错测试的全部 8 个变体，均通过。本证据限 Windows 自动化。 |
 | 桌面交接 | [演示与操作步骤](desktop-walkthrough.md) 使用 2.10 / 1.3 工程，已编译、保存重读，由真实 Designer 加载入口做脚本化冒烟。独立桌面交互仍由后续验收执行，P3.5 保持未勾选。 |
+
+### 提交后的串行复验
+
+实现提交 `d5b51161940625ea58a803392621e9fe01b7ecd7`，以下复验在该提交的干净 worktree 上执行，使用 Windows Python 3.10。并发汇总测试期间，本机记录了页文件不足、ONNX 原生访问异常和部分子进程启动心跳超时；保留原断言，按以下分组串行复验。
+
+| 复验范围 | 结果 |
+|---|---|
+| 插件、注册、端口、通信工作流、SQLite 后台文件引用与回执 | 1,559 通过。真实相机 smoke 测试未运行。 |
+| Runtime 执行、节点事件、查询/导出、单算子调试、后台任务和 Designer 日志 UI | 381 通过、1 跳过。跳过项为默认未启用的 65 秒调试租约测试。 |
+| 真实 Job 检查 RPC 与受影响的两个模拟 RTSP 子进程场景 | 10 通过。与上述第二组有重叠。 |
+
+该提交的 GitHub 检查见 [源码 CI 45533949835](https://github.com/jsdfhasuh/emo_master/actions/runs/45533949835) 和 [Web CI 45533949821](https://github.com/jsdfhasuh/emo_master/actions/runs/45533949821)。Web 三项均通过，含 Windows 合成数据的所属 Runtime 联调。
+
+### CI 首轮回归修正
+
+实现提交的 Linux Runtime 分片完成 3,455 通过、3 失败、10 跳过。3 条失败均是本变更新增说明后出现的示例快照一致性问题。Linux other 分片仅在连线示例的 4 个比较变体上失败，与本地复现相同。此前记录的 Designer 原生进程异常在这次 Linux other 运行中未复现。
+
+- 双 PLC 2.7 和连线 2.1 兼容夹具的生成器保留各自历史参数声明，编译使用现行算子合同。已有兼容工程文件及完整比较断言保留。
+- 视频 While 示例同步已有 VideoLoader 定义中的三条说明。工程格式、参数值和工作流沿用该示例。
+- 复核 RTSP/RTSPS 认证 URL 时补齐裸查询令牌脱敏。具名业务查询和实际执行值保留，重复验证原始事件、持久化、查询和导出。
+
+以上修正后的定向集合 72 通过；Ruff、mypy 和差异检查通过。后续检查对应头提交及结论在 [PR20 Checks](https://github.com/jsdfhasuh/emo_master/pull/20/checks) 留档。

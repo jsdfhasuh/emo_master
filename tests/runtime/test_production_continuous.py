@@ -61,6 +61,9 @@ def testContinuousWaitIsCancellableAndDoesNotReuseInputMutations():
     inputs = {"values": []}
     seen = []
     class Runner:
+        def pollBackgroundTasks(self):
+            pass
+
         def run(self, workflowId, values, context, token):
             seen.append(len(values["values"]))
             values["values"].append(1)

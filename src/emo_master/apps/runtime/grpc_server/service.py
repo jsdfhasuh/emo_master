@@ -43,6 +43,7 @@ from emo_master.apps.runtime.operator_debug.rpc import OperatorDebugRpcMixin
 from emo_master.apps.runtime.communication.manager import CommunicationManager
 from emo_master.apps.runtime.communication.rpc import CommunicationRpcMixin
 from emo_master.apps.runtime.project_config.rpc import ProjectConfigurationRpcMixin
+from emo_master.apps.runtime.project_config.resources import jobModelSources
 from emo_master.apps.runtime.presentation.history import HistoryRpcMixin
 from emo_master.apps.runtime.presentation.output_requests import OutputRequestsRpcMixin
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as _runtime_pb2
@@ -134,6 +135,7 @@ class RuntimeService(OutputRequestsRpcMixin, RunReadRpcMixin, HistoryRpcMixin, P
         self.productionMode = productionMode
         self.workspaceRoot.mkdir(parents=True, exist_ok=True)
         lockName = self.workspaceRoot.name or "runtime"
+        self.stagingRecoveryRoot = self.workspaceRoot.parent.resolve() / f".{lockName}.background-images.sqlite3"
         self._runtimeDataLock = RuntimeDataLock(
             self.workspaceRoot.parent / f".{lockName}.runtime.lock"
         )
@@ -192,7 +194,9 @@ class RuntimeService(OutputRequestsRpcMixin, RunReadRpcMixin, HistoryRpcMixin, P
         self._workspacePaths: dict[str, Path] = {}
         try:
             report("runtime-workspaces")
-            self._cleanupStaleWorkspaces()
+            if self._runtimeDataLockIsPrimary:
+                self._recoverStagedImages()
+                self._cleanupStaleWorkspaces()
             report("runtime-plugins")
             self.pluginScanResult = self._scanBuiltins(pluginRootPaths)
             self.pluginRootPaths = pluginRootPaths or (str(self._builtinsRoot()),)
@@ -265,7 +269,8 @@ class RuntimeService(OutputRequestsRpcMixin, RunReadRpcMixin, HistoryRpcMixin, P
         from emo_master.apps.runtime.operator_debug.manager import OperatorDebugManager
         self.operatorDebugManager = OperatorDebugManager(self.runtimeInstanceId,
             trustedEntries(self.pluginScanResult.activeOperators), resourceBusy=self._operatorDebugResourcesBusy,
-            sourceProvider=self._operatorDebugSources, variableProvider=self._operatorDebugVariables)
+            sourceProvider=self._operatorDebugSources, variableProvider=self._operatorDebugVariables,
+            loadedDocumentProvider=lambda: self.loadedDocument, stagingRecoveryRoot=self.stagingRecoveryRoot)
         # Never evict a request and then treat a delayed retry as a fresh run.
         # Bounded admission is reset only by a new Runtime generation.
         self._startRequests: dict[str, tuple[str, object]] = {}
@@ -764,11 +769,15 @@ class RuntimeService(OutputRequestsRpcMixin, RunReadRpcMixin, HistoryRpcMixin, P
                     inputsJson=json.dumps(inputs, ensure_ascii=True),
                     pluginRootPaths=tuple(self.pluginRootPaths),
                     jobWorkspacePath=str(workspacePath),
+                    stagingRecoveryRoot=str(self.stagingRecoveryRoot),
                     heartbeatTimeoutMs=document.runtime.heartbeatTimeoutMs,
                     runtimeDbPath=str(self.sqliteStore.dbPath),
                     usesCommunication=bool(communicationNodes(document, workflowId)),
                     deviceIds=workflowDeviceIds(document, workflowId),
                     managedConfiguration=self.projectConfiguration.current is not None,
+                    modelSources=(jobModelSources(document, self.projectConfiguration.current["payload"],
+                        (self.workspaceRoot.parent / "configuration-resources").resolve())
+                        if self.projectConfiguration.current else {}),
                     planRevision=(self.projectConfiguration.current["executionRevision"] if self.projectConfiguration.current else 0),
                     legacySnapshotPolicy=legacyPolicy,
                     inspectionEnabled=bool(inspectionId),
@@ -2229,7 +2238,8 @@ class RuntimeService(OutputRequestsRpcMixin, RunReadRpcMixin, HistoryRpcMixin, P
                 raise RuntimeError("Runtime maintenance still owns persistence; shutdown is incomplete")
         for jobId in list(self._workspacePaths):
             self._removeWorkspace(jobId)
-        self._cleanupStaleWorkspaces()
+        if self._runtimeDataLockIsPrimary:
+            self._cleanupStaleWorkspaces()
         journal = getattr(self, "configurationResourceJournal", None)
         if journal is not None:
             self._closeStep("configuration-resources-retired", journal.retire, retryable=True)
@@ -2435,15 +2445,39 @@ class RuntimeService(OutputRequestsRpcMixin, RunReadRpcMixin, HistoryRpcMixin, P
         workspace = self._workspacePaths.get(jobId, self.workspaceRoot / jobId)
         return lambda: self._removeOwnedWorkspace(jobId, workspace)
 
+    def _recoverStagedImages(self) -> None:
+        from emo_master.apps.runtime.execution.temporary_files import recoverTemporaryFiles
+
+        for message in recoverTemporaryFiles(self.stagingRecoveryRoot):
+            self._reportStagingCleanup(message)
+
+    def _reportStagingCleanup(self, message: str) -> None:
+        self.eventStore.append(jobId="__runtime__", eventType="runtime.image_staging.cleanup_deferred",
+            message=message, level="WARN", code="E_IMAGE_STAGING_CLEANUP_DEFERRED")
+
     def _cleanupStaleWorkspaces(self) -> None:
+        from emo_master.apps.runtime.execution.temporary_files import retireTemporaryFiles
+        from emo_master.apps.runtime.jobs.process_state import workerHasExited
         from emo_master.apps.runtime.preview.store import _ioPath
         if not self.workspaceRoot.exists():
             return
+        root = self.workspaceRoot.resolve()
         for workspace in self.workspaceRoot.iterdir():
-            if not workspace.is_dir():
+            if not workspace.is_dir() or workspace.resolve() != root / workspace.name:
                 continue
             record = self.jobRepository.get(workspace.name)
             if record is None or record.isTerminal:
+                recordedImages = (workspace / ".background-image-files").is_dir()
+                if recordedImages or (record is not None and record.pid and record.errorCode == "E_RUNTIME_RESTARTED"):
+                    # Startup marks old Jobs terminal even if the writer survived its parent.
+                    if not workerHasExited(record.pid if record is not None else None):
+                        continue
+                if recordedImages:
+                    try:
+                        retireTemporaryFiles(str(workspace), legacyOnly=True)
+                    except OSError as error:
+                        self._reportStagingCleanup(f"{workspace}: {error}")
+                        continue
                 try:
                     shutil.rmtree(_ioPath(workspace))
                 except OSError:

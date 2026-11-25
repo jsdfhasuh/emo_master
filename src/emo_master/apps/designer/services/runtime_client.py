@@ -481,13 +481,17 @@ class RuntimeClient:
         return self._projectConfigurationCall("GetOnlineProjectSnapshot",
             runtime_pb2.OnlineProjectRequest(project_id=projectId))
 
-    def initializeProjectConfiguration(self, payload, resourceRoot, requestId, *, validate=False, runtimeInstanceId='',
-                                       projectPath=''):
+    def usesRemoteProjectImport(self):
         from urllib.parse import urlsplit
         target = self._runtimeTarget
         remote = target and urlsplit('//' + target).hostname not in {'localhost', '127.0.0.1', '::1'}
         staged = getattr(self, '_initialImport', None)
-        if remote or staged and staged.get('scope') == self.runtimeScope:
+        return bool(remote or staged and staged.get('scope') == self.runtimeScope)
+
+    def initializeProjectConfiguration(self, payload, resourceRoot, requestId, *, validate=False, runtimeInstanceId='',
+                                       projectPath=''):
+        staged = getattr(self, '_initialImport', None)
+        if self.usesRemoteProjectImport():
             if validate:
                 staged = self.prepareProjectImport(payload, requestId)
             elif not staged or staged.get('scope') != self.runtimeScope:
@@ -638,22 +642,29 @@ class RuntimeClient:
                     code=getattr(error, 'code', 'E_RESOURCE_OUTCOME_UNKNOWN'), message=str(error)))
         return results
 
-    def uploadProjectResources(self, snapshot, payload, root, cancelled=None, *, repairConfirmed=False):
+    def uploadProjectResources(self, snapshot, payload, root, cancelled=None, *, repairConfirmed=False, resourceIds=None):
         from pathlib import Path
         from emo_master.core.project.models import ProjectDocument
-        from emo_master.core.project.snapshots import verifyResources
+        from emo_master.core.project.snapshots import verifyResourceItems
         results = dict(uploaded=[], cancelled=[], pending=[], errors=[])
         key, transferId, stage = '', '', 'VALIDATE'
         begun = committing = False
         try:
             document = ProjectDocument.model_validate(payload)
             snapshot = dict(snapshot, payload=payload)
-            root = Path(root).resolve()
-            paths = verifyResources(document, root.parent if root.is_file() else root)
+            root = Path(root).resolve() if root else None
+            if root and root.is_file():
+                root = root.parent
+            items = document.resources.items
+            if resourceIds is None:
+                paths = verifyResourceItems(document.project.projectId, items, root)
+            else:
+                items = {key: items[key] for key in sorted(resourceIds)}
+                paths = {}
             if getattr(self, 'pendingResourceTransfers', {}):
                 raise RuntimeClientError('E_RESOURCE_OUTCOME_UNKNOWN', 'query the original pending resource transfer before another upload')
             self.pendingResourceTransfers = {}
-            for key, path in paths.items():
+            for key, item in items.items():
                 transferId, stage = '', 'CHECK_CANCELLED'
                 begun = committing = False
                 if cancelled is not None and cancelled.is_set():
@@ -674,6 +685,10 @@ class RuntimeClient:
                     replacement = existing['transferId']
                 elif existing['state'] != 'MISSING':
                     raise RuntimeClientError('E_RESOURCE_TRANSFER_STATE', 'unexpected resource lookup state')
+                if key not in paths:
+                    stage = 'VALIDATE'
+                    paths.update(verifyResourceItems(document.project.projectId, {key: item}, root))
+                path = paths[key]
                 stage = 'BEGIN'
                 self.pendingResourceTransfers[transferId] = (snapshot, key)
                 self.transferProjectResource(snapshot, transferId, "BEGIN", resource=resource, replacementOf=replacement)

@@ -14,7 +14,7 @@ def testOwnedWorkspaceRetiresLongPreviewPathsWithoutRemovingLiveWorkspace(tmp_pa
     runtime.workspaceRoot = tmp_path / "jobs"
     workspace = runtime.workspaceRoot / "retired-job"
     runtime._workspacePaths = {"retired-job": workspace}
-    runtime.jobRepository = SimpleNamespace(get=lambda job: SimpleNamespace(isTerminal=job == "retired-job"))
+    runtime.jobRepository = SimpleNamespace(get=lambda job: SimpleNamespace(isTerminal=job == "retired-job", pid=None))
     runtime.jobSupervisor = SimpleNamespace(ownsJobResources=lambda job: False)
     runtime.deviceManager = SimpleNamespace(dispatchGroups={})
     preview = workspace / "preview_staging" / "assets"

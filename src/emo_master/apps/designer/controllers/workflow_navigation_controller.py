@@ -27,7 +27,7 @@ class WorkflowNavigationController:
         self.window = window
         self.history = NavigationHistory()
         self.popup = NavigationLocationsPopup(window)
-        self._busy = False
+        self.restoringLocation = False
         self.reset()
 
     @property
@@ -59,7 +59,7 @@ class WorkflowNavigationController:
         return NavigationLocation(self.session, workflowId, nodeId, view)
 
     def captureCurrent(self):
-        if self._busy:
+        if self.restoringLocation:
             return
         if self.history.current and self.history.current.session != self.session:
             self.reset()
@@ -117,7 +117,7 @@ class WorkflowNavigationController:
 
     def _restore(self, location):
         w = self.window
-        self._busy = True
+        self.restoringLocation = True
         try:
             w._activateWorkflow(location.workflowId)
             nodeId = location.nodeId
@@ -147,11 +147,13 @@ class WorkflowNavigationController:
                         w.flowView.centerOn(*center)
             w.onNodeSelectionChanged()
         finally:
-            self._busy = False
+            self.restoringLocation = False
+        # Scene rebuilds and Qt selection signals have now reached their final state.
+        w.updateToolbarState(projectChanged=False)
 
     def synchronize(self):
         """Reconcile explicit project edits that create/delete the active workflow."""
-        if not self._busy:
+        if not self.restoringLocation:
             self.captureCurrent()
             self.refresh()
 

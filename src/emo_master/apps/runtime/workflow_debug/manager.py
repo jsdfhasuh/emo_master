@@ -73,7 +73,7 @@ def consume(manager, session, event):
             for field in ("inputsAssets", "outputsAssets"):
                 retained.update(asset["assetId"] for asset in row.get(field, {}).values())
         session.assets.collectOutputs(retained)
-        session.worker.snapshotAck.set()
+        session.worker.snapshotAck.release()
     elif kind == "flow_state":
         if not session.retiringAt:
             session.state = event["state"]

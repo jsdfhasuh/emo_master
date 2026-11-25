@@ -275,4 +275,5 @@ class DeliveryStore:
             if revision is None:
                 raise ValueError('no active test project; import and activate explicitly')
             document, manifest = self.verify(revision)
-            yield document, manifest, self.revisionPath(revision)
+            from .test_delivery import materializeTestImagePaths
+            yield materializeTestImagePaths(document), manifest, self.revisionPath(revision)

@@ -234,10 +234,8 @@ def _checkResourceTransfer(service, root):
     candidate = deepcopy(snapshot["payload"])
     candidate["resources"]["items"]["package-input"] = dict(path=source.name, size=source.stat().st_size,
         sha256=hashlib.sha256(source.read_bytes()).hexdigest(), purpose="input_image")
-    candidate["resources"]["parameterBindings"] = [dict(resourceId="package-input", target=dict(
-        workflowId="main", nodeId="package-load", parameterPath=["imagePath"]))]
     candidate["workflows"]["main"]["nodes"].append(dict(nodeId="package-load", kind="operator",
-        operatorId="vision.io.image_loader", params=dict(imagePath="not-a-runtime-path.png")))
+        operatorId="vision.io.image_loader", params=dict(imagePath=source.name)))
     for key, purpose in (("page-picture", "page_image"), ("page-icon", "icon")):
         imagePath = local / (key + ".png")
         imagePath.write_bytes(source.read_bytes())

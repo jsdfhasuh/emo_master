@@ -12,6 +12,7 @@ from emo_master.apps.designer.services.runtime_client import RuntimeClient
 from emo_master.apps.designer.ui.operator_debug_window import OperatorDebugWindow
 from tests.designer.test_operator_debug_window import editorFor, wait
 from tests.runtime.operator_debug_fixture import project
+from tests.runtime.test_operator_debug_resources import boundYoloProject as boundYoloProject, uploadImage
 from tests.runtime.test_operator_debug_rpc import runtime as runtime
 
 
@@ -104,6 +105,44 @@ def testYoloFoldShowsModelAndAllOriginalControlsWithoutChangingParameters(runtim
         wait(lambda: not isValid(dialog))
         assert isValid(form) and form.isVisibleTo(editor)
         assert editor.collectParams() == original and not editor.isDirty()
+    finally:
+        retireEditor(editor)
+
+
+def testYoloDebugEditsSelectedModelWithoutChangingProject(runtime, boundYoloProject):
+    payload, projectFile, model = boundYoloProject
+    before = deepcopy(payload)
+    node = next(n for n in payload["workflows"]["main"]["nodes"] if n["nodeId"] == "yolo")
+    newModel = model.with_name("selected.onnx")
+    newModel.write_bytes(model.read_bytes())
+    schema = runtime.pluginScanResult.activeOperators[node["operatorId"]].manifest.paramSchema
+    context = EditorContext(key=EditorKey(payload["project"]["projectId"], "main", "yolo"),
+        operatorId=node["operatorId"], version="1", previewMode="none", paramSchema=schema,
+        runtimeClient=RuntimeClient(runtime), applyParams=lambda *_: pytest.fail("debug must not apply"),
+        appendLog=lambda *_: None, getPreviewProject=lambda _: payload, getProjectDirectory=lambda: str(projectFile.parent))
+    editor = OperatorWorkspaceWindow(key=context.key, title="YOLO", context=context, schema=schema, values=node["params"])
+    editor.show()
+    dialog = OperatorDebugWindow(editor)
+    editor._debugWindow = dialog
+    dialog.show()
+    try:
+        wait(lambda: dialog.run.isEnabled())
+        picker = editor._schemaForm._controls["modelPath"]
+        assert picker._lineEdit.isVisibleTo(dialog) and picker._browseButton.isVisibleTo(dialog)
+        assert not editor.isDirty()
+        picker.setText("models/selected.onnx")
+        editor._schemaForm._controls["confidence"].setValue(0.95)
+        dialog.rows["image"].setReference(uploadImage(dialog.connection), "测试图像")
+        QTest.mouseClick(dialog.run, Qt.LeftButton)
+        wait(lambda: bool(dialog.records) and dialog.run.isEnabled())
+        assert dialog.records[0]["status"] == "SUCCEEDED"
+        assert dialog.records[0]["metrics"]["detectionCount"] == 0
+        assert dialog.records[0]["rawParams"]["confidence"] == pytest.approx(0.95)
+        assert dialog.records[0]["diagnostics"]["modelPath"] == str(newModel)
+        dialog.close()
+        wait(lambda: not isValid(dialog))
+        assert picker._lineEdit.isVisibleTo(editor) and picker._browseButton.isVisibleTo(editor)
+        assert picker.text() == "models/selected.onnx" and payload == before
     finally:
         retireEditor(editor)
 

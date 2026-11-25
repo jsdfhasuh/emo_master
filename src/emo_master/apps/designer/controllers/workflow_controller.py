@@ -391,10 +391,10 @@ class WorkflowController:
                     kind=node.kind,
                 )
             )
-        for edge in self.flowModel.edges:
-            self.flowScene.renderEdge(
-                FlowEdgeViewModel(edge.fromNode, edge.fromPort, edge.toNode, edge.toPort)
-            )
+        self.flowScene.renderWorkflowEdges(
+            FlowEdgeViewModel(edge.fromNode, edge.fromPort, edge.toNode, edge.toPort)
+            for edge in self.flowModel.edges
+        )
         self.refreshSidebarNodeList()
         self.focusGraphContent()
         self.updateToolbarState()

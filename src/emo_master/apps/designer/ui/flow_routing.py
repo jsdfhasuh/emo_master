@@ -122,7 +122,8 @@ class OrthogonalRouter:
     Consecutive visible intersections on the same row/column are connected. A*
     includes incoming direction in its state so bend penalties remain correct.
     """
-    def __init__(self, nodes: Mapping[str, Rect], requests: Sequence[RouteRequest]) -> None:
+    def __init__(self, nodes: Mapping[str, Rect], requests: Sequence[RouteRequest], *,
+                 deferGrid: bool = False) -> None:
         self.nodes = nodes
         self.obstacles = {key: rect.expanded(20) for key, rect in nodes.items()}
         # Local links establish the channels before long result/bypass links.
@@ -184,12 +185,18 @@ class OrthogonalRouter:
         self.points: list[Point] = []
         self.indices: dict[Point, int] = {}
         self.links: list[list[tuple[int, int, float]]] = []
+        self._gridRows = self._buildGridRows(sorted(xs), sorted(ys))
+        if not deferGrid:
+            for _ in self._gridRows:
+                pass
+
+    def _buildGridRows(self, xs: list[float], ys: list[float]) -> Iterator[None]:
         # Row/column interval tests are shared rather than repeated per edge.
         previousColumn: dict[float, int] = {}
-        for y in sorted(ys):
+        for y in ys:
             rowRects = [rect for rect in self.obstacles.values() if rect.top < y < rect.bottom]
             previous: int | None = None
-            for x in sorted(xs):
+            for x in xs:
                 point = (x, y)
                 if any(rect.left < x < rect.right for rect in rowRects):
                     previous = None
@@ -210,6 +217,7 @@ class OrthogonalRouter:
                     self.links[neighbour].append((index, direction, length))
                 previous = index
                 previousColumn[x] = index
+            yield None
 
     def routeAll(self) -> dict[EdgeKey, Route]:
         return dict(item for item in self.iterRoutes() if item is not None)
@@ -242,6 +250,9 @@ class OrthogonalRouter:
         self, request: RouteRequest, occupied: Sequence[Segment],
         traffic: TrafficCache | None, stepNodes: int,
     ) -> Generator[None, None, Route]:
+        for _ in self._gridRows:
+            if stepNodes:
+                yield None
         start, end = self.stubs[request.key]
         source, _, target, _ = request.key
         blocked = (start not in self.indices or end not in self.indices

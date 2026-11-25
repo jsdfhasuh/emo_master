@@ -11,6 +11,7 @@ from emo_master.core.project.files import projectFiles
 from emo_master.core.project.global_variables import validateBindings
 from emo_master.core.project.snapshots import _setPath, verifyResources
 from emo_master.core.project.resources import DeviceParameterTarget
+from emo_master.core.project.node_input_files import NODE_INPUT_FILES, nodeInputResource
 from emo_master.core.project.device_resources import deviceDeclaration, deviceTarget
 from emo_master.core.workflow.errors import ValidationIssue, WorkflowCompileError, locatedValidationError
 
@@ -45,6 +46,7 @@ def prepareRuntimeProject(
             projectId=document.project.projectId, fieldPath='siteValues.'+key) for key in sorted(set(sites)-deviceSites)])
     if prepared.resources is not None:
         resources = verifyResources(prepared, root, resourcePaths=resourcePaths)
+        prepared._verifiedResourcePaths = resources
         prepared._pageResourcePaths = {key: path for key, path in resources.items()
             if prepared.resources.items[key].purpose in {"page_image", "icon"}}
         inputs.update(Path(path).resolve() for path in resources.values())
@@ -58,6 +60,8 @@ def prepareRuntimeProject(
                 _setPath(params, target.parameterPath, resources[binding.resourceId])
                 continue
             node = nodes.get((target.workflowId, target.nodeId))
+            if node and target.parameterPath == [NODE_INPUT_FILES.get(node.operatorId or "")]:
+                continue  # The node's file field also identifies its uploaded project resource.
             if node is None or node.kind != "operator" or binding.resourceId not in resources:
                 raise _targetError(document, target, 'E_RESOURCE_TARGET', 'resource reference/parameter target missing')
             descriptor = registry.get(node.operatorId or "")
@@ -70,6 +74,11 @@ def prepareRuntimeProject(
             if schema.get("xWidget") != "file" or schema.get("xFileMode") != "open":
                 raise _targetError(document, target, 'E_RESOURCE_TARGET', 'resource binding must target an input file parameter')
             _setPath(node.params, target.parameterPath, resources[binding.resourceId])
+        for (wid, _nid), node in nodes.items():
+            selected = nodeInputResource(prepared, prepared.workflows[wid], node, root)
+            if selected is not None:
+                key, _item = selected
+                node.params[NODE_INPUT_FILES[node.operatorId or ""]] = resources[key]
         for siteBinding in prepared.resources.siteBindings:
             target = siteBinding.target
             if isinstance(target, DeviceParameterTarget):

@@ -316,6 +316,7 @@ class PageCoordinator:
         path, _ = QFileDialog.getOpenFileName(self.window, '选择测试图片', '', 'Images (*.png *.jpg *.jpeg *.bmp)')
         if path:
             registerImage(self.session, self.directory, workflow, node, path)
+            self.window.workflowController._renderActive()
             self.preview.message('测试图片已加入项目；下一次开始测试时使用')
             self.chrome.update()
 

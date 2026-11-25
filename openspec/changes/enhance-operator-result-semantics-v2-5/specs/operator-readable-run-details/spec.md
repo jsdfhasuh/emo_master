@@ -17,7 +17,7 @@
 
 ### Requirement: Distinguish node duration from operator duration
 
-系统 SHALL 分别展示框架测得的节点总耗时和算子自身返回的内部耗时。两者统计边界不同，不得相互覆盖，也不得将差值解释为未经测量的阶段耗时。
+系统 SHALL 分别展示框架测得的节点总耗时和算子真实测得的内部耗时。两者统计边界不同，不得相互覆盖，也不得将差值解释为未经测量的阶段耗时。后台提交耗时 SHALL 明示提交边界，固定占位常量不得作为真实计时。
 
 #### Scenario: Compare duration values
 
@@ -35,7 +35,7 @@
 
 ### Requirement: Display effective parameters with their sources
 
-详情 SHALL 展示本次实际传入算子的参数值及可确认来源。配置默认值、节点保存值和最终生效值不一致时，应突出实际生效值。敏感参数只显示已隐藏状态。
+详情 SHALL 展示必要参数条目的 call/effective 阶段及可确认来源。调用参数、保存值和内部归一化后的最终值不一致时，只有可靠最终值可称生效值；无法取得时如实保留调用阶段。敏感参数只显示已隐藏状态。
 
 #### Scenario: Review a device-inherited parameter
 
@@ -68,3 +68,9 @@ metrics SHALL 按字段语义分为执行耗时、业务统计、计算结果或
 
 - **WHEN** 工程师查看单算子调试执行
 - **THEN** 系统用相同中文说明展示真实调试结果，并明确标记调试来源
+
+#### Scenario: Explain a resource prepared by the debug worker
+
+- **WHEN** Worker 将文件路径解析为实际 Runtime 路径，或将 SQLite 目标替换为隔离调试库
+- **THEN** 详情依据资源准备后的安全摘要或已有资源诊断解释实际使用值，不以提交前的 effectiveParams 覆盖它
+- **AND** operatorId/operatorVersion 来自可信调试会话，并继续匹配 generation/executionId

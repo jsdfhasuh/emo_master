@@ -1,121 +1,115 @@
 # 设计
 
-## 1. 目标与边界
+## 1. 基线、阶段和边界
 
-将算子运行信息变成可理解、可追溯、可统一展示的数据，而不是机械翻译 JSON 字段。本次只针对当前正式工程格式和当前 Runtime / Designer，不设计历史工程迁移、旧 Manifest 兼容、旧 SDK 双版本或历史日志回填。
+代码基线：`ed98a0212820efd0e6436029b69e82dc6e313fc7`，已含 PR19 后台任务服务和 PR25 收尾修复。PR20 工作分支同步此 main；不再按 PR19 未合并或双方并行的旧条件安排实施。
 
-## 2. 当前实现基础
+本轮由 **ChatGPT Web** 更新计划并进行 P0 源码审查。逐算子证据见 `reference/operator-field-audit.json`，共用链路见 `reference/runtime-field-audit.md`。P0 结论供后续实现直接使用；P1/P2/P3 尚未完成，不以文档审查冒充产品验收。
 
-审查基线：b75df0adb7a90a4e0b540ff1c8c09e9339cfcdbd
+本 Change 面向当前 Runtime、Designer 和内置算子。保留已确认的日志工作台及单算子调试入口；不做历史迁移、日志回填、旧 SDK 双版本、第二套日志存储、全 outputs 持久化、设备管理或工作流调度重构。
 
-- PluginManifest 已有 operatorId、displayName、version、inputPorts、outputPorts、paramSchema、summary。
-- 端口描述符当前校验 type、required、nullable、schemaVersion。
-- Runtime OperatorInfo 已传递端口 specs、paramSchema、summary、版本等元数据。
-- 正式 Job 完成事件已有 metrics、diagnostics、ioSummary；日志投影不保留完整 outputs。
-- 单算子调试已有 sourceIdentity、operatorVersion、outputs、metrics、diagnostics、elapsedMs。
-- Designer 已有 LogRecordDetail、LogJsonTree 和通用值展示能力。
+## 2. 已核实的实现基础
 
-优先复用这些能力，不另建注册中心、日志数据库、结果查询服务或逐算子 UI。
+| 链路 | 当前事实 | 本 Change 的最小改动 |
+|---|---|---|
+| 注册 | PluginManifest + PluginDescriptor 已含真实身份、版本、端口、paramSchema、runtimeCapabilities | 可选结果说明沿用实际注册对象 |
+| 参数定义 | Manifest.paramSchema 与实际 class.meta.paramSchema 全量相等校验 | 沿各算子的 schemaSource 同步补说明 |
+| 端口合同 | 描述符只允许 type/required/nullable/schemaVersion | 说明按端口 key 旁挂，不改连接合同 |
+| 元数据传输 | ListOperators / OperatorInfo 缺少独立结果语义载荷 | 在现有消息增加一个 JSON 字段，不增加 RPC |
+| 正式运行 | 节点已有 metrics/diagnostics/ioSummary；完成日志有投影白名单 | 补可信身份、受控参数摘要并同步投影 |
+| 调试 | 已有结果和 operatorVersion，但记录缺 operatorId；资源准备还会改写参数 | 从可信会话补身份，采集资源准备后的摘要 |
 
-## 3. P0：先审查，再确定结构
+精确代码位置集中在 Runtime 共用链路审查。实施前若有后续变更，只更新受影响条目，不重做一次全量发现性审查。
 
-对 82 个 operatorId 逐一核对当前 Manifest、实际参数 schema、端口定义和执行实现。共享 helper、继承类和设备托管路径需要沿各 operatorId 的真实分支检查，不能只按 Python 文件合并审查。
+## 3. 统一结果说明结构
 
-每个算子需要形成以下结论：
+采用 Manifest 可选 `resultSchema`，缺省为空。内置算子的完整覆盖由静态检查保证；第三方没有说明仍可正常注册和执行。
 
-- 输入和输出端口：真实类型、用途、数据结构、单位/坐标含义（适用时）、当前日志可见性。
-- 配置参数：名称、用途、默认值、约束、枚举、条件参数及敏感性。
-- 实际生效参数：节点配置、默认值、输入/绑定覆盖、设备继承等来源；只对源码能确认的部分下结论。
-- metrics / diagnostics：实际赋值来源、单位、统计口径、重复数据及业务意义。
-- 缺失信息：是否有业务价值、是否能从真实执行路径可靠取得、应补充还是复用已有结果。
+```text
+resultSchema
+  inputs:        {真实输入端口 key: FieldDescription}
+  outputs:       {真实输出端口 key: FieldDescription}
+  metrics:       {实际返回字段 key: FieldDescription}
+  diagnostics:   {实际返回字段 key: FieldDescription}
+  captureParams: [[参数路径片段, ...], ...]
 
-Runtime 的失败、跳过、取消等通用生命周期行为统一审查一次；只有算子存在专属处理或特殊返回结构时，才在该算子的审查记录中补充。
+FieldDescription
+  title: 中文名称
+  description: 真实用途、条件和统计口径
+  unit: 适用时的单位
+  group: duration/business/result/parameter（指标有明确分类时）
+  fields: 已知对象子字段说明（可选）
+  items: 已知数组元素说明（可选）
+```
 
-P0 完成后才确定 resultSchema、端口说明和必要的生效参数记录结构。不能预设一套字段强迫所有算子迁就。
+- inputs/outputs 只引用真实端口，不重复 type、required、nullable、schemaVersion。
+- metrics/diagnostics 解释已有值，不改变业务返回。动态键和未声明字段继续原始展示，不增加表达式语言或逐算子组件。
+- fields/items 只解释审查确认的结构。强类型集合复用既有合同及通用组件，不逐算子再定义一份数据模型。
+- captureParams 仅选择算子 params 命名空间，按 paramSchema 解释，不复制参数名称、默认值或说明。默认不采集，按审查结论选择必要字段；不得混入 deviceParameters/connection 的同名路径。
+- 校验说明结构及端口/参数引用；字段缺失和缺少说明分开处理。不把内置说明完整性变成所有第三方插件的执行门槛。
+- 不新增必填 OperatorMeta 字段。补参数 title/description 时同步其内嵌、共享或继承的 schema 来源。
 
-## 4. 语义元数据与参数
+在现有 OperatorInfo 中新增 `result_schema_json`，序号选择目标 proto 的未占用编号（本基线字段到 20）。Runtime ListOperators、RuntimeClient、OperatorDefinition 同步处理，并运行 `scripts/gen_proto.py`。结果说明不塞进 paramSchema、summary 或 editor_spec_json。
 
-复用现有 PluginManifest 和 paramSchema。元数据说明覆盖输入、输出、metrics、diagnostics；适用时提供中文名称、用途、单位、格式和展示重要程度。端口的 type、required、nullable、schemaVersion 仍由现有端口契约负责，说明字段不得改变端口连接兼容性。
+## 4. 身份和受控参数摘要
 
-配置参数说明直接使用 paramSchema，不另建重复参数定义。配置值与本次实际生效值必须区分；只有沿真实执行调用链确认的值才能标记为生效值，无法确认来源时如实标记。
+### 4.1 身份
 
-生效参数只记录对排障有价值且确实需要持久化的字段，不复制整份工程或设备配置。若需要持久化敏感参数，必须在进入日志前脱敏；不能只在界面隐藏明文。
+正式 Job 从执行子进程实际扫描得到的 PluginDescriptor 取 operatorId/operatorVersion，关联注册算子的节点生命周期记录。不能从显示名、共享父类版本或 Designer 当前工程反推。框架节点没有注册身份时保持缺失，skipped 不补本次执行参数或输出。
 
-新增 metrics / diagnostics 必须来自真实执行路径，并且不能重复已有 outputs、ioSummary 或框架生命周期信息。纯数值算子可以没有专用 metrics；不能为统一外观制造重复计数、估算耗时或推断业务状态。
+调试从已准入 spec 补 operatorId，沿用 version 和 session/generation/executionId。记录缺少匹配身份或当前目录版本不同，使用通用原始值；不建立旧版本注册表或历史回填。
 
-## 5. Runtime 身份与传递
+### 4.2 参数取值阶段
 
-正式 Job 的算子身份从实际注册描述符取得，使用 operatorId 和 operatorVersion 关联节点生命周期记录。不能从显示名称或当前工程配置猜版本。框架节点和无实际注册身份的记录不伪造字段。
+新增 `parameterSummary` 为小型条目列表，每项包含参数 `path`、真实 `value`、`stage`（call/effective）及能够确认的 `source`。来源只表述现有路径能证明的事实：准备后的节点参数、变量覆盖、输入覆盖、设备解析或算子内部归一化。已经默认化而无法区分原始填写来源时，不反推用户输入。
 
-优先复用现有事件 payload / OperatorInfo 通道；只有现有通道确实无法表达时才修改 proto，并运行正式生成脚本。单算子调试沿用已有 sourceIdentity 和 operatorVersion。
+- call：OperatorExecutor 在全局变量解析后、executeNode 调用前选取必要字段。托管设备参数从 deviceParameters 和真实动作路径取，不能用 params 同名连接字段冒充。
+- 设备值优先解释既有 deviceFrame/回执/诊断及 slot。确需补充时，在对应已有 diagnostics 中记录带 slot、设备 schema 来源的少量实际值，不纳入 captureParams 或复制 connection/policies。
+- effective：优先复用本次输出/metrics/diagnostics 的真实值。仅有价值且缺失时，经对应算子既有 diagnostics 通路补少量归一化结果；框架不猜内部覆盖。
+- CollectionFilter 的条件中和、CollectionSort 的默认排序键、Crop 的 roi 覆盖、模型路径及 SQLite 调试隔离路径，采用处理后的值或明确标为调用参数。
+- 模式未启用、字段缺失、显式空字符串保持原意；FlowSwitch 可选 case 不得无条件填成默认空串。
+- 调试 Worker 在 `resources.prepare` 后取得摘要。manager 原有 rawParams/effectiveParams 不直接改称最终生效值，resourcePaths/debugDatabasePath 等来源继续复用。
 
-## 6. 日志详情展示
+### 4.3 事件与脱敏
 
-复用 LogRecordDetail 和通用值组件。左侧执行树、查询、分页、导出和设备诊断不在本 Change 重做。
+摘要在进入事件或供查看的调试记录前筛选和脱敏，执行仍使用可信原值。复用已有敏感 key 处理，补足审查确认的认证字段和含认证信息的 URL。必要的敏感性标记使用参数校验器允许的 x 扩展，不引入未支持的 JSON Schema 关键字。
 
-右侧详情按实际存在的数据组织：
+调试展示/复制/导出的副本同时处理现有 rawParams、effectiveParams、bindingSources 及已知认证路径，不能只保护新 parameterSummary 却原样导出旧字段。现有早期 effectiveParams 明确标为准备/调用阶段；不改执行所需原值，不新建日志库。
 
-1. 运行概览：算子名称、状态、节点总耗时、算子内部耗时、核心业务结果。
-2. 输入数据：中文端口名称、用途和真实摘要。
-3. 本次生效参数：实际值、可确认来源和说明；敏感值隐藏。
-4. 输出结果：中文端口名称、用途、真实标量/集合摘要及现有可用结果资产。
-5. 运行指标：按耗时、业务统计、计算结果等真实语义分组。
-6. 诊断信息：处理摘要、模型/设备/通信信息、警告和回执。
-7. 技术详情：原始字段、类型、原始 JSON 和记录身份。
+JSONL 完成事件白名单必须保留新增身份与 parameterSummary。验证 raw payload、持久化、查询、复制和导出均保留安全结果；沿用既有大小约束，不复制整份工程、设备配置、资源表或大数组。
 
-无数据区域可以隐藏，不填充推测内容。概览可以合并重复值，但原始来源必须保留。0、false、null、空字符串、空数组、空对象和字段缺失继续区分。
+## 5. 按审查收敛的结果语义
 
-正式 Job 目前只保留有限 ioSummary，不保留完整 outputs。语义元数据只能解释已有摘要，不能恢复未保存的图像、集合或完整检测框。调试结果只有真实 outputAssets 存在时才预览。
+- ImageSaver 后台 accepted/saved/state/taskId 分别解释；提交接受不等于文件完成，latencyMs 只计复制/提交返回。排空、成功产物登记和 SQLite FILE_REFERENCE 等待沿用 PR19。
+- TCP 发送到传输层、网关 ACK、PLC 回读和设备播放请求各保留真实含义，不能推成物理动作完成。托管/直接路径的参数来源、attempts 和重试分别说明。
+- 数值/几何无专用 metrics 时使用既有输出与框架耗时；百分比未定义保留 null/defined=false，点均值中心、轮廓几何面积和连通域像素面积按各自源码解释。
+- 图像/推理解释自适应阈值的 null、模板匹配 quality、PatchCore 相对热图、真实模型来源与输出类型，不统一叫成校准概率。
+- EmptyOperator 的 latencyMs=0.0 是占位，P1 去除该伪计时并复用框架耗时；enabled 目前仅校验、无执行开关作用，说明事实，不扩展禁用功能。
+- 详细新增/复用/不补决定以逐算子记录为准。已有 outputs、metrics、diagnostics 只说明来源关系，不为齐整再造重复计数或耗时。
 
-## 7. 验证
+## 6. Designer 接入范围
 
-全部 82 个算子做静态字段和元数据覆盖检查；真实执行验证选取少量代表算子，覆盖不同执行类别。Runtime 参数来源与脱敏、元数据传递、Designer 详情和单算子调试按共用链路验证，不为每个字段或算子重复测试。
+复用 LogRecordDetail、LogJsonTree 和现有调试结果接线，在已确认的详情结构中解释匹配身份的字段。参数说明来自 paramSchema，摘要区分调用/生效阶段。保留原始 key、值、类型、JSON、复制和展开。
 
-使用现有模拟设备、隔离服务和测试夹具，不连接生产相机或 PLC，不要求全部算子加载真实模型。
+0、false、null、空字符串、空集合和缺失继续区分。ioSummary 仅有 shape/dtype/数量时只解释摘要；图像/集合资产必须实际存在。调试结果保持独立，不改设备准入和调试隔离。
 
-## 8. 非目标
+本轮计划更新不更换已确认布局。后续若调整具体界面或操作流程，先按用户要求提供可操作原型；本轮源码审查无需重新制作界面原型。
 
-历史项目/日志迁移、旧版本兼容层、日志回填、第二套日志存储、全量 outputs 持久化、逐算子自定义 UI、所有算子强制增加 metrics 或主动 logger、Web 日志 UI、工作流调度和设备管理重构，以及没有实际场景支持的防御性框架和重复测试。
+## 7. 验证范围
 
+| 范围 | 必要验证 |
+|---|---|
+| 全部 82 算子 | 静态核对端口、参数含嵌套/条件项、说明及引用；复用注册一致性检查 |
+| 身份与参数 | 代表性继承版本、变量/输入覆盖、内部归一化、资源解析；共用机制不逐算子重复 |
+| 日志与脱敏 | 一组完成事件贯通持久化/查询/导出，直接反例确认明文凭据未进入原始记录 |
+| 结果语义 | 各执行类别少量代表，已有指标、重复字段和空值含义不失真 |
+| Designer/调试 | 共用解释、真实会话身份、资产与安全摘要；一次相关原生 Qt 走查 |
+| 收尾 | OpenSpec strict、协议生成一致性、受影响测试及适用 CI，列出未执行/跳过 |
 
-## 9. 与 PR19 并行实施的文件边界
+不要求全部算子实际执行、全部模型/生产硬件、逐字段重复测试、线程交错排列、性能专项或冻结包作为开工条件。PR25 取消/故障和 PR19 后台任务测试在受影响时复用，不另建同义测试组。
 
-PR19（Runtime 后台任务服务，PR #19）与本 Change（算子运行信息完整化，PR #20）计划同时推进。两者都可能修改 PluginManifest、Manifest Validator、OperatorExecutor、WorkflowRunner 和部分算子 Manifest，不能让两个执行分支同时独立改写同一公共文件。
+## 8. 已合并依赖与基线记录
 
-### 9.1 职责归属
+PR19、PR25 已合入，能力通过正常分支同步继承。PR20 相对该 main 的新增差异只属于本 Change；无需临时集成分支或重新分配已结束 PR 的文件所有权。
 
-PR19 独占负责：
-- runtimeCapabilities 的声明、解析和校验。
-- BackgroundTaskService、TaskControl、后台任务客户端及注入。
-- Job 生命周期 drain、任务完成轮询、后台产物处理。
-- ImageSaver 的后台保存实现及其专属 Manifest 声明。
-- PR19 计划中约定的 SQLite FILE_REFERENCE 延迟绑定。
-
-PR20 独占负责：
-- 82 个算子的字段语义审查及审查清单。
-- 全部算子的中文参数、输入端口和输出端口说明。
-- resultSchema（或 P0 审查后确定的最终结构）及其展示语义。
-- 算子运行身份、必要的生效参数摘要和日志详情展示。
-- Designer RuntimeClient、LogRecordDetail 与单算子调试统一展示。
-
-### 9.2 并行推进方式
-
-两条工作线可以并行，但按以下顺序交接：
-
-1. PR20 的 P0：82 算子逐字段审查可以与 PR19 全程并行；审查只读源码，不改 PR19 所有权范围内的 Runtime 核心文件。
-2. PR19 实施期间，PR20 可以独立准备字段审查结果、Designer 详情布局和不依赖新 Runtime 元数据的 UI 部分；不得在自己的分支复制实现 PR19 的 PluginManifest / validator / Runner 改动。
-3. PR19 的公共 Runtime 基础合入 main 后，PR20 从最新 main 更新工作分支，再实施 PluginManifest、Validator、OperatorInfo、WorkflowRunner、日志投影等共享链路改动。
-4. 若 PR19 尚未合并但确需联调，使用 PR19 分支作为临时集成基线或在本地集成工作区验证；不要把 PR19 的提交复制进 PR20 的独立产品提交，也不要让 PR20 反向修改 PR19 分支。
-5. PR20 最终 PR 只包含本 Change 的差异；PR19 已合入的能力通过依赖当前 main 使用。
-
-### 9.3 共享文件修改规则
-
-- PluginManifest / validator：PR19 先落地 runtimeCapabilities；PR20 在其合并后增补语义元数据，保留 PR19 字段和校验。
-- OperatorExecutor / WorkflowRunner：PR19 负责后台任务注入、drain 和完成事件；PR20 只增加必要的算子身份与参数信息，不重写后台任务生命周期。
-- ImageSaver Manifest：PR19 负责 runtimeCapabilities；PR20 的中文端口和参数说明应在 PR19 分支完成后合并式补充，不能覆盖该能力声明。
-- Runtime 事件：两个功能各自添加必要字段，合并前核对字段命名和投影路径；不得建立两套事件身份或重复事件。
-- PR20 不得因接入后台任务能力而改变 ImageSaver 的同步/异步语义；PR19 不负责 PR20 的结果语义 UI。
-
-### 9.4 Codex 执行约束
-
-PR20 的执行者为 **Codex 6.2 Astra**。启动时必须先读取 PR19 当前状态、实际 head SHA 和已合入文件差异；不能假定 PR19 仍停留在计划状态。每次修改共享文件前先对照最新 main 和 PR19 已合入内容。不得将 PR19 的后台任务实现混入 PR20，也不得为避免冲突而删掉 PR19 已有能力。
+记录固定源 SHA 和后续增量，不以移动分支名代替证据。合并后源码 CI 曾出现 Designer 进程崩溃，同树合并前 CI 通过，根因未定；涉及该链路实现/验收前针对性核查，不升级成重新验收整个 PR19 或暂停 P0 的条件。

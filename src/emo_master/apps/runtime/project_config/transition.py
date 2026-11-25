@@ -78,7 +78,10 @@ class DeviceTransition:
                     for group in groups:
                         with group.lock:
                             busy = busy or any(slot.queue or slot.active for slot in group.slots.values())
-                    if not busy:
+                    # A cycle or delivery can retire before its accepted file
+                    # writes. Admission is now closed, so check those last.
+                    if not busy and not any(runtime.jobSupervisor.hasPendingBackgroundTasks(owner)
+                                            for owner in self.owners):
                         break
                     time.sleep(.02)
             for owner in self.owners:

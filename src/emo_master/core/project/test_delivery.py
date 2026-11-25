@@ -80,6 +80,18 @@ def portableDocument(document):
     return result
 
 
+def materializeTestImagePaths(document):
+    """The isolated P5-A format stores its input image only in the package manifest/plan."""
+    result = document.model_copy(deep=True)
+    for binding in result.resources.nodeParameterBindings:
+        target = binding.target
+        node = next(n for n in result.workflows[target.workflowId].nodes if n.nodeId == target.nodeId)
+        if (node.operatorId == "vision.io.image_loader" and target.parameterPath == ["imagePath"]
+                and not node.params.get("imagePath")):
+            node.params["imagePath"] = result.resources.items[binding.resourceId].path
+    return result
+
+
 def validateTestProject(document, root, registry):
     """Same formal release snapshot and compiler as Runtime, without execution."""
     if (document.schemaVersion != '2.2' or document.resources is None
@@ -139,7 +151,7 @@ def validateTestProject(document, root, registry):
             if component.type == 'navigation_button' and not component.actions:
                 raise ValueError('navigation button requires an explicit action')
     with tempfile.TemporaryDirectory(prefix='emo-package-validate-') as temporary:
-        snapshot = freezeProjectSnapshot(document, {k: d.manifest for k, d in registry.items()},
+        snapshot = freezeProjectSnapshot(materializeTestImagePaths(document), {k: d.manifest for k, d in registry.items()},
             mode='release', releaseRevision='validation-only', resourceRoot=Path(root),
             siteDataRoot=Path(temporary), siteValues=sites)
         compiled = ProjectDocument.model_validate(document.model_dump())

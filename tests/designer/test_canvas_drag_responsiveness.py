@@ -7,6 +7,9 @@ from PySide2.QtGui import QColor, QImage, QMouseEvent, QPainter
 from PySide2.QtWidgets import QApplication, QGraphicsView, QStyle, QStyleOptionGraphicsItem
 
 from emo_master.apps.designer.ui import flow_scene
+from emo_master.apps.designer.controllers.workflow_controller import WorkflowController
+from emo_master.apps.designer.state.flow_graph_model import FlowGraphModel
+from emo_master.apps.designer.state.workflow_store import WorkflowStore
 from emo_master.apps.designer.ui.flow_routing import OrthogonalRouter, Route
 from emo_master.apps.designer.ui.flow_scene import FlowEdgeViewModel
 from emo_master.apps.designer.ui.designer_graphics_view import DesignerGraphicsView
@@ -35,6 +38,46 @@ def drainRoutes(scene):
         scene._routeRefineTimer.stop()
         scene._continueRouteRefinement()
     pytest.fail('route refinement did not finish')
+
+
+def testWorkflowSwitchSlicesRoutingAndCancelsTheOldGraph(ownedFlowScene, monkeypatch):
+    scene = ownedFlowScene()
+    model = FlowGraphModel()
+    controller = WorkflowController(WorkflowStore(), model, scene)
+    main = controller.activeWorkflowId
+    source = model.addNode('test.source', 'Source', {}, {'out': 'number'})
+    target = model.addNode('test.target', 'Target', {'a': 'number', 'b': 'number'}, {})
+    for port in ('a', 'b'):
+        model.connectNodes(source, 'out', target, port)
+    controller.refreshActiveWorkflow()
+    scene._nodeItems[source].setPos(0, 1000)
+    scene._nodeItems[target].setPos(600, 1120)
+    other = controller.createWorkflow('Other')
+
+    clock = count()
+    monkeypatch.setattr(flow_scene, 'perf_counter', lambda: next(clock) * .005)
+    controller.switchWorkflow(main)
+    assert scene._routeRefineTimer.isActive() and not scene._routeTimer.isActive()
+    nodes, requests = scene._routingInputs(list(scene._edgeItems.values()))
+    expected = OrthogonalRouter(nodes, requests).routeAll()
+    for _ in range(1000):
+        scene._routeRefineTimer.stop()
+        scene._continueRouteRefinement()
+        visible = {key: edge for key, edge in scene._edgeItems.items() if not edge._displayPath.isEmpty()}
+        if visible:
+            break
+    assert len(visible) == 1 and scene._routesDirty
+    key, edge = next(iter(visible.items()))
+    assert edge.route == expected[key] and not edge.shape().isEmpty()
+    assert not scene._wireGeometry.parts  # Shared paths are built once after the search.
+    controller.switchWorkflow(other)
+    assert scene._routeRefinement is None and not scene._edgeItems
+
+    controller.switchWorkflow(main)
+    assert len(expected) == 2 and all(not route.blocked for route in expected.values())
+    drainRoutes(scene)
+    assert {key: edge.route for key, edge in scene._edgeItems.items()} == expected
+    assert scene._sharedWireItems
 
 
 def testClickDoesNotRouteOrCheckpointAndDragCommitsOnce(ownedFlowScene, designerApplication, monkeypatch):

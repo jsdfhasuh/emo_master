@@ -22,8 +22,6 @@ def runtime(tmp_path):
         operatorId="vision.io.image_loader", params=dict(imagePath=str(resource))))
     payload["resources"]["items"]["image"] = dict(path="input.png", sha256=hashlib.sha256(resource.read_bytes()).hexdigest(),
         size=resource.stat().st_size, purpose="input_image")
-    payload["resources"]["parameterBindings"] = [dict(resourceId="image", target=dict(
-        workflowId="main", nodeId="file", parameterPath=["imagePath"]))]
     project = tmp_path / "project.json"
     project.write_text(json.dumps(payload), encoding="utf-8")
     service = RuntimeService(dbPath=tmp_path / "runtime.db", workspaceRoot=tmp_path / "jobs")
@@ -45,6 +43,9 @@ def testResourceReplacementPinsOldBytesAndInstallsNewBytes(runtime):
     resource.write_bytes(b"replacement resource")
     candidate = deepcopy(service.projectConfiguration.snapshot()["payload"])
     candidate["resources"]["items"]["image"].update(sha256=hashlib.sha256(resource.read_bytes()).hexdigest(), size=resource.stat().st_size)
+    from emo_master.apps.runtime.project_config.impact import affectedObjects
+    assert affectedObjects(service.projectConfiguration.snapshot()["payload"], candidate,
+                           projectRoot=service.loadedProjectPath) == ({"main"}, set(), False)
     service.projectConfiguration.start(dict(requestId="resources", expectedRuntimeInstanceId=service.runtimeInstanceId,
         expectedRevision=1, localPayload=candidate,
         selectedPaths=["/resources/items/image/sha256", "/resources/items/image/size"]))

@@ -23,16 +23,20 @@ INPUT = cv2.imencode(".png", np.zeros((8, 8, 3), dtype=np.uint8))[1].tobytes()
 REPLACEMENT = cv2.imencode(".png", np.full((8, 8, 3), 128, dtype=np.uint8))[1].tobytes()
 
 
+def selectImage(payload, name, data):
+    node = next(node for node in payload["workflows"]["main"]["nodes"] if node["nodeId"] == "file")
+    node["params"]["imagePath"] = name
+    payload["resources"]["items"]["image"] = dict(manifest(data, name), purpose="input_image")
+
+
 def resourceProject(root):
     root.mkdir()
     source = root / "input.png"
     source.write_bytes(INPUT)
     payload = simulatedProject()
     payload["workflows"]["main"]["nodes"].append(dict(nodeId="file", kind="operator",
-        operatorId="vision.io.image_loader", params=dict(imagePath=str(source))))
-    payload["resources"]["items"]["image"] = dict(manifest(source.read_bytes(), source.name), purpose="input_image")
-    payload["resources"]["parameterBindings"] = [dict(resourceId="image", target=dict(
-        workflowId="main", nodeId="file", parameterPath=["imagePath"]))]
+        operatorId="vision.io.image_loader", params={}))
+    selectImage(payload, source.name, INPUT)
     project = root / "project.json"
     project.write_text(json.dumps(payload), encoding="utf-8")
     return project, source
@@ -83,9 +87,10 @@ def testInitialLocalResourceSurvivesDirectoryRemovalOrAllowsExplicitRepair(tmp_p
             assert not reply.ok
         candidate = deepcopy(service.projectConfiguration.snapshot()["payload"])
         data = REPLACEMENT
-        candidate["resources"]["items"]["image"] = dict(manifest(data, "new.png"), purpose="input_image")
+        selectImage(candidate, "new.png", data)
         transfer = upload(service, candidate, data)
-        assert write(service, candidate)["state"] == "COMMITTED"
+        status = write(service, candidate)
+        assert status["state"] == "COMMITTED", status
         assert not service.onlineRecoveryError
         assert service.loadedProjectId == candidate["project"]["projectId"]
         assert imagePath(service).read_bytes() == data
@@ -116,7 +121,7 @@ def testPreparedUploadCannotBeCancelledUntilCancelledWriteRetires(tmp_path, monk
         assert service.LoadProject(pb.LoadProjectRequest(project_path=str(project)), None).ok
         candidate = deepcopy(service.projectConfiguration.current["payload"])
         data = b"candidate bytes"
-        candidate["resources"]["items"]["image"] = dict(manifest(data, "candidate.png"), purpose="input_image")
+        selectImage(candidate, "candidate.png", data)
         transfer = upload(service, candidate, data)
         original = service._preparePinnedProjectConfiguration
         def prepare(payload, cancelled):
@@ -152,7 +157,7 @@ def testFailedResourceIngestionReleasesQuotaWithoutCommitting(tmp_path, monkeypa
         candidate = deepcopy(service.projectConfiguration.current["payload"])
         source = project.parent / "wrong.bin"
         source.write_bytes(b"wrong content")
-        candidate["resources"]["items"]["image"]["path"] = source.name
+        selectImage(candidate, source.name, INPUT)
         assert write(service, candidate, "bad-input")["state"] == "FAILED"
         assert service.projectConfiguration.current["documentRevision"] == 1
         with service.sqliteStore.connection() as connection:
@@ -193,7 +198,7 @@ def testResourceCommitFailureReleasesCandidateButKeepsOnlineCopy(tmp_path):
     try:
         assert service.LoadProject(pb.LoadProjectRequest(project_path=str(project)), None).ok
         candidate = deepcopy(service.projectConfiguration.current["payload"])
-        candidate["resources"]["items"]["image"] = dict(manifest(REPLACEMENT, "candidate.png"), purpose="input_image")
+        selectImage(candidate, "candidate.png", REPLACEMENT)
         transfer = upload(service, candidate, REPLACEMENT)
         with service.sqliteStore.connection() as connection:
             connection.execute("CREATE TRIGGER failReceipt BEFORE INSERT ON projectWriteReceipts BEGIN SELECT RAISE(ABORT,'injected failure'); END")
@@ -217,7 +222,7 @@ def testFailedLocalPreparationReclaimsOnlyItsAutomaticallyIngestedCopy(tmp_path)
         source = project.parent / "candidate.png"
         source.write_bytes(REPLACEMENT)
         candidate = deepcopy(service.projectConfiguration.current["payload"])
-        candidate["resources"]["items"]["image"] = dict(manifest(REPLACEMENT, source.name), purpose="input_image")
+        selectImage(candidate, source.name, REPLACEMENT)
         with service.sqliteStore.connection() as connection:
             connection.execute("CREATE TRIGGER failReceipt BEFORE INSERT ON projectWriteReceipts BEGIN SELECT RAISE(ABORT,'injected failure'); END")
         assert write(service, candidate, "local-rollback")["state"] == "FAILED"

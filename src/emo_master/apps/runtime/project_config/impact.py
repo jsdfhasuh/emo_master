@@ -1,13 +1,15 @@
 """Conservative dependency-scoped retirement for non-cycle-safe changes."""
-from emo_master.core.project.configuration import projectChanges, presentationExecution
+from emo_master.core.project.configuration import projectChanges, presentationExecution, workflowInputFileKeys
+from emo_master.core.project.node_input_files import NODE_INPUT_FILES, nodeInputPathKey
 from emo_master.core.workflow.loop_contracts import loopWorkflowReferenceFields
 
 
-def affectedObjects(before, payload):
+def affectedObjects(before, payload, *, projectRoot=None):
     if before["project"]["projectId"] != payload["project"]["projectId"]:
         return (set(before['workflows']) | set(payload['workflows']),
                 set(before['devices']['definitions']) | set(payload['devices']['definitions']), True)
     flows, devices = set(), set()
+    changedFiles = set()
     for change in projectChanges(before, payload):
         p = change["parts"]
         if p[0] in {"project", "workflowOrder"}:
@@ -24,6 +26,8 @@ def affectedObjects(before, payload):
             oldResources, newResources = before.get("resources") or {}, payload.get("resources") or {}
             for document in (before, payload):
                 resources = document.get("resources") or {}
+                if len(p) >= 3 and p[1] == "items" and p[2] in resources.get("items", {}):
+                    changedFiles.add(nodeInputPathKey(resources["items"][p[2]]["path"]))
                 fields = (p[1],) if len(p) >= 2 and p[1] in {"parameterBindings", "siteBindings"} else ("parameterBindings", "siteBindings")
                 for binding in [binding for field in fields for binding in resources.get(field, [])]:
                     if len(p) >= 3 and p[1] == "items" and binding.get("resourceId") != p[2]:
@@ -35,6 +39,11 @@ def affectedObjects(before, payload):
                     if "deviceId" in target:
                         devices.add(target["deviceId"])
                     else:
+                        workflow = document["workflows"].get(target["workflowId"], {})
+                        node = next((n for n in workflow.get("nodes", []) if n["nodeId"] == target["nodeId"]), {})
+                        if ("resourceId" in binding and
+                                target["parameterPath"] == [NODE_INPUT_FILES.get(node.get("operatorId"))]):
+                            continue
                         flows.add(target["workflowId"])
         elif p[0] == "presentation":
             if presentationExecution(before) == presentationExecution(payload):
@@ -53,6 +62,8 @@ def affectedObjects(before, payload):
     for data in (before, payload):
         for key, workflow in data['workflows'].items():
             targets = edges.setdefault(key, set())
+            if changedFiles and changedFiles.intersection(workflowInputFileKeys(workflow, projectRoot)):
+                flows.add(key)
             for node in workflow['nodes']:
                 if any(binding['deviceId'] in devices for binding in node.get('deviceBindings', {}).values()):
                     flows.add(key)
@@ -72,7 +83,8 @@ def affectedObjects(before, payload):
 
 
 def affectedJobs(runtime, payload, *, sourceChanged=False):
-    flows, _devices, allJobs = affectedObjects(runtime.projectConfiguration.current['payload'], payload)
+    flows, _devices, allJobs = affectedObjects(runtime.projectConfiguration.current['payload'], payload,
+                                               projectRoot=runtime.loadedProjectPath)
     jobs = {record.jobId for record in runtime.jobRepository.all() if allJobs or record.workflowId in flows}
     if sourceChanged:
         projectId = runtime.projectConfiguration.current['payload']['project']['projectId']
@@ -98,15 +110,16 @@ def changeEffects(runtime, candidate):
     """Describe explicit preflight changes using the same cycle/replacement rules."""
     from emo_master.core.project.configuration import executionDigest, selectedCandidate
     before = runtime.projectConfiguration.current['payload']
+    root = runtime.loadedProjectPath
     projectChanged = before['project']['projectId'] != candidate['project']['projectId']
     result = {}
     for change in projectChanges(before, candidate):
         partial = selectedCandidate(before, candidate, [change['path']])
         scope = candidate if projectChanged else partial
-        flows, devices, _all = affectedObjects(before, scope)
+        flows, devices, _all = affectedObjects(before, scope, projectRoot=root)
         if projectChanged:
             effect = 'stop'
-        elif executionDigest(partial) == executionDigest(before):
+        elif executionDigest(partial, projectRoot=root) == executionDigest(before, projectRoot=root):
             effect = 'document'
         elif runtime._supportsCycleChange(partial):
             effect = 'next_cycle'

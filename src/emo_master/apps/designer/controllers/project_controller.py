@@ -45,6 +45,7 @@ class ProjectController:
         self.workflowController = workflowController
         self.editCoordinator = None
         self.currentProjectFile: Path | None = None
+        self.pendingNodeInputs: set[tuple[str, str, str]] = set()
         self.lastLoadError = ""
         self.lastSaveError = ""
         self._fallbackProjectMetadata: dict[str, object] = {
@@ -200,6 +201,7 @@ class ProjectController:
             self._restoreProjectPayload(payload)
         if self.editCoordinator is not None:
             self.editCoordinator.loaded(projectDir)
+        self.pendingNodeInputs.clear()
         self.currentProjectFile = projectFile
         self.recordRecentProject(str(projectFile))
         self.appendLog("INFO", f"项目已加载：{projectFile}")
@@ -220,6 +222,7 @@ class ProjectController:
                 self.editCoordinator.copyResources(projectDir)
             createProjectSkeleton(projectFile, projectName)
             payload = self._buildProjectPayload(projectName, loadedProjectPath)
+            imported = self._preparePendingNodeInputs(payload, projectDir)
             saveProject(projectFile, payload)
         except Exception as err:
             self.lastSaveError = f"项目保存失败：{err}"
@@ -243,14 +246,55 @@ class ProjectController:
                     return False, None
         if self.workflowController is not None:
             self.workflowController.commitSavedPayload(payload)
+            if imported:
+                store = self.workflowController.workflowStore
+                store.projectExtensions["resources"] = payload["resources"]
+                for wid, nodeId, field, chosen, relative in imported:
+                    row = next(n for n in store.get(wid).nodes if n["nodeId"] == nodeId)
+                    row["params"][field] = relative
+                    if wid == store.activeWorkflowId:
+                        self.flowModel.nodes[nodeId].params[field] = relative
+                    if self.editCoordinator is not None:
+                        from emo_master.apps.designer.operator_editors import EditorKey
+                        editor = self.editCoordinator.window.operatorEditorManager.get(EditorKey(
+                            str(store.project["projectId"]), wid, nodeId))
+                        if editor is not None:
+                            editor.syncSavedInput(field, chosen, relative)
+                self.workflowController._renderActive()
         else:
             self._captureFallbackProjectMetadata(payload)
         if self.editCoordinator is not None:
             self.editCoordinator.saved(projectDir)
         self.currentProjectFile = projectFile
+        self.pendingNodeInputs.clear()
         self.recordRecentProject(str(projectFile))
         self.appendLog("INFO", f"项目已保存：{projectFile}")
         return True, projectDir
+
+    def _preparePendingNodeInputs(self, payload, directory):
+        """Make files selected in an unsaved project portable at its first save."""
+        if not self.pendingNodeInputs:
+            return []
+        from emo_master.core.project.models import ProjectDocument
+        from emo_master.core.project.node_input_files import activeNodeInputFile, alignNodeInputFiles, projectInputFilePath
+        document = ProjectDocument.model_validate(payload)
+        imported = []
+        for projectId, wid, nodeId in self.pendingNodeInputs:
+            workflow = document.workflows.get(wid)
+            if projectId != document.project.projectId or workflow is None:
+                continue
+            node = next((n for n in workflow.nodes if n.nodeId == nodeId), None)
+            field = activeNodeInputFile(workflow, node) if node else None
+            chosen = node.params.get(field) if field else None
+            if not isinstance(chosen, str) or not chosen or not (directory / chosen).is_file():
+                continue
+            relative = projectInputFilePath(chosen, directory, node.operatorId)
+            node.params[field] = relative
+            imported.append((wid, nodeId, field, chosen, relative))
+        if imported:
+            document = alignNodeInputFiles(document, directory, only={(row[0], row[1]) for row in imported})
+            payload.update(document.model_dump(mode="json"))
+        return imported
 
     def resolveProjectDirectory(self, selectedPath: str) -> Path | None:
         try:

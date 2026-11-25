@@ -4,6 +4,7 @@ Committed copies are never overwritten or reclaimed behind an old Job. The cache
 is persistent and bounded; exhaustion fails preparation instead of evicting users.
 """
 import hashlib
+import re
 from pathlib import Path
 from uuid import uuid4
 
@@ -21,6 +22,31 @@ def fileDigest(path):
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def jobModelSources(document, rawPayload, cacheRoot=None, *, verifiedFiles=None):
+    """Pair the accepted configuration with its prepared YOLO files once per Job."""
+    result = {}
+    for workflowId, workflow in document.workflows.items():
+        rawNodes = {node["nodeId"]: node for node in rawPayload["workflows"][workflowId]["nodes"]}
+        for node in workflow.nodes:
+            if node.operatorId not in {"vision.inference.yolo", "vision.inference.yolo_classification"}:
+                continue
+            loaded = node.params.get("modelPath")
+            if not isinstance(loaded, str) or not loaded:
+                continue
+            literal = rawNodes[node.nodeId].get("params", {}).get("modelPath")
+            if not isinstance(literal, str) or not literal:
+                continue
+            source = dict(path=literal)
+            # prepareResources names immutable copies by the digest of the bytes it copied.
+            prepared = Path(loaded)
+            if verifiedFiles and loaded in verifiedFiles:
+                source["sha256"] = verifiedFiles[loaded]
+            elif prepared.parent.parent == cacheRoot and re.fullmatch("[0-9a-f]{64}", prepared.stem):
+                source["sha256"] = prepared.stem
+            result[(workflowId, node.nodeId, loaded)] = source
+    return result
 
 
 def retainDeviceInputs(document, previous, deviceTypes, cacheRoot):
@@ -60,19 +86,8 @@ def prepareResources(document, registry, deviceTypes, cacheRoot, cancelled, *, p
     root.mkdir(parents=True, exist_ok=True)
     staging = root / uuid4().hex
     created = []
-    expected = {}
-    if result.resources:
-        for key, path in result._pageResourcePaths.items():
-            expected[str(Path(path).resolve())] = result.resources.items[key].sha256
-        for binding in result.resources.parameterBindings:
-            target = binding.target
-            if hasattr(target, "deviceId"):
-                value = getattr(result.devices.definitions[target.deviceId], target.section)
-            else:
-                value = next(n.params for n in result.workflows[target.workflowId].nodes if n.nodeId == target.nodeId)
-            for part in target.parameterPath:
-                value = value[part]
-            expected[str(Path(value).resolve())] = result.resources.items[binding.resourceId].sha256
+    expected = {str(Path(path).resolve()): result.resources.items[key].sha256
+                for key, path in result._verifiedResourcePaths.items()} if result.resources else {}
 
     def copyInput(path, old=None):
         source = Path(path).resolve(strict=True)

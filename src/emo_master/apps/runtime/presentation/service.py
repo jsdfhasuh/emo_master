@@ -131,6 +131,7 @@ class PresentationService:
             prepared.verify()
             snapshot = prepared.snapshot
             from emo_master.core.project.models import ProjectDocument
+            from emo_master.apps.runtime.project_config.resources import jobModelSources
             document = ProjectDocument.model_validate_json(prepared.projectPath.read_text(encoding="utf-8"))
             errors = self.runtime.livePreviewManager.closeAll(timeoutSeconds=3.0)
             if errors:
@@ -151,7 +152,10 @@ class PresentationService:
                 self.runtime.jobManager.start(job, JobProcessSpec(
                     job.jobId, str(prepared.projectPath), document.entryWorkflowId,
                     pluginRootPaths=tuple(self.runtime.pluginRootPaths), jobWorkspacePath=str(workspace),
-                    projectId=snapshot.projectId, runtimeDbPath=snapshot.runtimeDbPath, presentation=config))
+                    stagingRecoveryRoot=str(self.runtime.stagingRecoveryRoot),
+                    projectId=snapshot.projectId, runtimeDbPath=snapshot.runtimeDbPath, presentation=config,
+                    modelSources=jobModelSources(document, json.loads(snapshot.projectJson),
+                                                 verifiedFiles=dict(prepared.files))))
             except BaseException:
                 self.runtime.jobRepository.update(job.jobId, status="FAILED")
                 self.terminalStates[job.jobId] = ("FAILED", time.monotonic())

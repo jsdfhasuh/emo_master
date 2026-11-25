@@ -16,6 +16,7 @@ from emo_master.clients.runtime.connection import connectionProfile, createChann
 from emo_master.ui.presentation.hub import DisplayHub
 from emo_master.core.presentation.models import walkComponents
 from emo_master.core.presentation.coverage import CaptureCoverage
+from emo_master.core.project.node_input_files import nodeInputPathKey
 
 
 LOCAL_OPERATORS = frozenset({'vision.io.image_loader', 'vision.analysis.blob',
@@ -24,7 +25,7 @@ STATUS_LABELS = {'ACCEPTED': '等待开始', 'STARTING': '正在启动', 'RUNNIN
                  'STOPPING': '正在停止', 'COMPLETED': '已完成', 'FAILED': '失败', 'ABORTED': '已停止'}
 
 
-def checkLocalDraft(document):
+def checkLocalDraft(document, root=None):
     """P4 permission boundary: trusted local image pipeline only, no device operators."""
     if document.presentation is None or document.resources is None:
         raise ValueError('请先启用页面设计')
@@ -35,8 +36,6 @@ def checkLocalDraft(document):
         and document.presentation.dataSources[key].expectedType == 'image'}
     if len(imageSources) > 1:
         raise ValueError('隔离草稿调试/测试入口仅支持单图来源，请跨页复用；正常运行可按 Runtime 广告能力使用有界双图配置')
-    inputs = {(b.target.workflowId, b.target.nodeId, tuple(b.target.parameterPath))
-              for b in document.resources.nodeParameterBindings}
     outputs = {(b.target.workflowId, b.target.nodeId, tuple(b.target.parameterPath))
                for b in document.resources.nodeSiteBindings if b.purpose == 'output_file'}
     for workflowId, workflow in document.workflows.items():
@@ -45,8 +44,8 @@ def checkLocalDraft(document):
                 continue
             if node.operatorId not in LOCAL_OPERATORS:
                 raise ValueError(f'本地调试尚不支持算子 {node.operatorId}；不执行设备或未知插件')
-            if node.operatorId == 'vision.io.image_loader' and (workflowId, node.nodeId, ('imagePath',)) not in inputs:
-                raise ValueError(f'请先登记输入资源：{workflowId}/{node.nodeId}')
+            if node.operatorId == 'vision.io.image_loader' and not nodeInputPathKey(node.params.get('imagePath'), root):
+                raise ValueError(f'请在图片加载节点选择工程内的输入图片：{workflowId}/{node.nodeId}')
             if node.operatorId == 'vision.io.image_saver' and (workflowId, node.nodeId, ('outputPath',)) not in outputs:
                 raise ValueError('文件输出必须先声明隔离输出目标；当前编辑入口不自动猜路径')
 
@@ -78,7 +77,7 @@ class LocalBackend:
             raise
 
     def start(self, document, root):
-        checkLocalDraft(document)
+        checkLocalDraft(document, root)
         modules = {'vision.io.image_loader': ('image_loader', '1.1.0'),
                    'vision.analysis.blob': ('blob_analysis', '1.2.0'),
                    'vision.collection.count': ('collection_count', '1.1.0'),
@@ -210,10 +209,10 @@ class PreviewController(QObject):
             raise ValueError('请先停止当前图片测试，再开始新的测试')
         self.coordinator.sync()
         document = self.coordinator.session.document()
-        checkLocalDraft(document)
         root = self.coordinator.directory
         if root is None:
-            raise ValueError('请先保存项目并登记本地输入资源')
+            raise ValueError('请先保存工程，再开始图片测试')
+        checkLocalDraft(document, root)
         runtime = getattr(self.coordinator.window.runtimeClient, 'runtimeService', None)
         def start():
             self.backend = LocalBackend(runtime)

@@ -188,7 +188,8 @@ def buildWorkflowPackage(
         for workflowId in workflowOrder
     }
     referencedDevices = _referencedDeviceIds(workflows)
-    resources = packagedResources.dependencyPlan(sourceStore, workflows, referencedDevices)
+    resources = packagedResources.dependencyPlan(sourceStore, workflows, referencedDevices, sourceRoot,
+                                                 inProjectCopy=forInProjectCopy)
     catalog = cast(dict, sourceStore.devices.get("definitions", {}))
     if referencedDevices - set(catalog):
         raise ValueError(f"workflow package has missing devices: {sorted(referencedDevices - set(catalog))}")
@@ -355,7 +356,7 @@ def importWorkflowPackage(
             ProjectDocument.model_validate(workingStore.toPayload())
             if not reuseVariableIds:
                 installed = packagedResources.installDependencies(targetRoot, document, plan, resourceIds)
-                packagedResources.applyImportedPaths(workingStore, plan, resourceIds)
+                packagedResources.applyImportedPaths(workingStore, plan, resourceIds, document, workflowIdMap, nodeIdMaps)
             workingStore.projectExtensions["resources"] = plan.model_dump(mode="json")
             ProjectDocument.model_validate(workingStore.toPayload())
         replaceWorkflowStoreState(store, workingStore)
@@ -691,7 +692,7 @@ def _importDevices(store: WorkflowStore, document: WorkflowPackageDocument,
 
 
 def _validateWorkflowPackage(document: WorkflowPackageDocument, *, referencesOnly=False) -> None:
-    packagedResources.validateDependencies(document, referencesOnly=referencesOnly)
+    packagedResources.validateDependencies(document, workflows=document.workflows.values(), referencesOnly=referencesOnly)
     if set(document.devices) != _referencedDeviceIds(document.workflows):
         raise ValueError("devices must exactly match referenced device dependencies")
     expectedOperators = _requiredOperatorIds(document.workflows)

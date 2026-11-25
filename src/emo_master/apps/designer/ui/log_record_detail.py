@@ -1,5 +1,7 @@
 """Read the selected log or debug record without retrieving any other execution."""
 from datetime import datetime
+from pathlib import PureWindowsPath
+import re
 
 from PySide2.QtCore import Qt
 from PySide2.QtWidgets import (
@@ -254,6 +256,9 @@ class LogRecordDetail(QWidget):
                                ("blockedByBranches", "未选中的上游分支")):
                 if key in remaining:
                     self.readable.field(label, remaining.pop(key))
+            diagnostics = remaining.get("diagnostics")
+            if kind == "node.completed" and isinstance(diagnostics, dict):
+                remaining["diagnostics"] = self._modelDetails(diagnostics)
             source = remaining.pop("ioSummary", None)
             summary = normalizeInspection(source)
             reason = source.get("unavailableReason") if isinstance(source, dict) else None
@@ -277,6 +282,47 @@ class LogRecordDetail(QWidget):
         if remaining:
             label = "附加字段" if kind in _NODE_TITLES else "记录数据"
             self.readable.field(label, remaining, expand=kind not in _NODE_TITLES)
+
+    def _modelDetails(self, diagnostics):
+        loadedPath = diagnostics.get("modelPath")
+        if not isinstance(loadedPath, str) or not loadedPath:
+            return diagnostics
+        remaining = dict(diagnostics)
+        remaining.pop("modelPath")
+        source = diagnostics.get("modelSource", {})
+        source = source if isinstance(source, dict) else {}
+        sourcePath = source.get("path")
+        if not isinstance(sourcePath, str):
+            sourcePath = None
+        resourceId = source.get("resourceId")
+        digest = source.get("sha256")
+        if sourcePath:
+            remaining.pop("modelSource")
+            name = PureWindowsPath(sourcePath).name
+            if resourceId:
+                summary = f"{name} · 工程资源"
+            else:
+                summary = f"{name} · 节点选定文件" if sourcePath != loadedPath else f"{name} · 直接文件"
+        else:
+            name = PureWindowsPath(loadedPath).name
+            summary = f"{name} · 来源未记录"
+            archived = re.search(r"(?:^|[/\\])configuration-resources[/\\][^/\\]+[/\\]([0-9a-f]{64})\.onnx\Z",
+                                 loadedPath, re.IGNORECASE)
+            if archived:
+                digest = archived.group(1)
+                summary = "来源未记录"
+        model = QTreeWidgetItem(self.readable, ["使用的模型", summary])
+        if sourcePath and sourcePath != loadedPath:
+            self.readable.field("模型来源路径" if resourceId else "节点选择路径", sourcePath, parent=model)
+        self.readable.field("实际加载路径", loadedPath, parent=model)
+        if source.get("configuredPath"):
+            self.readable.field("填写路径（未生效）", source["configuredPath"], parent=model)
+        if resourceId:
+            self.readable.field("资源 ID", resourceId, parent=model)
+        if digest:
+            self.readable.field("SHA-256", digest, parent=model)
+        model.setExpanded(True)
+        return remaining
 
     def _ioSide(self, label, batch, unavailableReason):
         if batch is None:

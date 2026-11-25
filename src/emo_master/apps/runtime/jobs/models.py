@@ -75,6 +75,8 @@ class JobProcessSpec:
     targetSlotId: str = ""
     inspectionEnabled: bool = False
     inspectionCredits: BoundedSemaphore | None = field(default=None, repr=False, compare=False)
+    modelSources: dict[tuple[str, str, str], dict[str, str]] = field(default_factory=dict)
+    stagingRecoveryRoot: str | None = None
 
     @property
     def inputs_json(self) -> str:

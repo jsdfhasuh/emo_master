@@ -48,6 +48,50 @@ def testDraftSourcesUseFormalPortsAndStableIdsWithoutRunning():
         validateDraftMappings(configValue, sources, payload['workflows']['main'], 'writer')
 
 
+def testCanvasDraftUsesLiveGraphAndOtherWorkflowInterfacesWithoutSerializingProject(monkeypatch):
+    from emo_master.apps.designer.operator_editors.controller_protocol import EditorKey
+    from emo_master.apps.designer.operator_editors.sqlite_canvas import draftForEditor, refreshCanvasHints
+    from emo_master.apps.designer.state.flow_graph_model import FlowGraphModel
+    from emo_master.apps.designer.state.workflow_store import WorkflowStore
+
+    store = WorkflowStore()
+    store.addWorkflow('Child', 'child', outputs={'count': 'integer'})
+    store.get('child').nodes.append({'nodeId': 'child-writer', 'operatorId': 'vision.io.sqlite_writer'})
+    store.projectExtensions['globalVariables']['quantity'] = {'name': 'Quantity', 'type': 'integer', 'initialValue': 1}
+    graph = FlowGraphModel()
+    graph.loadProjectGraph(store.graphFor())
+    writer = graph.addNode('vision.io.sqlite_writer', 'Writer', {}, {})
+    call = graph.addNode('', 'Live call', {}, {}, kind='subflow', targetWorkflowId='child')
+    read = graph.addNode('vision.state.variable_read', 'Quantity', {}, {})
+    graph.nodes[read].params = {'variableId': 'quantity'}
+    graph.nodes[writer].params = config(rows=[mapping(node=read, storage='INTEGER')])
+    graph.selectedNodeId = writer
+    projectId = store.project['projectId']
+    definitions = catalog() + [{'operatorId': 'vision.state.variable_read'}]
+    window = SimpleNamespace(workflowStore=store, flowModel=graph, _currentProjectId=lambda: projectId, activeWorkflowId='main',
+                             flowScene=SimpleNamespace(getNodePositions=lambda: {writer: (10, 20)}),
+                             operatorCatalogController=SimpleNamespace(getCatalog=lambda: definitions),
+                             currentProjectDir=None, loadedProjectPath=None)
+    monkeypatch.setattr(WorkflowStore, 'toPayload', lambda *_: pytest.fail('SQLite draft serialized project'))
+    active = draftForEditor(window, EditorKey(projectId, 'main', writer))
+    sources = {item['nodeId']: item for item in active['sources']}
+    assert set(sources[call]['ports']) == {'count'} and 'child-writer' not in sources
+    assert sources[read]['ports']['value']['type'] == 'integer'
+    assert active['workflow']['layout']['nodePositions'][writer] == {'x': 10, 'y': 20}
+    assert all(node['nodeId'] != writer for node in store.get('main').nodes)
+    inactive = draftForEditor(window, EditorKey(projectId, 'child', 'child-writer'))
+    childSources = {item['nodeId'] for item in inactive['sources']}
+    assert 'child-writer' in childSources and writer not in childSources
+    hints, dependencies = [], []
+    window.flowScene = SimpleNamespace(setSqliteHints=lambda *args: hints.append(args),
+                                       setBindingDependencies=lambda *args: dependencies.append(args))
+    refreshCanvasHints(window)
+    assert hints[0][0] == writer and hints[0][2] == '' and dependencies == [(writer, [read])]
+    del graph.nodes[writer]
+    with pytest.raises(ValueError, match='流程或节点已删除'):
+        draftForEditor(window, EditorKey(projectId, 'main', writer))
+
+
 def testUnavailableFormalDefinitionCannotOfferSavedStalePorts():
     payload = draftPayload()
     sources = {n['nodeId']: n for n in sourceCatalog(payload, 'main', [])}

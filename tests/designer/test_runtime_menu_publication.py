@@ -17,6 +17,7 @@ from tests.designer.runtime_state_fixture import setRunning
 from tests.designer.test_designer_shortcuts import press
 from tests.runtime.test_initial_project_configuration import initialRuntime, imageProject, waitForWrite  # noqa: F401
 from tests.runtime.test_device_runtime import simulatedProject
+from tests.runtime.test_remote_project_import import remoteImport  # noqa: F401
 from tests.ui.operator_view.test_view import waitFor
 
 
@@ -33,6 +34,97 @@ def menuDialog(window, monkeypatch):
     assert dialog.parentWidget() is window
     waitUntil(lambda: dialog.pending is None)
     return dialog
+
+
+def testWritingSelectedFileTransfersItsBytesWithoutASeparateUpload(
+        ownedDesignerWindow, remoteImport, tmp_path, monkeypatch, messages):  # noqa: F811
+    from pathlib import Path
+    from tests.runtime.current_production_fixture import currentProductionProject, imageBytes, node
+
+    service, client = remoteImport
+    path, document = currentProductionProject(tmp_path / 'engineering', declared=True)
+    loader = node(document, 'load')
+    loader.params['imagePath'] = 'chosen.png'
+    first = imageBytes(91)
+    (path.parent / 'chosen.png').write_bytes(first)
+    saveProject(path, document.model_dump(mode='json'))
+    window = ownedDesignerWindow(client)
+    assert window.loadProjectDirectory(str(path), confirmed=True)
+    monkeypatch.setattr(QMessageBox, 'question', lambda *_: QMessageBox.Yes)
+    dialog = menuDialog(window, monkeypatch)
+    try:
+        assert dialog.initial
+        dialog.writeButton.click()
+        waitUntil(lambda: (not dialog.initial and dialog.pending is None) or bool(messages))
+        assert not messages
+        assert Path(node(service.loadedDocument, 'load').params['imagePath']).read_bytes() == first
+        assert Path(service.loadedProjectFile).parent != path.parent
+        assert not client.getOnlineProjectSnapshot()['payload']['resources']['parameterBindings']
+    finally:
+        dialog.reject()
+
+    # Only the selected node change and its file should be published.
+    second = imageBytes(173)
+    (path.parent / 'replacement.png').write_bytes(second)
+    window.flowModel.nodes['load'].params['imagePath'] = 'replacement.png'
+    window.flowModel.nodes['save'].params['outputPath'] = 'outputs/unselected.png'
+    window.pageCoordinator.sync()
+    dialog = menuDialog(window, monkeypatch)
+    try:
+        wanted = '/workflows/main/nodes/load/params/imagePath'
+        rows = [dialog.table.item(i, 0) for i in range(dialog.table.rowCount())]
+        assert any(row.data(Qt.UserRole) == wanted for row in rows)
+        for row in rows:
+            row.setCheckState(Qt.Checked if row.data(Qt.UserRole) == wanted else Qt.Unchecked)
+        dialog.writeButton.click()
+        waitUntil(lambda: ((dialog.snapshot or {}).get('documentRevision') == 2 and dialog.pending is None)
+                  or bool(messages))
+        assert not messages
+        assert Path(node(service.loadedDocument, 'load').params['imagePath']).read_bytes() == second
+        published = client.getOnlineProjectSnapshot()['payload']
+        assert next(n for n in published['workflows']['main']['nodes'] if n['nodeId'] == 'save')[
+            'params']['outputPath'] == 'outputs/result.png'
+        assert {item['path'] for item in published['resources']['items'].values()} == {'replacement.png'}
+    finally:
+        dialog.reject()
+
+    # Replacing bytes under the same name must update the file without republishing unrelated parameters.
+    third = imageBytes(204)
+    (path.parent / 'replacement.png').write_bytes(third)
+    dialog = menuDialog(window, monkeypatch)
+    try:
+        rows = [dialog.table.item(i, 0) for i in range(dialog.table.rowCount())]
+        assert any(row.data(Qt.UserRole).endswith('/sha256') and 'replacement.png' in row.text() for row in rows)
+        for row in rows:
+            row.setCheckState(Qt.Checked if row.data(Qt.UserRole).endswith('/sha256') else Qt.Unchecked)
+        dialog.writeButton.click()
+        waitUntil(lambda: ((dialog.snapshot or {}).get('documentRevision') == 3 and dialog.pending is None)
+                  or bool(messages))
+        assert not messages
+        assert Path(node(service.loadedDocument, 'load').params['imagePath']).read_bytes() == third
+        assert client.getOnlineProjectSnapshot()['payload']['workflows'] == published['workflows']
+    finally:
+        dialog.reject()
+
+
+def testPublishingVideoPortChangePreparesOnlyTheActiveFile(tmp_path):
+    from emo_master.apps.designer.services.project_file_publication import comparisonFilePayload, selectedFilePublication
+    from emo_master.apps.designer.state.workflow_store import WorkflowStore
+
+    online = WorkflowStore().toPayload()
+    wid = online['entryWorkflowId']
+    flow = online['workflows'][wid]
+    flow['nodes'].append(dict(nodeId='video', operatorId='vision.io.video_loader', params=dict(videoPath='clip.mp4')))
+    flow['edges'].append(dict(fromNode='input', fromPort='path', toNode='video', toPort='videoPath'))
+    (tmp_path / 'clip.mp4').write_bytes(b'fixed source')
+    local = deepcopy(online)
+    local['workflows'][wid]['edges'].pop()
+    path = f'/workflows/{wid}/edges'
+    display = comparisonFilePayload(online, local, tmp_path)
+    fixed, _ = selectedFilePublication(online, display, [path], tmp_path)
+    assert [item['path'] for item in fixed['resources']['items'].values()] == ['clip.mp4']
+    connected, _ = selectedFilePublication(fixed, online, [path], tmp_path)
+    assert not connected['resources']['items']
 
 
 @pytest.mark.parametrize('confirm', [False, True])

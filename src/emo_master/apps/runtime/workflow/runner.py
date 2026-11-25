@@ -14,6 +14,7 @@ from emo_master.apps.runtime.execution.operator_executor import (
 )
 from emo_master.apps.runtime.execution.errors import WorkflowExecutionError as WorkflowExecutionError
 from emo_master.apps.runtime.workflow.cancellation import CancellationToken
+from emo_master.apps.runtime.workflow.background_outputs import BackgroundOutputs, pendingTaskId
 from emo_master.apps.runtime.workflow.branch_activity import BranchActivity
 from emo_master.apps.runtime.workflow.context import RunContext
 from emo_master.core.contracts.port_types import (
@@ -48,6 +49,9 @@ class WorkflowRunner:
         communication: Any = None,
         devices: Any = None,
         cycleScope: Any = None,
+        backgroundTasks=None,
+        runtimeCapabilities=None,
+        onPendingArtifactsChanged: Callable[[bool], None] | None = None,
     ) -> None:
         self.compiledProject = compiledProject
         self.cycleScope = cycleScope
@@ -55,6 +59,7 @@ class WorkflowRunner:
         self.eventPublisher = eventPublisher
         self.maxCallDepth = maxCallDepth
         self.artifactStore = artifactStore
+        self._backgroundOutputs = BackgroundOutputs(backgroundTasks, self._publishArtifact, onPendingArtifactsChanged)
         self.previewSnapshotStore = previewSnapshotStore
         self.globalCounters = globalCounters
         from emo_master.apps.runtime.context.global_variables import ReadOnlyVariables
@@ -87,6 +92,8 @@ class WorkflowRunner:
             logManager=self._operatorLogManager,
             communication=communication,
             devices=devices,
+            backgroundTasks=backgroundTasks,
+            runtimeCapabilities=runtimeCapabilities,
         )
         # Preserve the existing lifecycle inspection hooks while ownership moves.
         self._lifecycleOperators = self.operatorExecutor._lifecycleOperators
@@ -158,6 +165,7 @@ class WorkflowRunner:
         if workflow is None:
             raise WorkflowExecutionError("E_WORKFLOW_INVALID", f"unknown workflow: {workflowId}")
         cancellation.raise_if_cancelled()
+        self.pollBackgroundTasks()
         self.publish("workflow.started", context, f"workflow started: {workflowId}")
         nodeInputs: dict[str, dict[str, object]] = {nodeId: {} for nodeId in workflow.nodeById}
         # Invocation-local deliveries. A child/iteration never inherits this map.
@@ -182,6 +190,7 @@ class WorkflowRunner:
         try:
             for nodeId in workflow.topologicalOrder:
                 cancellation.raise_if_cancelled()
+                self.pollBackgroundTasks()
                 node = workflow.nodeById[nodeId]
                 nodeContext = context.forNode(node.nodeId)
                 nodeInput = dict(nodeInputs.get(nodeId, {}))
@@ -199,6 +208,7 @@ class WorkflowRunner:
                     )
                 ):
                     branchActivity.skipped(node, blockedBranches)
+                    self._backgroundOutputs.releaseBindings(boundValues.pop(nodeId, {}))
                     self.publish(
                         "node.skipped",
                         nodeContext,
@@ -212,6 +222,9 @@ class WorkflowRunner:
                     )
                     continue
                 inspection = startInspection(nodeInput)
+                mapped = self._backgroundOutputs.prepareBindings(
+                    boundValues.pop(nodeId, {}), enabled=nodeInput.get("enabled", True) is not False
+                )
                 self.publish("node.started", nodeContext, f"node started: {node.nodeId}",
                              payload={"ioSummary": inspection})
                 nodeDiagnostics = {}
@@ -220,7 +233,7 @@ class WorkflowRunner:
                         self.debugController.before(node, nodeInput, nodeContext)
                     nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
                         node, nodeInput, supplied, nodeContext, cancellation,
-                        boundValues.get(nodeId, {})
+                        mapped
                     )
                     self._validateNodeOutputs(node, nodeOutputs)
                     if self.debugController is not None:
@@ -234,8 +247,13 @@ class WorkflowRunner:
                     self._publishArtifacts(node, nodeOutputs, nodeContext)
                     for binding in workflow.outgoingBindings.get(nodeId, ()):
                         if binding.fromPort in nodeOutputs:
-                            boundValues.setdefault(binding.toNode, {})[binding.mappingIndex] = captureBoundValue(
-                                nodeOutputs[binding.fromPort], binding, nodeContext)
+                            value = nodeOutputs[binding.fromPort]
+                            taskId = pendingTaskId(value) if binding.storageType == "FILE_REFERENCE" else None
+                            if taskId is None:
+                                delivery = captureBoundValue(value, binding, nodeContext)
+                            else:
+                                delivery = self._backgroundOutputs.deferBinding(taskId, value["path"], binding, nodeContext)
+                            boundValues.setdefault(binding.toNode, {})[binding.mappingIndex] = delivery
                     cancellation.raise_if_cancelled()
                 except Exception as err:
                     if self.debugController is not None:
@@ -302,6 +320,7 @@ class WorkflowRunner:
                     "E_OUTPUT_TYPE",
                     f"workflow outputs have invalid types: {', '.join(invalidOutputs)}",
                 )
+            self.pollBackgroundTasks()
             result = WorkflowResult(outputs=outputs, metrics=metrics, diagnostics=diagnostics)
             if disposeWhenComplete:
                 cleanupError = self.disposeOperators()
@@ -336,6 +355,19 @@ class WorkflowRunner:
                 ),
             )
             raise
+        finally:
+            # Early error/cancel may leave a scheduled consumer unvisited.
+            for values in boundValues.values():
+                self._backgroundOutputs.releaseBindings(values)
+
+    def pollBackgroundTasks(self):
+        self._backgroundOutputs.poll()
+
+    def waitForBackgroundTasks(self):
+        self._backgroundOutputs.waitForIdle()
+
+    def prepareDispatchValue(self, value):
+        return self._backgroundOutputs.forTransfer(value)
 
     def _runNode(self, node, nodeInput, supplied, context, cancellation, boundValues=None):
         if node.kind == "workflow_input":
@@ -353,6 +385,8 @@ class WorkflowRunner:
             result = self.loopRunner.run(node, nodeInput, context, cancellation)
             return result.outputs, result.metrics, result.diagnostics
         if node.kind in {"dispatch", "join"}:
+            if node.kind == "dispatch":
+                nodeInput = self.prepareDispatchValue(nodeInput)
             return self.dispatchRunner.run(node, nodeInput, context, cancellation)
         return self.operatorExecutor.invoke(node, nodeInput, context, cancellation, boundValues)
 
@@ -375,31 +409,33 @@ class WorkflowRunner:
     def _publishArtifacts(self, node, outputs, context) -> None:
         if node.kind != "operator":
             return
-        for value in outputs.values():
+        for port, value in outputs.items():
             if isinstance(value, dict) and isinstance(value.get("path"), str):
-                artifact = value
-                if self.artifactStore is not None:
-                    register = getattr(self.artifactStore, "registerPath", None)
-                    if callable(register):
-                        artifactRef = register(
-                            value["path"],
-                            nodeId=context.callerNodeId,
-                            workflowRunId=context.workflowRunId,
-                        )
-                        artifact = artifactRef.__dict__
-                self.publish(
-                    "artifact.created",
-                    context,
-                    f"artifact created: {value['path']}",
-                    payload={"artifact": _jsonSafe(artifact)},
-                )
-                capture = getattr(self.previewSnapshotStore, 'captureArtifact', None)
-                if callable(capture):
-                    try:
-                        capture(node, artifact, context)
-                    except Exception as error:
-                        self.publish('preview.snapshot.failed', context, str(error), level='WARN',
-                                     code='E_PREVIEW_SNAPSHOT_FAILED')
+                outputs[port] = self._backgroundOutputs.artifact(node, value, context)
+
+    def _publishArtifact(self, node, value, context):
+        artifact = value
+        register = getattr(self.artifactStore, "registerPath", None)
+        if callable(register):
+            artifactRef = register(
+                value["path"],
+                nodeId=context.callerNodeId,
+                workflowRunId=context.workflowRunId,
+            )
+            artifact = artifactRef.__dict__
+        self.publish(
+            "artifact.created",
+            context,
+            f"artifact created: {value['path']}",
+            payload={"artifact": _jsonSafe(artifact)},
+        )
+        capture = getattr(self.previewSnapshotStore, 'captureArtifact', None)
+        if callable(capture):
+            try:
+                capture(node, artifact, context)
+            except Exception as error:
+                self.publish('preview.snapshot.failed', context, str(error), level='WARN',
+                             code='E_PREVIEW_SNAPSHOT_FAILED')
 
     def _capturePreviewSnapshot(self, node, outputs, context):
         if node.kind != "operator" or self.previewSnapshotStore is None:

@@ -194,6 +194,55 @@ def testSecondRuntimeServiceDoesNotReapLiveJobInSameProcess(tmp_path: Path) -> N
         first.close()
 
 
+def testRestartRecoversPreviouslyRegisteredImageAfterOldWriterExits(tmp_path: Path) -> None:
+    import subprocess
+    import sys
+    from uuid import uuid4
+
+    dbPath = tmp_path / "runtime.db"
+    store = SqliteStore(dbPath)
+    store.initialize()
+    store.insertJob(jobId="legacy", projectId="project", workflowId="main", status="RUNNING")
+    records = tmp_path / "jobs" / "legacy" / ".background-image-files"
+    records.mkdir(parents=True)
+    output = tmp_path / "images"
+    output.mkdir()
+    key = uuid4().hex
+    staged = output / f".emo-image-{key}.tmp"
+    staged.write_bytes(b"interrupted image")
+    unrelated = output / f".emo-image-{uuid4().hex}.tmp"
+    unrelated.write_bytes(b"other writer")
+    registration = records / key
+    registration.write_text(json.dumps(str(output.resolve())), encoding="utf-8")
+    with subprocess.Popen([sys.executable, "-c", "import sys; sys.stdin.read()"], stdin=subprocess.PIPE) as old:
+        try:
+            store.updateJobStatus(jobId="legacy", status="RUNNING", pid=old.pid)
+            service = RuntimeService(dbPath=dbPath)
+            try:
+                assert staged.exists() and registration.exists()
+            finally:
+                service.close()
+        finally:
+            old.communicate(timeout=10)
+    # The old format stored each target directory as a JSON string. Keep that
+    # record when the volume is temporarily unavailable at startup.
+    offline = output.rename(tmp_path / "offline")
+    service = RuntimeService(dbPath=dbPath)
+    try:
+        assert registration.exists()
+        assert any(event.code == "E_IMAGE_STAGING_CLEANUP_DEFERRED"
+                   for event in service.eventStore.readMerged("__runtime__"))
+    finally:
+        service.close()
+    offline.rename(output)
+    service = RuntimeService(dbPath=dbPath)
+    try:
+        assert not staged.exists() and not registration.exists()
+        assert unrelated.read_bytes() == b"other writer"
+    finally:
+        service.close()
+
+
 def testDefaultRuntimeDataDirectoryAndDbPathAreStable(monkeypatch, tmp_path: Path) -> None:
     dataDir = tmp_path / "runtime-data"
     monkeypatch.setenv("EMO_RUNTIME_DATA_DIR", str(dataDir))

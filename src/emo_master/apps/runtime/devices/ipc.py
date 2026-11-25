@@ -7,6 +7,7 @@ from time import process_time_ns, thread_time_ns
 from uuid import uuid4
 
 from emo_master.apps.runtime.communication.pipe_io import sendBytes, receiveBytes
+from emo_master.apps.runtime.project_config.coordinator import CycleAdmissionCancelled
 from emo_master.apps.runtime.workflow.cancellation import CancellationRequested
 from .executor import DeviceError
 from .frame_store import copyFrame
@@ -76,7 +77,8 @@ class DeviceBridge:
                         result = self.manager.frames.commitWrite(self.owner, request["frameId"])
                     elif request["action"] == "beginCycle":
                         result = self.manager.configuration.beginCycle(self.owner, request["knownRevision"], self.cancelled,
-                            parentCycleId=request.get("parentCycleId"))
+                            parentCycleId=request.get("parentCycleId"),
+                            canPollParkedArtifacts=getattr(self.cancellation, "canPollParkedArtifacts", None))
                     elif request["action"] == "endCycle":
                         self.manager.waitOwner(self.owner, request['cycleId'])
                         self.manager.configuration.endCycle(self.owner, request["cycleId"])
@@ -95,6 +97,8 @@ class DeviceBridge:
                         raise DeviceError('E_DEVICE_IPC_OPERATION', 'unknown framework operation')
                     reply = dict(ok=True, result=result)
                 except Exception as error:
+                    if isinstance(error, CycleAdmissionCancelled):
+                        error = DeviceError("E_DEVICE_CANCELLED", str(error))
                     reply = dict(ok=False, code=getattr(error, "code", "E_DEVICE_IPC"), message=str(error),
                                  outcome=getattr(error, "outcome", "UNKNOWN"), diagnostics=getattr(error, "diagnostics", {}))
                 phase, phaseStarted, deadline = "encode_reply", time.monotonic(), None

@@ -12,6 +12,7 @@ from typing import Any, Callable
 
 from emo_master.apps.runtime.events.event_store import EventStore
 from emo_master.apps.runtime.events.models import RuntimeEvent, MAX_WORKER_EVENT_BATCH, batchableWorkerEvent
+from emo_master.apps.runtime.execution.temporary_files import retireTemporaryFiles
 from emo_master.apps.runtime.jobs.cancellation import JobCancellation
 from emo_master.apps.runtime.jobs.event_bridge import EventBridge
 from emo_master.apps.runtime.jobs.heartbeat import HeartbeatCell, monotonicMs
@@ -85,7 +86,7 @@ class JobSupervisor:
             if spec.jobId in self._handles:
                 raise ValueError(f"duplicate job id: {spec.jobId}")
 
-            cancelEvent = JobCancellation(self._context)
+            cancelEvent = JobCancellation(self._context, spec.jobWorkspacePath)
             # Continuous diagnostics must backpressure the producer, not accumulate
             # an unbounded feeder backlog that outlives cancellation and retention.
             eventQueue = self._context.Queue(maxsize=64)
@@ -669,6 +670,11 @@ class JobSupervisor:
         with self._lock:
             return jobId in self._ownedJobs()
 
+    def hasPendingBackgroundTasks(self, jobId: str) -> bool:
+        with self._lock:
+            handle = self._handles.get(jobId)
+            return bool(handle and handle[1].hasPendingBackgroundTasks())
+
     def activeCount(self) -> int:
         with self._lock:
             return sum(1 for record in self.jobRepository.all() if not record.isTerminal)
@@ -1176,6 +1182,7 @@ class JobSupervisor:
                 self._bridges[jobId] = bridge
                 return
         if process is not None:
+            retireTemporaryFiles(getattr(cancelEvent, "stagingWorkspace", None))
             close = getattr(process, "close", None)
             if callable(close):
                 try:
@@ -1242,6 +1249,7 @@ class JobSupervisor:
                 except BaseException as error:
                     receipt.fault("process", error)
                     raise
+            retireTemporaryFiles(getattr(_cancelEvent, "stagingWorkspace", None))
             if not receipt.queueClosed:
                 try:
                     closeQueue = getattr(eventQueue, "close", None)

@@ -184,17 +184,25 @@ class RunResultHistory:
             return False
         if willEvict:
             run.notice = 'E_INSPECTION_METADATA_BUDGET: 节点摘要超过64条，最早更新的记录已释放；可查看任务日志'
+        executionChanged = False
         if kind in {'job.completed', 'job.failed', 'job.aborted'}:
             self.setStatus(run.jobId, kind.split('.')[1].upper())
         elif kind == 'node.started':
             run.status = 'RUNNING'
         elif kind == 'artifact.created':
             artifact = event.get('payload', {}).get('artifact', {})
-            if isinstance(artifact, dict):
+            if isinstance(artifact, dict) and all(isinstance(value, str) for value in identifiers):
                 run.artifact = {key: clipText(str(artifact.get(key, '')), 512)
                                 for key in ('path', 'nodeId', 'artifactId', 'mimeType', 'checksum')}
                 run.artifact.update(workflowId=event.get('workflowId', ''), nodeId=event.get('nodeId', ''),
                                     nodeRunId=event.get('nodeRunId', ''), workflowRunId=event.get('workflowRunId', ''))
+                # A background save can finish after this node's next invocation has started.
+                for entry in self.executions.get(identifiers, ()):
+                    if entry['run'] is run and all(entry['record'][key] == run.artifact[key]
+                                                   for key in ('workflowRunId', 'nodeRunId')):
+                        entry['artifact'] = deepcopy(run.artifact)
+                        executionChanged = True
+                        break
         if kind in {'node.started', 'node.completed', 'node.failed'}:
             record = run.inspection.get(*identifiers, run.jobId)
             if record:
@@ -215,13 +223,15 @@ class RunResultHistory:
                 if all(artifact.get(key) == record[key] for key in ('workflowId', 'nodeId', 'workflowRunId', 'nodeRunId')):
                     entries[-1]['artifact'] = deepcopy(artifact)
                 self.executions.move_to_end(identifiers)
-                self._measureExecution(identifiers)
+                executionChanged = True
+        if executionChanged:
+            self._measureExecution(identifiers)
+            self._pruneJobs()
+            while self.executions and (len(self.executions) > 64 or self.retainedBytes > 2 * RUN_METADATA_LIMIT):
+                removed, _ = self.executions.popitem(last=False)
+                self._executionBytes.pop(removed, None)
                 self._pruneJobs()
-                while self.executions and (len(self.executions) > 64 or self.retainedBytes > 2 * RUN_METADATA_LIMIT):
-                    removed, _ = self.executions.popitem(last=False)
-                    self._executionBytes.pop(removed, None)
-                    self._pruneJobs()
-                    run.notice = 'E_INSPECTION_METADATA_BUDGET: 节点摘要超过额度，最早更新的记录已释放'
+                run.notice = 'E_INSPECTION_METADATA_BUDGET: 节点摘要超过额度，最早更新的记录已释放'
         run.enforceLimit()
         return True
 

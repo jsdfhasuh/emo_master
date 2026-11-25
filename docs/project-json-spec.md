@@ -426,11 +426,21 @@ Designer 只读预览支持同页绑定一个 Dispatch 生产入口和一个已�
 
 | 字段 | 内容 |
 | --- | --- |
-| `items` | resourceId 到资源声明：`path`、`sha256`、`size`、`purpose`。path 为规范化相对 POSIX 路径；sha256 为 64 位小写十六进制；size 为非负字节数。purpose 为 `input_image/model/page_image/icon`。 |
+| `items` | 资源 ID 对应的文件清单包含 `path`、`sha256`、`size`、`purpose`。path 为规范化相对 POSIX 路径，sha256 为 64 位小写十六进制，size 为非负字节数。purpose 支持 `input_image/model/input_file/page_image/icon`，其中 `input_file` 用于坐标、视频等普通输入文件。 |
 | `parameterBindings` | `resourceId` 与 `target` 的绑定。节点目标为 `workflowId/nodeId/parameterPath`；设备目标为 `deviceId/section/parameterPath`，section 仅允许 `connection/defaults`。 |
 | `siteBindings` | 声明现场字段 `field`、`target`、`purpose`、`required`（默认 true）。purpose 为 `output_directory/output_file/device_address/camera_serial/secret_ref`。 |
 
 绑定字段应由算子或设备插件声明用途，不猜测任意字符串都是路径。
+
+以下五个内置输入参数以节点所选文件为准。Designer 在项目中记录相对路径，资源清单按该路径登记内容指纹、大小及用途，供发布和传输使用。已有 `parameterBindings` 中指向这些参数的条目不能覆盖节点填写值。其他算子、页面资源、设备绑定和全局变量引用沿用各自的来源规则。
+
+| 内置算子 | 文件参数 |
+| --- | --- |
+| `vision.inference.yolo`、`vision.inference.yolo_classification` | `modelPath` |
+| `vision.io.image_loader` | `imagePath` |
+| `vision.io.coordinate_reader` | `filePath` |
+| `vision.io.video_loader` | `videoPath`，接入同名端口时使用上游传入的 Runtime 文件路径 |
+
 输入媒体、模型、输出目录和 Runtime 数据目录应分开；输出文件不是输入资源清单。
 资源摘要与大小须由实际文件计算，不能填占位值交付。
 

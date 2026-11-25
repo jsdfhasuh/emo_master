@@ -11,9 +11,14 @@
 - **WHEN** 用户查看由已注册算子产生的节点运行记录
 - **THEN** 记录中的 operatorId 和 operatorVersion 与 Runtime 实际执行的注册定义一致，不根据节点名称或当前工程配置猜测版本
 
+#### Scenario: Preserve identity in completed-record projection
+
+- **WHEN** 节点完成事件经过 Runtime JSONL 投影并被历史查询或导出
+- **THEN** 实际注册身份和安全参数摘要仍保留，不被完成事件白名单丢弃
+
 ### Requirement: Show the effective parameters used by the operator
 
-节点详情 SHALL 区分节点配置、参数默认值、输入/绑定覆盖和设备继承参数。只有从实际执行路径能够确认的值和来源才标记为本次生效参数。确需持久化的敏感字段必须在写入日志前脱敏，明文凭据不得进入原始记录或导出。
+节点详情 SHALL 区分调用参数、输入/绑定覆盖、设备解析和算子内部归一化结果。parameterSummary SHALL 保留阶段与可确认来源；仅从真实执行路径取得的最终值才标记为本次生效参数。确需记录的敏感字段必须在进入事件前脱敏，明文凭据不得进入原始记录或导出。
 
 #### Scenario: Inspect an overridden parameter
 

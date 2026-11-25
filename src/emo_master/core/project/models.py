@@ -131,6 +131,7 @@ class ProjectDevices(StrictModel):
 class ProjectDocument(StrictModel):
     # Execution-only asset locations never enter portable snapshots or digests.
     _pageResourcePaths: dict[str, str] = PrivateAttr(default_factory=dict)
+    _verifiedResourcePaths: dict[str, str] = PrivateAttr(default_factory=dict)
     schemaVersion: Literal["2.0", "2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "2.7", "2.8", "2.9", "2.10"]
     project: ProjectMetadata
     entryWorkflowId: str

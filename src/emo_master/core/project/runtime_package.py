@@ -18,7 +18,7 @@ from emo_master.core.project.delivery_store import DirectoryOwner
 from emo_master.core.project.migration import loadProjectPayload, migrateProjectPayload
 from emo_master.core.project.models import ProjectDocument
 from emo_master.core.project.files import projectFiles, resolveProjectFile
-from emo_master.core.project.runtime_directory import prepareRuntimeProject
+from emo_master.core.project.runtime_directory import nodeFileSchema, prepareRuntimeProject
 from emo_master.core.project.device_resources import deviceDeclaration, trustedDeviceTypes
 from emo_master.core.project.snapshots import _inside, canonicalJson
 from emo_master.core.project.test_delivery import packagePath, readJson, trustedRegistry
@@ -155,10 +155,11 @@ def buildRuntimePackage(projectDir: Path, outputDir: Path, *, document: ProjectD
         original = {node.nodeId: node for node in flow.nodes}
         for node in prepared.workflows[wid].nodes:
             if node.kind == "operator":
-                portable = _files(node.params, registry[node.operatorId].manifest.paramSchema, collect)
+                schema = nodeFileSchema(node, flow, registry[node.operatorId].manifest.paramSchema)
+                portable = _files(node.params, schema, collect)
                 # Only input paths change. Keep the project's device and output values verbatim.
                 targetNode = original[node.nodeId]
-                targetNode.params = _replaceInputs(targetNode.params, portable, registry[node.operatorId].manifest.paramSchema)
+                targetNode.params = _replaceInputs(targetNode.params, portable, schema)
     def collectDevice(raw, mode):
         if mode == "directory":
             raise ValueError("runtime packages require explicit files, not device input directories")

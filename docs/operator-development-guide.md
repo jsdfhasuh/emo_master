@@ -234,6 +234,28 @@ context，不跨执行缓存 logger；ERROR 不单独决定作业失败，业务
 驱动独有诊断通过 `DeviceRuntimeContext.events()` 上报；管理器已有动作结果无需算子重复记录。
 查询、归属及三种历史范围见 [Runtime 事件流程](runtime-event-flow.md)。
 
+### 由 Runtime 执行后台文件任务
+
+需要提交文件写入或等待其他节点文件的算子，在 manifest 顶层声明 `"runtimeCapabilities": ["backgroundTasks"]`。沿用现有 `executeNode`，从 `runtimeContext["backgroundTasks"]` 取客户端。同一个 Job 的节点、子流程和循环共用一条 FIFO 工作线程。
+
+```python
+client.checkSize("image.save", image.nbytes)
+task = client.submit(writeImage, image.copy(), path,
+                     taskName="image.save", estimatedBytes=image.nbytes)
+# 将 task.id 随提交回执传给下游。需要读文件的节点调用自己的客户端。
+result = client.wait(task.id)
+```
+
+提交前复制仍可能被主工作流修改的数据，以字节数申报占用。数量或字节额度用尽时，提交会等到有空间或 Job 取消。任务函数的第一个参数是 Runtime 注入的 `TaskControl`。写文件时先检查 `raiseIfCancelled()`，在 `with control.temporaryFile(directory) as stream` 中写入编码结果，关闭流后用 `publish(finalize)` 原子发布。上下文负责清理临时文件，受管 Job 或调试进程被强制结束时由父进程接手清理。任务只处理传入的数据，返回路径等小结果。设备、算子实例、节点日志和工作流变量由执行线程使用。后台任务里递归提交或等待同一条线程会造成死锁。
+
+ImageSaver 的 `saveMode` 默认为 `sync`。选 `background` 时同时设置 `namingMode=unique`。回执中的 `state=SUBMITTED`、`saved=false` 表示已经入队。其他节点可用 `status(taskId)` 查询状态，或用 `wait(taskId)` 获取最终结果及错误。Runner 在成功后登记产物，SQLiteWriter 的 `FILE_REFERENCE` 绑定自动等待并按既有失败策略处理。普通任务记录只保留最近一批，过期查询返回 `E_BACKGROUND_TASK_EXPIRED`。
+
+受管任务将 `temporaryFile(directory)` 的临时文件放在输出目录的 `.emo-image-stage-<标识>` 子目录。算子应使用返回流的 `name` 得到暂存路径。Runtime 重启时按持久登记自动清理退出进程留下的暂存图片，保留已发布的文件。这个子目录及其锁文件会留在原处供后续保存复用。
+
+任务编号只在提交它的 Job 内有效。通过 Dispatch 输入或消费者返回值交付文件回执时，Runtime 会在发送方确认写入，再传递含 `saved=true` 和 `path` 的文件结果。消费者在确认本次投递前处理自己的后台写入。在线配置选择“排空后替换”时，已受理的写入也属于排空范围。
+
+正式 Job 和获准显式执行的调试支持已声明能力。PurePreview 和克隆试跑均不提供客户端。
+
 ### 失败、取消与已发生的副作用
 
 返回 status=error 或抛出普通 Python 异常均使当前工作流、外层调用及所属 Job 失败，连续运行也退出；不会默认重试或把失败当成跳过。保留已有业务错误码；无错误码的普通异常使用 E_EXEC_FAILED，不用 E_WORKER_CRASHED 冒充业务失败。取消保持取消异常和 E_CANCELLED，不补执行剩余动作。

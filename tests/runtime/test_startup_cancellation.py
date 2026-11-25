@@ -5,6 +5,7 @@ import multiprocessing
 from pathlib import Path
 import queue
 from threading import Event
+from time import monotonic
 
 import pytest
 
@@ -171,11 +172,54 @@ def testStartupStopRetiresAndNextSpawnReallyRuns(monkeypatch, tmp_path, boundary
         service.close()
 
 
+def testParkedCycleCancellationReceiptAbortsWorker(monkeypatch, tmp_path):
+    from types import SimpleNamespace
+
+    from emo_master.apps.runtime.devices import ipc
+    from tests.runtime.production_fixture import waitFor
+    from tests.runtime.test_project_configuration import authority
+
+    spec = _spec(tmp_path)
+    configuration = authority(tmp_path)
+    configuration.drainingOwners.add(spec.jobId)
+    cancellation = Event()
+    events = queue.Queue()
+    parent, child = multiprocessing.Pipe()
+    bridge = ipc.DeviceBridge(SimpleNamespace(configuration=configuration), spec.jobId, parent, cancellation)
+    receive = ipc.receiveBytes
+
+    def receiveReply(connection, limit, cancelled, deadline):
+        if connection is child:
+            waitFor(lambda: spec.jobId in configuration.parkedOwners, seconds=5)
+            cancellation.set()
+            # A pending Windows read can complete before its next stop check.
+            return receive(connection, limit, lambda: False, min(deadline, monotonic() + 5))
+        return receive(connection, limit, cancelled, deadline)
+
+    monkeypatch.setattr(ipc, 'receiveBytes', receiveReply)
+    bridge.thread.start()
+    try:
+        worker_main.runJobProcess(spec, cancellation, events, devicePipe=child)
+        rows = list(events.queue)
+        assert [row['eventType'] for row in rows if row['eventType'] in
+                {'job.completed', 'job.failed', 'job.aborted'}] == ['job.aborted']
+        assert rows[-1]['code'] == 'E_CANCELLED'
+        assert rows[-1]['payload']['outcome'] == 'NOT_EXECUTED'
+        assert not any(row['eventType'] == 'node.started' for row in rows)
+        assert bridge.sequence == 1 and not configuration.cycles
+    finally:
+        cancellation.set()
+        child.close()
+        bridge.close()
+        configuration.close()
+
+
 @pytest.mark.parametrize('code,cancelled,outcome', [
     ('E_DEVICE_UNAVAILABLE', False, 'NOT_EXECUTED'),
     ('E_DEVICE_UNAVAILABLE', True, 'NOT_EXECUTED'),
     ('E_DEVICE_OUTCOME_UNKNOWN', True, 'UNKNOWN'),
     ('E_DEVICE_CANCELLED', False, 'NOT_EXECUTED'),
+    ('E_CONFIG_NOT_READY', True, 'UNKNOWN'),
 ])
 def testFrameworkFaultKeepsFailureAndDetailsEvenIfStopRacesReply(monkeypatch, tmp_path, code, cancelled, outcome):
     from emo_master.apps.runtime.devices import ipc

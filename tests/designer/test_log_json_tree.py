@@ -173,6 +173,51 @@ def testWorkbenchReadsReceivedIoSummaryMetricsAndReasons(designerApplication):
     assert json.loads(detail.rawTree.toPlainText()) == wrapper
 
 
+def testCompletedModelShowsRecordedBindingAndLoadedPathBeforePorts(designerApplication):
+    digest = "42" * 32
+    loaded = rf"C:\runtime\configuration-resources\station\{digest}.onnx"
+    source = {"path": "assets/三标签.onnx", "resourceId": "labels", "sha256": digest,
+              "configuredPath": "D:/models/previous.onnx"}
+    record = {"eventType": "node.completed", "payload": {
+        "diagnostics": {"modelPath": loaded, "modelSource": source, "provider": "CPU"}}}
+    detail = LogRecordDetail()
+    detail.setEvent(record)
+    root = detail.readable.invisibleRootItem()
+    model = child(root, "使用的模型")
+    assert model.isExpanded() and model.text(1) == "三标签.onnx · 工程资源"
+    assert root.indexOfChild(model) < root.indexOfChild(child(root, "输入摘要"))
+    assert child(model, "模型来源路径").text(1) == source["path"]
+    assert child(model, "实际加载路径").text(1) == loaded
+    assert child(model, "填写路径（未生效）").text(1) == source["configuredPath"]
+    assert child(model, "资源 ID").text(1) == "labels"
+    assert child(model, "SHA-256").text(1) == digest
+    assert child(root, "诊断").childCount() == 1 and child(child(root, "诊断"), "provider").text(1) == "CPU"
+    assert json.loads(detail.rawTree.toPlainText()) == record
+
+    detail.setEvent({"eventType": "node.completed", "payload": {"diagnostics": {
+        "modelPath": loaded, "modelSource": {"path": "models/当前模型.onnx", "sha256": digest}}}})
+    model = child(root, "使用的模型")
+    assert model.text(1) == "当前模型.onnx · 节点选定文件"
+    assert child(model, "节点选择路径").text(1) == "models/当前模型.onnx"
+    assert child(model, "实际加载路径").text(1) == loaded
+    assert child(model, "SHA-256").text(1) == digest
+
+    # Historical records may identify only the Runtime copy. This event has no source filename.
+    detail.setEvent({"eventType": "node.completed", "payload": {"diagnostics": {"modelPath": loaded}}})
+    model = child(root, "使用的模型")
+    assert model.text(1) == "来源未记录" and model.childCount() == 2
+    assert child(model, "SHA-256").text(1) == digest
+    assert child(model, "实际加载路径").text(1) == loaded
+
+    # A digest-like name elsewhere is just a filename unless a fingerprint was recorded.
+    direct = f"D:/models/{digest}.onnx"
+    detail.setEvent({"eventType": "node.completed", "payload": {"diagnostics": {
+        "modelPath": direct, "modelSource": {"path": direct}}}})
+    model = child(root, "使用的模型")
+    assert model.text(1).endswith(" · 直接文件") and model.childCount() == 1
+    assert child(model, "实际加载路径").text(1) == direct
+
+
 def testFrameworkPresentationTranslatesOnlyKnownFieldsAndCopiesOriginalValues(designerApplication, monkeypatch):
     copies = []
     monkeypatch.setattr(log_json_tree, "_copyText", copies.append)

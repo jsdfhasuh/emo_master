@@ -15,6 +15,7 @@ from emo_master.apps.runtime.workflow.cancellation import CancellationToken
 from emo_master.apps.runtime.workflow.context import RunContext
 from emo_master.apps.runtime.workflow.runner import WorkflowRunner
 from emo_master.apps.runtime.execution.operator_executor import OperatorExecutor
+from emo_master.apps.runtime.execution.background_tasks import BackgroundTaskService
 from emo_master.core.workflow.compiler import WorkflowCompiler
 from .controller import WorkflowDebugController
 
@@ -28,6 +29,7 @@ def runWorkflowDebug(specJson, commands, events, cancellation, stop, heartbeat, 
     beat.start()
     runner, executionThread, trialThread = None, None, None
     token = CancellationToken(cancellation)
+    backgroundTasks = None
     variables = DebugVariables(spec["variableDefinitions"])
     snapshots = DebugAssets(spec["workspacePath"])
     runDone = threading.Event()
@@ -49,10 +51,9 @@ def runWorkflowDebug(specJson, commands, events, cancellation, stop, heartbeat, 
                 inline, assets = freezeOutputs(data.pop(field, {}), snapshots, provenance)
                 data[field], data[field + "Assets"] = inline, assets
             data.update(snapshotId=snapshotId, kind="flow_snapshot", snapshotKind=kind)
-            snapshotAck.clear()
             send(data)
             # Parent owns eviction; don't delete files before it adopts the snapshot.
-            while not snapshotAck.wait(.05):
+            while not snapshotAck.acquire(timeout=.05):
                 token.raise_if_cancelled()
         else:
             send(dict(kind="flow_" + kind, **value))
@@ -74,14 +75,23 @@ def runWorkflowDebug(specJson, commands, events, cancellation, stop, heartbeat, 
             snapshots.budget = command["outputBudget"]
             inputs = materialize(command["inputs"], DebugAssets(spec["workspacePath"]))
             result = runner.run(spec["workflowId"], inputs, context, token)
+            backgroundTasks.close()
+            runner.pollBackgroundTasks()
             publish("observed", phase="workflow.result", identity=asdict(context), nodeId="", inputs={},
                     outputs=result.outputs, variables=variables.values, stack=[])
             publish("terminal", state="SUCCEEDED")
         except BaseException as error:
             primary = error
+            backgroundTasks.close(drain=False, waitForActive=token.is_cancelled())
+            identity = asdict(controller.failureContext or context)
+            source = getattr(error, "diagnostics", {}).get("backgroundTask", {})
+            if isinstance(source, dict) and "nodeRunId" in source:
+                identity.update({key: source[key] for key in ("jobId", "workflowId", "workflowRunId", "nodeRunId")
+                                 if key in source})
+                identity["callerNodeId"] = source.get("nodeId", identity["callerNodeId"])
             publish("terminal", state="CANCELLED" if getattr(error, "code", "") == "E_CANCELLED" else "FAILED",
                     code=getattr(error, "code", "E_EXEC_FAILED"), message=str(error)[:2048],
-                    identity=asdict(controller.failureContext or context))
+                    identity=identity)
         finally:
             try:
                 runner.closeSession(context, primary)
@@ -140,8 +150,12 @@ def runWorkflowDebug(specJson, commands, events, cancellation, stop, heartbeat, 
             module, name = entry["entry"].split(":")
             registry[key] = getattr(importlib.import_module(module), name)
         compiled = WorkflowCompiler(registry).compile(spec["project"])
+        backgroundTasks = BackgroundTaskService(token, stagingWorkspace=spec["workspacePath"],
+                                               stagingRecoveryRoot=spec.get("_stagingRecoveryRoot"))
+        capabilities = {key: entry.get("runtimeCapabilities", ()) for key, entry in spec["entries"].items()}
         runner = WorkflowRunner(compiled, registry, eventPublisher=logs, globalVariables=variables,
-                                globalCounters=DebugCounters(variables), debugController=controller, retainOperators=True)
+                                globalCounters=DebugCounters(variables), debugController=controller, retainOperators=True,
+                                backgroundTasks=backgroundTasks, runtimeCapabilities=capabilities)
         locations = {(workflow.workflowId, node.nodeId) for workflow in compiled.workflows.values()
                      for node in workflow.nodes if node.kind not in {"workflow_input", "workflow_output"}}
         send(dict(kind="ready"))
@@ -187,6 +201,8 @@ def runWorkflowDebug(specJson, commands, events, cancellation, stop, heartbeat, 
         for thread in (executionThread, trialThread):
             if thread is not None:
                 thread.join()  # Parent supervision enforces the cancellation grace.
+        if backgroundTasks is not None:
+            backgroundTasks.close(drain=False)
         send(dict(kind="closed"))
         finished.set()
         beat.join(1)

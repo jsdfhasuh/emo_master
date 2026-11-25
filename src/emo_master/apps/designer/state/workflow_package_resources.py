@@ -1,11 +1,13 @@
 """Bounded portable dependencies; import never overwrites an existing file."""
 import base64
-from copy import deepcopy
 import hashlib
 from pathlib import Path
 import tempfile
 from uuid import uuid4
 
+from emo_master.core.project.node_input_files import (
+    NODE_INPUT_FILES, activeNodeInputFile, alignWorkflowInputFiles, nodeInputPathKey, nodeInputResource,
+)
 from emo_master.core.project.resources import ResourcePlan, DeviceParameterTarget
 from emo_master.core.project.snapshots import _setPath
 
@@ -14,13 +16,19 @@ MAX_RESOURCE_BYTES = 64 * 1024 * 1024
 MAX_PACKAGE_BYTES = 96 * 1024 * 1024
 
 
-def dependencyPlan(store, workflows, devices):
-    raw = deepcopy(store.projectExtensions.get("resources", {}))
+def dependencyPlan(store, workflows, devices, sourceRoot, *, inProjectCopy):
+    plan = ResourcePlan.model_validate(store.projectExtensions.get("resources", {}))
+    alignWorkflowInputFiles(workflows, plan, store.project["projectId"], sourceRoot,
+                            bestEffort=inProjectCopy, refreshExisting=False)
+    raw = plan.model_dump()
     for field in ("parameterBindings", "siteBindings"):
         raw[field] = [binding for binding in raw.get(field, [])
             if binding["target"].get("deviceId") in devices
             or binding["target"].get("workflowId") in workflows]
     used = {binding["resourceId"] for binding in raw["parameterBindings"]}
+    inputPaths = {nodeInputPathKey(node.params.get(field), sourceRoot) for flow in workflows.values()
+                  for node in flow.nodes if (field := activeNodeInputFile(flow, node))}
+    used.update(key for key, item in plan.items.items() if nodeInputPathKey(item.path) in inputPaths)
     raw["items"] = {key: value for key, value in raw.get("items", {}).items() if key in used}
     if used - set(raw["items"]):
         raise ValueError("workflow package resource dependency is missing")
@@ -36,9 +44,11 @@ def targetParameters(document, target):
     return node.params
 
 
-def validateDependencies(document, *, referencesOnly=False):
+def validateDependencies(document, *, workflows=(), referencesOnly=False):
     plan = ResourcePlan.model_validate(document.resources.model_dump(mode="json"))
     used = {binding.resourceId for binding in plan.parameterBindings}
+    used.update(selected[0] for workflow in workflows for node in workflow.nodes
+                if (selected := nodeInputResource(document, workflow, node)) is not None)
     if used != set(plan.items):
         raise ValueError("workflow package resources must exactly match referenced dependencies")
     for binding in [*plan.parameterBindings, *plan.siteBindings]:
@@ -122,6 +132,10 @@ def remapDependencies(store, document, workflowIds, nodeIds, deviceIds, *, inPro
                 target.deviceId = deviceIds[target.deviceId]
             else:
                 originalWorkflowId = target.workflowId
+                if field == "parameterBindings":
+                    sourceNode = next(n for n in document.workflows[originalWorkflowId].nodes if n.nodeId == target.nodeId)
+                    if target.parameterPath == [NODE_INPUT_FILES.get(sourceNode.operatorId)]:
+                        continue  # Legacy packages already carry the selected filename on the node.
                 target.workflowId = workflowIds[originalWorkflowId]
                 target.nodeId = nodeIds[originalWorkflowId][target.nodeId]
             if field == "parameterBindings":
@@ -132,7 +146,7 @@ def remapDependencies(store, document, workflowIds, nodeIds, deviceIds, *, inPro
     return plan, resourceIds
 
 
-def applyImportedPaths(store, plan, resourceIds):
+def applyImportedPaths(store, plan, resourceIds, document, workflowIds, nodeIds):
     for binding in plan.parameterBindings:
         if binding.resourceId not in set(resourceIds.values()):
             continue
@@ -142,6 +156,14 @@ def applyImportedPaths(store, plan, resourceIds):
         else:
             params = next(node["params"] for node in store.get(target.workflowId).nodes if node["nodeId"] == target.nodeId)
         _setPath(params, target.parameterPath, plan.items[binding.resourceId].path)
+    for wid, importedId in workflowIds.items():
+        workflow = document.workflows[wid]
+        imported = {node["nodeId"]: node for node in store.get(importedId).nodes}
+        for node in workflow.nodes:
+            selected = nodeInputResource(document, workflow, node)
+            if selected is not None:
+                path = plan.items[resourceIds[selected[0]]].path
+                imported[nodeIds[wid][node.nodeId]]["params"][activeNodeInputFile(workflow, node)] = path
 
 
 def installDependencies(root, document, plan, resourceIds):

@@ -1,4 +1,5 @@
 from copy import deepcopy
+import hashlib
 from pathlib import Path
 
 import pytest
@@ -9,6 +10,7 @@ from emo_master.apps.designer.state.workflow_store import WorkflowStore
 from emo_master.core.plugin.registry import PluginRegistry
 from emo_master.core.project.migration import migrateProjectPayload
 from emo_master.core.project.models import ProjectDocument
+from emo_master.core.project.node_input_files import NODE_INPUT_FILES
 from emo_master.core.project.runtime_directory import _resolveFiles, prepareRuntimeProject
 from tests.runtime.production_fixture import productionProject
 
@@ -58,7 +60,7 @@ def testMovedUnicodeProjectResolvesPathsNotCwdAndLeavesSourceUntouched(tmp_path,
     nodes = {node.nodeId: node for node in prepared.workflows["main"].nodes}
     assert nodes["load"].params["imagePath"] == str(destination / "input.png")
     assert nodes["save"].params["outputPath"] == str(destination / "outputs/result.png")
-    assert "imagePath" not in document.workflows["main"].nodes[1].params
+    assert document.workflows["main"].nodes[1].params["imagePath"] == "input.png"
     assert (destination / "project.json").read_bytes() == source
 
 
@@ -121,6 +123,30 @@ def testMissingAndModifiedResourceFailsBeforeExecution(tmp_path, registry):
     (root / "input.png").write_bytes(b"bad")
     with pytest.raises(ValueError, match="size mismatch"):
         prepareRuntimeProject(document, root, registry)
+
+
+@pytest.mark.parametrize("operator,field", NODE_INPUT_FILES.items())
+def testStagedInputFollowsNodePathEvenWithConflictingBinding(tmp_path, registry, operator, field):
+    payload = WorkflowStore().toPayload()
+    paths = {}
+    for key in ("selected", "stale"):
+        staged = tmp_path / (key + ".uploaded")
+        staged.write_bytes(key.encode())
+        paths[key] = str(staged)
+        payload["resources"]["items"][key] = dict(path=f"inputs/{key}.bin", size=staged.stat().st_size,
+            sha256=hashlib.sha256(staged.read_bytes()).hexdigest(), purpose="input_file")
+    node = dict(nodeId="reader", operatorId=operator, params={field: "inputs/selected.bin"})
+    payload["workflows"]["main"]["nodes"].append(node)
+    payload["resources"]["parameterBindings"].append(dict(resourceId="stale", target=dict(
+        workflowId="main", nodeId="reader", parameterPath=[field])))
+    root = tmp_path / "remote"
+    effective = prepareRuntimeProject(ProjectDocument.model_validate(payload), root, registry,
+                                      resourcePaths=paths, allowMissingRoot=True)
+    assert effective.workflows["main"].nodes[-1].params[field] == paths["selected"]
+    node["params"][field] = "inputs/missing.bin"
+    with pytest.raises(ValueError, match="missing.bin"):
+        prepareRuntimeProject(ProjectDocument.model_validate(payload), root, registry,
+                              resourcePaths=paths, allowMissingRoot=True)
 
 
 def testFileArrayMetadataAndOptionalBlankFileHaveNoPathGuessing(tmp_path):

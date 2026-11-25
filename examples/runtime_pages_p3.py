@@ -26,7 +26,7 @@ def sampleProjectP3(root, count=12):
     data = (root / "second.png").read_bytes()
     raw['resources']['items']['second'] = dict(path='second.png',sha256=hashlib.sha256(data).hexdigest(),size=len(data),purpose='input_image')
     workflow = raw['workflows'].pop('main')
-    workflow['nodes'].extend([{'nodeId':'load-b','operatorId':'vision.io.image_loader'},
+    workflow['nodes'].extend([{'nodeId':'load-b','operatorId':'vision.io.image_loader','params':{'imagePath':'second.png'}},
                              {'nodeId':'select','operatorId':'test.p3.select'}])
     workflow['edges'] = [edge for edge in workflow['edges'] if edge['toNode'] != 'blob'] + [
         {'fromNode':node,'fromPort':port,'toNode':'select','toPort':target}

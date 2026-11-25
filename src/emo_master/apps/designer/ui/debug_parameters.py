@@ -4,6 +4,7 @@ from copy import deepcopy
 from PySide2.QtCore import Qt
 from PySide2.QtWidgets import QHBoxLayout, QScrollArea, QToolButton, QVBoxLayout, QWidget
 from shiboken2 import isValid
+from emo_master.core.project.node_input_files import NODE_INPUT_FILES
 
 from .debug_values import ValueTree, tool
 from .param_form import parameterTitle
@@ -20,6 +21,7 @@ class DebugParameterSection(QWidget):
         self.snapshot = None
         self.lastValues = None
         self.lastBindings = None
+        self.boundResourcePaths = {}
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         header = QHBoxLayout()
@@ -70,6 +72,16 @@ class DebugParameterSection(QWidget):
         self.editor.raise_()
         self.editor.activateWindow()
 
+    def showBoundResourcePaths(self, paths):
+        nodeFile = NODE_INPUT_FILES.get(self.editor.context.operatorId)
+        paths = {key: path for key, path in paths.items() if key != nodeFile}
+        if self.form is not None:
+            self.form.showBoundResourcePaths(paths)
+        else:
+            self.boundResourcePaths = dict(paths)
+            self.lastValues = None
+            self.refresh()
+
     def refresh(self):
         if self.snapshot is None:
             return
@@ -79,7 +91,8 @@ class DebugParameterSection(QWidget):
             if values != self.lastValues or bindings != self.lastBindings:
                 properties = self.editor.context.paramSchema.get("properties", {})
                 labeled = {}
-                for name, value in values.items():
+                displayed = {**values, **{name: f"资源绑定 · {path}" for name, path in self.boundResourcePaths.items()}}
+                for name, value in displayed.items():
                     title = parameterTitle(name, properties.get(name, {}))
                     labeled[f"{title} ({name})" if title != name else name] = value
                 if bindings:
@@ -99,6 +112,7 @@ class DebugParameterSection(QWidget):
             return
         source, self.sourceScroll = self.sourceScroll, None
         if isValid(source) and self.form is not None and isValid(self.form):
+            self.form.showBoundResourcePaths({})
             self.body.layout().removeWidget(self.form)
             placeholder = source.takeWidget()
             source.setWidget(self.form)

@@ -194,8 +194,9 @@ def testTwoRealRunsFollowSelectionWithoutExtraReadsAndViewerCloseKeepsRuntime(tm
             window.close()
 
 
-@pytest.mark.parametrize('shape', [(12, 16), (2160, 3840)])
-def testLiveLoopPanelAndViewerKeepOneInvocationAcrossFourTabs(tmp_path, designerApplication, ownedDesignerWindow, shape):
+@pytest.mark.parametrize('shape, backgroundSave', [((12, 16), False), ((2160, 3840), False), ((12, 16), True)])
+def testLiveLoopPanelAndViewerKeepOneInvocationAcrossFourTabs(tmp_path, designerApplication, ownedDesignerWindow,
+                                                            shape, backgroundSave):
     import json
     import os
     from pathlib import Path
@@ -204,6 +205,9 @@ def testLiveLoopPanelAndViewerKeepOneInvocationAcrossFourTabs(tmp_path, designer
     def configure(document, root):
         next(node for node in document.workflows['body'].nodes if node.nodeId == 'image').params.update(
             height=shape[0], width=shape[1])
+        if backgroundSave:
+            next(node for node in document.workflows['body'].nodes if node.nodeId == 'save').params.update(
+                saveMode='background', namingMode='unique')
     with running(tmp_path, factory=autonomousLoopProject, configure=configure) as (runtime, client, project, extra):
         client.inspectionSession('close', project, extra)
         # Keep this visual test independent of saved application preferences.

@@ -41,7 +41,7 @@ def imageProject(runtime):
     graph = payload['workflows']['main']
     output = next(n['nodeId'] for n in graph['nodes'] if n['kind'] == 'workflow_output')
     for name, operatorId, params in [
-        ('load', 'vision.io.image_loader', {'imagePath': '', 'colorMode': 'grayscale'}),
+        ('load', 'vision.io.image_loader', {'imagePath': 'resources/input.png', 'colorMode': 'grayscale'}),
         ('threshold', 'vision.preprocess.threshold', {'mode': 'fixed', 'threshold': 127}),
     ]:
         manifest = runtime.pluginScanResult.activeOperators[operatorId].manifest
@@ -123,7 +123,7 @@ def testRealImageCompileAndMissingResourceRepairWithoutOnlineMutation(runtime, t
     assert fixed['runtimeInstanceId'] == runtime.runtimeInstanceId
     assert (runtime.loadedDocument.model_dump(), runtime.loadedProjectFile,
             runtime.projectConfiguration.current, runtime.jobRepository.all()) == before
-    assert next(n for n in payload['workflows']['main']['nodes'] if n['nodeId'] == 'load')['params']['imagePath'] == ''
+    assert next(n for n in payload['workflows']['main']['nodes'] if n['nodeId'] == 'load')['params']['imagePath'] == 'resources/input.png'
 
 
 def testInvalidThresholdReturnsLocatedCompilerDiagnostic(runtime):

@@ -9,6 +9,7 @@ from PySide2.QtWidgets import (QCheckBox, QComboBox, QDialog, QDialogButtonBox, 
 
 from emo_master.apps.designer.ui.icon_map import icon
 from emo_master.core.project.models import ProjectDocument
+from emo_master.core.project.node_input_files import NODE_INPUT_FILES
 from emo_master.core.project.migration import migrateProjectPayload
 from emo_master.core.project.snapshots import PARAMETER_PURPOSES
 
@@ -16,6 +17,8 @@ from emo_master.core.project.snapshots import PARAMETER_PURPOSES
 def bindingTargets(document, deviceTypes, operators):
     result = []
     def visit(value, schema, target, path=(), operatorId=None):
+        if path == (NODE_INPUT_FILES.get(operatorId),):
+            return  # The node's own file picker selects this input.
         purpose = schema.get("xResourcePurpose") or PARAMETER_PURPOSES.get((operatorId, path))
         if purpose and schema.get("type") == "string":
             result.append((dict(target, parameterPath=list(path)), purpose, value if isinstance(value, str) else ""))

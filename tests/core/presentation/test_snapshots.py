@@ -21,7 +21,7 @@ def addImageResource(project, root):
     content = b"immutable local input fixture"
     (root / "input.bin").write_bytes(content)
     project.workflows["main"].nodes.append(WorkflowNode(
-        nodeId="loader", operatorId="vision.io.image_loader", params={"imagePath": "Z:/developer/input.png"}))
+        nodeId="loader", operatorId="vision.io.image_loader", params={"imagePath": "input.bin"}))
     project.resources = ResourcePlan.model_validate({
         "items": {"input": {"path": "input.bin", "sha256": hashlib.sha256(content).hexdigest(),
                             "size": len(content), "purpose": "input_image"}},
@@ -167,5 +167,5 @@ def testIllegalWorkflowAndUndeclaredFileCannotPrepare(project, manifests, tmp_pa
     project.workflows["main"].edges.clear()
     project.workflows["main"].nodes.append(WorkflowNode(
         nodeId="loader", operatorId="vision.io.image_loader", params={"imagePath": "Z:/dev.png"}))
-    with pytest.raises(ValueError, match="explicit resource"):
+    with pytest.raises(ValueError, match=r"main/loader/imagePath"):
         freeze(project, manifests, tmp_path)

@@ -2,7 +2,7 @@
 
 ## 当前状态
 
-本地候选已修复八项审计缺口，包含 main 的 SQLite 后台写入。P3.5 桌面验收通过，P3.6 的修复提交、PR 正文与对应 CI 待完成。最初审计的 main 为 `ed98a0212820efd0e6436029b69e82dc6e313fc7`。
+PR #20 已纳入八项审计修复与 main 的 SQLite 后台写入。P3.5 原生桌面走查和 P3.6 修复提交的远端验收均已通过。最初审计的 main 为 `ed98a0212820efd0e6436029b69e82dc6e313fc7`。
 
 任务状态以 [tasks.md](tasks.md) 为准。原 P0、主体实现、独立复审与各自测试证据按固定提交保留。
 
@@ -20,7 +20,15 @@
 
 同一候选另行复跑了 11 个 Runtime 与算子测试文件，210 项通过。调试、导出与 SQLite 专项 58 项通过，按各自分组记录。实际注册 82/82 个算子，核对 420 条参数路径，嵌入式与回环 gRPC 的 82 份定义一致。协议生成一致性、Ruff、mypy 与 OpenSpec strict 均通过。现场相机、PLC 和打包产物未参与本次验收。
 
-验收时 GitHub PR 仍为 Draft，头提交为上述 `cd7058bd`，10 项检查通过，GitHub 报告其与 main 存在合并冲突。本地候选已处理冲突，尚未提交至 PR。[远端检查](https://github.com/jsdfhasuh/emo_master/pull/20/checks)
+桌面走查时，远端 PR 仍为 Draft，头提交为 `cd7058bd`，本地候选已处理与 main 的冲突。后续推送和对应的远端结果见下节。
+
+## 修复提交的远端验收
+
+2026-11-25，Codex 将 `d70ef45632f2cfba73dd3ce56a4c64391064e86e` 推送到 PR #20，更新 PR 正文、添加执行者评论并转为可审查。该提交包含 PR 旧头 `cd7058bd` 与 main `5f337cb5`。提交树与桌面验收树 `c344489c` 之间仅有四份验收文档的差异。在该提交的干净工作树上，补跑 13 项示例生成和快照回归，全部通过。
+
+四份 JUnit 报告共覆盖每平台 9,947 项源码测试。Linux 通过 9,907 项、跳过 40 项，Windows 通过 9,941 项、跳过 6 项，两平台均为零失败、零错误。四个源码分组和两平台汇总均已通过。[源码 CI](https://github.com/jsdfhasuh/emo_master/actions/runs/45599752943)
+
+Web 的 Linux、Windows 和 Windows 合成数据 Runtime 联调三项均通过。连同源码检查选择在内，GitHub 在该修复提交上报告 10/10 项成功。[Web CI](https://github.com/jsdfhasuh/emo_master/actions/runs/45599752809) · [PR #20](https://github.com/jsdfhasuh/emo_master/pull/20)
 
 ## 实施审计后的功能修复（2026-11-25）
 

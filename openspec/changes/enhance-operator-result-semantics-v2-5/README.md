@@ -2,7 +2,7 @@
 
 ## 当前状态
 
-**本地候选已补齐八项审计缺口，并通过 P3.5 原生 Windows Qt 桌面验收。** 用户授权 Codex 完成本次桌面操作。当前清单已完成 23/24 项，P3.6 还须提交修复、更新 PR 正文并记录该提交的 CI。[交付记录](delivery.md)
+**实施清单 24/24 项已完成。** 八项审计缺口已修复，P3.5 已由用户授权 Codex 在原生 Windows Qt 桌面验收。PR #20 修复提交 `d70ef456` 的 10 项远端检查全部通过。[交付记录](delivery.md#修复提交的远端验收)
 
 - 原 main 基线：`ed98a0212820efd0e6436029b69e82dc6e313fc7`，已包含 PR19、PR25。
 - 下表的 R1–R3 复审基于 PR20 头 `3d6448d3da18790c5f97bfdecb5fc845ebd67a1c`。
@@ -19,7 +19,7 @@
 
 ## 阅读入口
 
-- [tasks.md](tasks.md) 是唯一实施状态清单，记录本轮尚待完成的验收。
+- [tasks.md](tasks.md) 是本轮实施与验收的状态清单。
 - [reference/pr20-review-20261125.md](reference/pr20-review-20261125.md)：三项已确认问题、源码依据、实际复现及最小回归要求。
 - [design.md](design.md)：保留原设计，并明确本轮三项局部修正边界。
 - [proposal.md](proposal.md)：原目标、当前阶段与本次补充范围。

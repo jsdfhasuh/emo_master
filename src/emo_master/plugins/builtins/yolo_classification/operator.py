@@ -37,19 +37,20 @@ class YoloClassificationOperator:
         paramSchema={
             "type": "object", "properties": {
                 "modelPath": {
+                    "description": "Runtime 本地分类 .onnx 文件路径；相对路径依 workspacePath；模型必须声明 task=classify、合法连续且唯一类别名、固定 H/W。",
                     "title": "\u5206\u7c7b\u6a21\u578b\u8def\u5f84", "type": "string", "default": "",
                     "xWidget": "file", "xFileMode": "open", "xFilter": "YOLO Classification (*.onnx)",
                 },
                 "confidence": {
                     "title": "\u5206\u7c7b\u7f6e\u4fe1\u5ea6\u9608\u503c", "type": "number",
                     "minimum": 0, "maximum": 1, "default": 0.8,
-                    "description": "\u4f4e\u4e8e\u9608\u503c\u4ecd\u4fdd\u7559 Top-1\uff0caccepted=false\uff0cacceptedLabel \u4e3a\u7a7a\u5b57\u7b26\u4e32\u3002",
+                    "description": "业务接受阈值 [0,1]；只决定 accepted/acceptedLabel，不删除 Top-1/完整概率。",
                 },
                 "preprocess": {
                     "title": "\u9884\u5904\u7406\u534f\u8bae", "type": "string",
                     "enum": ["resize_full_frame_v1"], "default": "resize_full_frame_v1",
                     "xOptionLabels": {"resize_full_frame_v1": "\u8bad\u7ec3\u5e73\u53f0\u6574\u56fe\u7f29\u653e"},
-                    "description": "PIL \u53cc\u7ebf\u6027\u6574\u56fe\u7f29\u653e\uff0cRGB / 255\u3002\u4e0d\u652f\u6301\u4e2d\u5fc3\u88c1\u526a\u8bad\u7ec3\u7684\u6a21\u578b\u3002",
+                    "description": "唯一支持 resize_full_frame_v1：PIL 双线性整图拉伸、RGB/255；无中心裁剪，不用检测 letterbox。",
                 },
             }, "required": ["modelPath"], "additionalProperties": False,
         },

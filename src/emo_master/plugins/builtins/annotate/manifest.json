@@ -26,25 +26,227 @@
   "paramSchema": {
     "type": "object",
     "properties": {
-      "drawBBoxes": {"title": "绘制包围框", "type": "boolean", "default": true},
-      "drawContours": {"title": "绘制轮廓", "type": "boolean", "default": true},
-      "drawCentroids": {"title": "绘制质心", "type": "boolean", "default": true},
-      "drawLabels": {"title": "绘制标签", "type": "boolean", "default": true},
-      "drawRoi": {"title": "绘制 ROI", "type": "boolean", "default": true},
-      "thickness": {"title": "线条宽度（像素）", "type": "integer", "minimum": 1, "default": 2},
-      "fontScale": {"title": "字体缩放比例", "type": "number", "exclusiveMinimum": 0.0, "default": 0.5},
-      "classStyles": {"title": "类别显示名称与颜色", "type": "object", "default": {}, "additionalProperties": {"type": "object", "properties": {"displayLabel": {"type": "string", "minLength": 1}, "color": {"type": "array", "items": {"type": "integer", "minimum": 0, "maximum": 255}, "minItems": 3, "maxItems": 3}}, "additionalProperties": false}},
-      "labelBackground": {"title": "绘制标签底色", "type": "boolean", "default": false},
-      "showConfidence": {"title": "显示置信度", "type": "boolean", "default": true},
-      "colorMode": {"title": "输出颜色模式", "type": "string", "enum": ["preserve", "bgr"], "default": "preserve"},
-      "lineColor": {"title": "线段颜色（BGR）", "xOptionalPresence": true, "type": "array", "items": {"type": "integer", "minimum": 0, "maximum": 255}, "minItems": 3, "maxItems": 3},
-      "lineStyle": {"title": "线段样式", "type": "string", "enum": ["solid", "dashed"], "default": "solid"},
-      "endpointMarker": {"title": "线段端点", "type": "string", "enum": ["none", "dot"], "default": "none"},
-      "blobColor": {"title": "连通域颜色", "type": "array", "items": {"type": "integer", "minimum": 0, "maximum": 255}, "minItems": 3, "maxItems": 3, "default": [0, 255, 0]},
-      "detectionColor": {"title": "检测框颜色", "type": "array", "items": {"type": "integer", "minimum": 0, "maximum": 255}, "minItems": 3, "maxItems": 3, "default": [0, 165, 255]},
-      "roiColor": {"title": "ROI 颜色", "type": "array", "items": {"type": "integer", "minimum": 0, "maximum": 255}, "minItems": 3, "maxItems": 3, "default": [255, 0, 255]}
+      "drawBBoxes": {
+        "description": "仅控制 Blob bbox 与 Detection geometry/bbox；不控制独立 matches/measurements 的绘制。",
+        "title": "绘制包围框",
+        "type": "boolean",
+        "default": true
+      },
+      "drawContours": {
+        "description": "仅控制 Blob 自带 contour；独立 contours 集合始终绘制。",
+        "title": "绘制轮廓",
+        "type": "boolean",
+        "default": true
+      },
+      "drawCentroids": {
+        "description": "仅控制 Blob 质心；measurements 的质心始终绘制。",
+        "title": "绘制质心",
+        "type": "boolean",
+        "default": true
+      },
+      "drawLabels": {
+        "description": "控制 Blob、Detection、Contour、Measurement、Match 标签；Lines/Circles 没有标签分支。",
+        "title": "绘制标签",
+        "type": "boolean",
+        "default": true
+      },
+      "drawRoi": {
+        "description": "是否绘制 roi 输入；关闭时 roi 不计 drawnCount。",
+        "title": "绘制 ROI",
+        "type": "boolean",
+        "default": true
+      },
+      "thickness": {
+        "description": "图形线宽；同时影响质心点、线端点和虚线长度。",
+        "title": "线条宽度（像素）",
+        "type": "integer",
+        "minimum": 1,
+        "default": 2
+      },
+      "fontScale": {
+        "description": "字体大小为 max(1,round(32*fontScale))，采用随插件字体显示中文。",
+        "title": "字体缩放比例",
+        "type": "number",
+        "exclusiveMinimum": 0.0,
+        "default": 0.5
+      },
+      "classStyles": {
+        "description": "按 Detection 原始 label 精确匹配的样式映射，其他集合不使用。",
+        "title": "类别显示名称与颜色",
+        "type": "object",
+        "default": {},
+        "additionalProperties": {
+          "title": "单个类别样式",
+          "description": "每个动态 key 是检测类别原始 label，值仅允许 displayLabel/color。",
+          "type": "object",
+          "properties": {
+            "displayLabel": {
+              "title": "显示标签",
+              "description": "仅改变 Detection 显示文字，不修改输入 label 或类别 ID。",
+              "type": "string",
+              "minLength": 1
+            },
+            "color": {
+              "title": "类别颜色（BGR）",
+              "description": "Detection 的 BGR 绘制颜色，缺省回退 detectionColor。",
+              "type": "array",
+              "items": {
+                "title": "颜色通道值",
+                "description": "按 B、G、R 顺序填写三个 0 至 255 的整数。保留灰度输出时，绘制亮度取三个分量的最大值。",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "minItems": 3,
+              "maxItems": 3
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "labelBackground": {
+        "description": "为标签填背景并根据背景亮度选黑/白文字；仅有标签时生效。",
+        "title": "绘制标签底色",
+        "type": "boolean",
+        "default": false
+      },
+      "showConfidence": {
+        "description": "是否在 Detection 标签后附两位小数 confidence；不改变筛选或业务结果。",
+        "title": "显示置信度",
+        "type": "boolean",
+        "default": true
+      },
+      "colorMode": {
+        "description": "preserve 保留输入的灰度或 BGR 格式，灰度图上的绘制亮度取颜色三个分量的最大值。bgr 将灰度图转为 BGR 后绘制。",
+        "title": "输出颜色模式",
+        "type": "string",
+        "enum": [
+          "preserve",
+          "bgr"
+        ],
+        "default": "preserve"
+      },
+      "lineColor": {
+        "title": "线段颜色（BGR）",
+        "description": "独立 Lines 集合的颜色；字段省略时动态回退 detectionColor。",
+        "type": "array",
+        "items": {
+          "title": "颜色通道值",
+          "description": "按 B、G、R 顺序填写三个 0 至 255 的整数。保留灰度输出时，绘制亮度取三个分量的最大值。",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "minItems": 3,
+        "maxItems": 3,
+        "xOptionalPresence": true
+      },
+      "lineStyle": {
+        "description": "独立 Lines 集合实线/虚线；ROI 中 Line 几何仍实线。",
+        "title": "线段样式",
+        "type": "string",
+        "enum": [
+          "solid",
+          "dashed"
+        ],
+        "default": "solid"
+      },
+      "endpointMarker": {
+        "description": "仅独立 Lines 集合端点圆标记。",
+        "title": "线段端点",
+        "type": "string",
+        "enum": [
+          "none",
+          "dot"
+        ],
+        "default": "none"
+      },
+      "blobColor": {
+        "description": "Blob bbox/contour/centroid/标签颜色。",
+        "title": "连通域颜色",
+        "type": "array",
+        "items": {
+          "title": "颜色通道值",
+          "description": "按 B、G、R 顺序填写三个 0 至 255 的整数。保留灰度输出时，绘制亮度取三个分量的最大值。",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "minItems": 3,
+        "maxItems": 3,
+        "default": [
+          0,
+          255,
+          0
+        ]
+      },
+      "detectionColor": {
+        "description": "Detection 默认色，且用于 Contour、Measurement、Circle、Match；lineColor 省略时的回退。",
+        "title": "检测框颜色",
+        "type": "array",
+        "items": {
+          "title": "颜色通道值",
+          "description": "按 B、G、R 顺序填写三个 0 至 255 的整数。保留灰度输出时，绘制亮度取三个分量的最大值。",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "minItems": 3,
+        "maxItems": 3,
+        "default": [
+          0,
+          165,
+          255
+        ]
+      },
+      "roiColor": {
+        "description": "ROI 几何颜色。",
+        "title": "ROI 颜色",
+        "type": "array",
+        "items": {
+          "title": "颜色通道值",
+          "description": "按 B、G、R 顺序填写三个 0 至 255 的整数。保留灰度输出时，绘制亮度取三个分量的最大值。",
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 255
+        },
+        "minItems": 3,
+        "maxItems": 3,
+        "default": [
+          255,
+          0,
+          255
+        ]
+      }
     }
   },
   "minCoreVersion": "0.3.0",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "image": {"title": "图像", "description": "非空 uint8 灰度或 BGR 基图；输出使用副本。"},
+      "frame": {"title": "坐标框", "description": "所有语义输入必须与 frame 在同一坐标空间；缺省按图生成。"},
+      "blobs": {"title": "连通域", "description": "Blob 集合：bbox/contour/centroid 和 id/area 标签。 非空类型端口可省略；传入时解析结构及校验坐标空间。"},
+      "detections": {"title": "检测结果", "description": "检测集合：geometry 优先于 bbox，标签采用类别样式。 非空类型端口可省略；传入时解析结构及校验坐标空间。"},
+      "contours": {"title": "轮廓", "description": "轮廓集合：polygon 与 contourId 标签。 非空类型端口可省略；传入时解析结构及校验坐标空间。"},
+      "measurements": {"title": "形状测量", "description": "形状测量集合：minAreaRect、centroid 和 A/P/C 文本。 非空类型端口可省略；传入时解析结构及校验坐标空间。"},
+      "lines": {"title": "线段", "description": "直线集合，可配置虚线与端点。 非空类型端口可省略；传入时解析结构及校验坐标空间。"},
+      "circles": {"title": "圆", "description": "圆集合，绘制 circle。 非空类型端口可省略；传入时解析结构及校验坐标空间。"},
+      "matches": {"title": "模板匹配", "description": "模板匹配集合，绘制 bbox 与集合 label/quality 标签。 非空类型端口可省略；传入时解析结构及校验坐标空间。"},
+      "roi": {"title": "感兴趣区域", "description": "单几何 ROI，由 drawRoi 控制。 非空类型端口可省略；传入时解析结构及校验坐标空间。"}
+    },
+    "outputs": {
+      "overlay": {"title": "叠加图", "description": "完成标注的图像；默认保留灰度/BGR，可强制灰度转 BGR。"},
+      "frame": {"title": "坐标框", "description": "输入解析后的原 frame。"},
+      "drawnCount": {"title": "标注对象数", "description": "遍历的集合对象数加实际启用 ROI 数；Blob/Detection 即使所有可视开关关闭也计数，不是渲染图元数。"}
+    },
+    "metrics": {
+      "latencyMs": {"title": "算子内部耗时", "description": "含输入校验、语义解析和 Pillow 标签绘制的本次本地耗时。", "unit": "ms", "group": "duration"},
+      "drawnCount": {"title": "标注对象数", "description": "同名输出的对象计数，不能视为有效检测数或真正绘制元素数。", "unit": "个", "group": "business"}
+    },
+    "diagnostics": {
+      "text": {"title": "摘要", "description": "Annotated + drawnCount 的英文摘要，需按实际对象计数理解。"}
+    },
+    "captureParams": [["colorMode"], ["showConfidence"]]
+  }
 }

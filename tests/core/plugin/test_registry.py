@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from emo_master.core.plugin.registry import PluginRegistry
-from emo_master.core.plugin.validator import isVersionCompatible
+from emo_master.core.plugin.validator import isVersionCompatible, validateManifestFields
 
 
 def testRegistryLoadsValidManifest(tmp_path: Path, monkeypatch) -> None:
@@ -17,7 +17,49 @@ def testRegistryLoadsValidManifest(tmp_path: Path, monkeypatch) -> None:
 
     assert "vision.demo.temp" in scanResult.activeOperators
     assert scanResult.activeOperators["vision.demo.temp"].manifest.runtimeCapabilities == ()
+    assert scanResult.activeOperators["vision.demo.temp"].manifest.resultSchema == {}
     assert scanResult.rejectedOperators == {}
+
+
+def testResultSchemaReferencesDeclaredPortsAndParameters():
+    payload = _validManifest(entry="unused.module:UnusedOperator")
+    portSpec = {"type": "number", "required": False, "nullable": True}
+    field = {"title": "采样值", "description": "以伏特表示的采样值", "unit": "V"}
+    payload["inputPorts"] = {"signal": portSpec}
+    payload["paramSchema"] = {"properties": {"options": {"properties": {"offset": {"type": "number"}}}}}
+    payload["resultSchema"] = {
+        "inputs": {"signal": field},
+        "metrics": {"samples": {"title": "采样", "description": "已处理的采样", "group": "result", "items": field}},
+        "captureParams": [["options", "offset"]],
+    }
+
+    manifest, issues = validateManifestFields(payload)
+
+    assert not issues and manifest is not None
+    assert manifest.inputPorts == {"signal": portSpec}
+    assert manifest.resultSchema == payload["resultSchema"]
+
+
+@pytest.mark.parametrize(("schema", "path"), [
+    (None, "resultSchema"),
+    ({"inputs": {"unknown": {"title": "未知端口", "description": "未知"}}}, "resultSchema.inputs"),
+    ({"outputs": {"signal": {"title": "错误方向", "description": "输入端口"}}}, "resultSchema.outputs"),
+    ({"metrics": {"elapsed": {"title": "耗时", "description": "运行耗时", "group": []}}}, "metrics.elapsed.group"),
+    ({"diagnostics": {"data": {"title": "回执", "description": "处理结果", "items": {}}}}, "diagnostics.data.items.title"),
+    ({"captureParams": [["options", "missing"]]}, "captureParams[0]"),
+    ({"captureParams": [["options"], ["options"]]}, "captureParams[1]"),
+])
+def testRejectsInvalidResultSchema(schema, path):
+    payload = _validManifest(entry="unused.module:UnusedOperator")
+    payload["inputPorts"] = {"signal": "number"}
+    payload["paramSchema"] = {"properties": {"options": {"type": "object"}}}
+    payload["resultSchema"] = schema
+
+    manifest, issues = validateManifestFields(payload)
+
+    assert manifest is None
+    assert [issue.code for issue in issues] == ["E_MANIFEST_RESULT_SCHEMA"]
+    assert path in issues[0].message
 
 
 @pytest.mark.parametrize("capabilities", [["unknown"], ["backgroundTasks"] * 2, [1], "backgroundTasks", None])

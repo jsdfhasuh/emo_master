@@ -45,7 +45,7 @@ _PARAM_SCHEMA: dict[str, object] = {
                 "adaptiveMean": "自适应均值",
                 "adaptiveGaussian": "自适应高斯",
             },
-            "description": "固定模式使用指定阈值；自动模式由图像计算阈值；自适应模式按局部邻域计算阈值。",
+            "description": "fixed手动、otsu/triangle自动单阈值、adaptiveMean/adaptiveGaussian局部阈值。",
         },
         "threshold": {
             "title": "阈值",
@@ -56,13 +56,13 @@ _PARAM_SCHEMA: dict[str, object] = {
             "xEnabledWhen": {"mode": ["fixed"]},
             "xUnit": "灰度级",
             "xExample": 127,
-            "description": "仅固定阈值模式生效，填写 0～255 的整数。",
+            "description": "仅fixed分支的灰度阈值0..255。",
         },
         "invert": {
             "title": "反向阈值",
             "type": "boolean",
             "default": False,
-            "description": "开启后反转二值掩码的前景与背景，输出仍为 0/255。",
+            "description": "决定THRESH_BINARY_INV或THRESH_BINARY；输出仍0/255。",
         },
         "blockSize": {
             "title": "自适应邻域大小",
@@ -73,7 +73,7 @@ _PARAM_SCHEMA: dict[str, object] = {
             "xEnabledWhen": {"mode": ["adaptiveMean", "adaptiveGaussian"]},
             "xUnit": "像素",
             "xExample": 11,
-            "description": "仅自适应模式生效，必须是大于等于 3 的奇数，如 3、5、11。",
+            "description": "仅自适应模式的邻域边长，奇数>=3。",
         },
         "constant": {
             "title": "自适应阈值偏移量",
@@ -82,7 +82,7 @@ _PARAM_SCHEMA: dict[str, object] = {
             "xEnabledWhen": {"mode": ["adaptiveMean", "adaptiveGaussian"]},
             "xUnit": "灰度级",
             "xExample": 2.0,
-            "description": "仅自适应模式生效，从局部均值或加权均值中减去此有限数值，可为负数或小数。",
+            "description": "仅自适应模式的局部阈值减数，有限数，可负。",
         },
     },
 }

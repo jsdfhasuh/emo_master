@@ -26,12 +26,14 @@ _PARAM_SCHEMA: dict[str, object] = {
     "type": "object",
     "properties": {
         "sourceSpace": {
+            "description": "输入像素应按此颜色空间解读；本算子无法从数组自行确认真实色序。",
             "title": "源颜色空间",
             "type": "string",
             "enum": list(_SPACES),
             "default": "BGR",
         },
         "targetSpace": {
+            "description": "输出目标空间BGR/RGB/GRAY/HSV/LAB。",
             "title": "目标颜色空间",
             "type": "string",
             "enum": list(_SPACES),

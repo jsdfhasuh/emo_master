@@ -19,10 +19,41 @@
   "paramSchema": {
     "type": "object",
     "properties": {
-      "invert": {"title": "反转掩膜", "type": "boolean", "default": false},
-      "fillValue": {"title": "填充值", "type": "integer", "minimum": 0, "maximum": 255, "default": 0}
+      "invert": {
+        "description": "在保留像素前反转归一化掩码。",
+        "title": "反转掩膜",
+        "type": "boolean",
+        "default": false
+      },
+      "fillValue": {
+        "description": "掩码外每个通道的固定uint8填充值。",
+        "title": "填充值",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 255,
+        "default": 0
+      }
     }
   },
   "minCoreVersion": "0.3.0",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "image": {"title": "图像", "description": "待遮罩的 uint8 灰度/BGR 图像。"},
+      "mask": {"title": "掩膜", "description": "同尺寸单通道 uint8 掩码，非零归一化为255。"},
+      "frame": {"title": "坐标框", "description": "图像有效区域和回源坐标；缺失取全图默认。"},
+      "maskFrame": {"title": "掩膜坐标框", "description": "可选掩码空间身份；提供时必须与 image frame 等价；本算子不以其矩形裁切mask。"}
+    },
+    "outputs": {
+      "image": {"title": "图像", "description": "mask非零处保留原像素，其他位置填 fillValue；invert后再选区。"},
+      "frame": {"title": "坐标框", "description": "传递规范化输入frame，未根据遮罩重算有效矩形。"}
+    },
+    "metrics": {
+      "latencyMs": {"title": "算子内部耗时", "description": "包含参数、输入验证及掩码应用的内部耗时。", "unit": "ms", "group": "duration"},
+      "operation": {"title": "操作", "description": "常量 applyMask，操作名称。", "group": "result"}
+    },
+    "diagnostics": {
+      "text": {"title": "摘要", "description": "applyMask completed 完成摘要。"}
+    }
+  }
 }

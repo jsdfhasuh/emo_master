@@ -34,16 +34,38 @@ class OperatorMeta:
 _PARAM_SCHEMA: dict[str, object] = {
     "type": "object",
     "properties": {
-        "x": {"title": "X 坐标", "type": "number", "default": 0.0},
-        "y": {"title": "Y 坐标", "type": "number", "default": 0.0},
-        "width": {"title": "宽度（像素）", "type": "number", "minimum": 0.0, "default": 0.0},
-        "height": {"title": "高度（像素）", "type": "number", "minimum": 0.0, "default": 0.0},
-        "clip": {"title": "裁剪到图像边界", "type": "boolean", "default": True},
-        "paddingLeft": {"title": "左侧填充（像素）", "type": "integer", "minimum": 0, "default": 0},
-        "paddingTop": {"title": "顶部填充（像素）", "type": "integer", "minimum": 0, "default": 0},
-        "paddingRight": {"title": "右侧填充（像素）", "type": "integer", "minimum": 0, "default": 0},
-        "paddingBottom": {"title": "底部填充（像素）", "type": "integer", "minimum": 0, "default": 0},
+        "x": {"description": "无roi输入时矩形左上x，有限像素坐标。", "title": "X 坐标", "type": "number", "default": 0.0},
+        "y": {"description": "无roi输入时矩形左上y。", "title": "Y 坐标", "type": "number", "default": 0.0},
+        "width": {
+            "description": "无roi输入时矩形宽；0为从x到图像右边。",
+            "title": "宽度（像素）", "type": "number", "minimum": 0.0, "default": 0.0
+        },
+        "height": {
+            "description": "无roi输入时矩形高；0为从y到图像下边。",
+            "title": "高度（像素）", "type": "number", "minimum": 0.0, "default": 0.0
+        },
+        "clip": {
+            "description": "true把取整roi裁至图像；false只要越界即error。",
+            "title": "裁剪到图像边界", "type": "boolean", "default": True
+        },
+        "paddingLeft": {
+            "description": "裁剪结果左侧增加的像素数，非roi向外扩展量。",
+            "title": "左侧填充（像素）", "type": "integer", "minimum": 0, "default": 0
+        },
+        "paddingTop": {
+            "description": "裁剪结果上侧增加的像素数，非roi向外扩展量。",
+            "title": "顶部填充（像素）", "type": "integer", "minimum": 0, "default": 0
+        },
+        "paddingRight": {
+            "description": "裁剪结果右侧增加的像素数，非roi向外扩展量。",
+            "title": "右侧填充（像素）", "type": "integer", "minimum": 0, "default": 0
+        },
+        "paddingBottom": {
+            "description": "裁剪结果下侧增加的像素数，非roi向外扩展量。",
+            "title": "底部填充（像素）", "type": "integer", "minimum": 0, "default": 0
+        },
         "padValue": {
+            "description": "裁剪后显式padding区域的常量，BGR三个通道相同。",
             "title": "填充值",
             "type": "integer",
             "minimum": 0,

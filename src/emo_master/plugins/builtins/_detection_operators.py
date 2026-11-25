@@ -64,25 +64,32 @@ class TemplateMatchingOperator:
         "type": "object",
         "properties": {
             "method": {
+                "description": "sqdiff/sqdiffNormed差异；ccorr/ccorrNormed相关；ccoeff/ccoeffNormed相关系数。",
                 "title": "匹配方法",
                 "type": "string",
                 "enum": list(_METHODS),
                 "default": "ccoeffNormed",
             },
             "colorMode": {
+                "description": "gray统一转灰度；native保持像素通道且要求两图一致。",
                 "title": "颜色模式",
                 "type": "string",
                 "enum": ["gray", "native"],
                 "default": "gray",
             },
             "thresholdMode": {
+                "description": "quality对统一高分优选值筛选；raw直接比较原分，sqdiff类越小越好。",
                 "title": "阈值模式",
                 "type": "string",
                 "enum": ["quality", "raw"],
                 "default": "quality",
             },
-            "threshold": {"title": "阈值", "type": "number", "default": 0.8},
+            "threshold": {
+                "description": "quality要求0..1且>=；raw要求有限，sqdiff类<=，其余>=。",
+                "title": "阈值", "type": "number", "default": 0.8
+            },
             "peakKernelSize": {
+                "description": "局部峰值搜索窗口，奇数1..31；在quality上膨胀求局部最大。",
                 "title": "峰值搜索核大小",
                 "type": "integer",
                 "minimum": 1,
@@ -90,6 +97,7 @@ class TemplateMatchingOperator:
                 "default": 3,
             },
             "nmsIouThreshold": {
+                "description": "候选与已选框IoU不得大于此值，0..1。",
                 "title": "非极大值抑制 IoU 阈值",
                 "type": "number",
                 "minimum": 0.0,
@@ -97,13 +105,14 @@ class TemplateMatchingOperator:
                 "default": 0.3,
             },
             "maxMatches": {
+                "description": "NMS后最多保留数，1..10000。",
                 "title": "最大匹配数量",
                 "type": "integer",
                 "minimum": 1,
                 "maximum": 10000,
                 "default": 100,
             },
-            "label": {"title": "匹配标签", "type": "string", "default": "template"},
+            "label": {"description": "写入整个模板匹配集合的标签。", "title": "匹配标签", "type": "string", "default": "template"},
         },
     }
     meta = OperatorMeta(
@@ -313,17 +322,30 @@ class HoughLineOperator:
     _PARAM_SCHEMA = {
         "type": "object",
         "properties": {
-            "rho": {"title": "距离分辨率（像素）", "type": "number", "exclusiveMinimum": 0.0, "default": 1.0},
+            "rho": {
+                "description": "Hough距离分辨率，正有限数，像素。",
+                "title": "距离分辨率（像素）", "type": "number", "exclusiveMinimum": 0.0, "default": 1.0
+            },
             "thetaDegrees": {
+                "description": "Hough角度分辨率，(0,180]度，执行时转弧度。",
                 "title": "角度分辨率（度）",
                 "type": "number",
                 "exclusiveMinimum": 0.0,
                 "maximum": 180.0,
                 "default": 1.0,
             },
-            "threshold": {"title": "阈值", "type": "integer", "minimum": 1, "default": 50},
-            "minLineLength": {"title": "最小线段长度（像素）", "type": "number", "minimum": 0.0, "default": 0.0},
-            "maxLineGap": {"title": "最大线段间隙（像素）", "type": "number", "minimum": 0.0, "default": 0.0},
+            "threshold": {
+                "description": "HoughLinesP累加阈值，整数>=1；不是灰度二值阈值。",
+                "title": "阈值", "type": "integer", "minimum": 1, "default": 50
+            },
+            "minLineLength": {
+                "description": "保留线段的最小长度，>=0像素。",
+                "title": "最小线段长度（像素）", "type": "number", "minimum": 0.0, "default": 0.0
+            },
+            "maxLineGap": {
+                "description": "可连接线段的最大间隙，>=0像素。",
+                "title": "最大线段间隙（像素）", "type": "number", "minimum": 0.0, "default": 0.0
+            },
         },
     }
     meta = OperatorMeta(
@@ -446,12 +468,27 @@ class HoughCircleOperator:
     _PARAM_SCHEMA = {
         "type": "object",
         "properties": {
-            "dp": {"title": "累加器分辨率反比", "type": "number", "exclusiveMinimum": 0.0, "default": 1.0},
-            "minDist": {"title": "最小圆心距离（像素）", "type": "number", "exclusiveMinimum": 0.0, "default": 20.0},
-            "param1": {"title": "Canny 高阈值", "type": "number", "exclusiveMinimum": 0.0, "default": 100.0},
-            "param2": {"title": "圆心累加器阈值", "type": "number", "exclusiveMinimum": 0.0, "default": 30.0},
-            "minRadius": {"title": "最小半径（像素）", "type": "integer", "minimum": 0, "default": 0},
-            "maxRadius": {"title": "最大半径（像素）", "type": "integer", "minimum": 0, "default": 0},
+            "dp": {
+                "description": "霍夫梯度圆检测累加器分辨率反比，正有限数。",
+                "title": "累加器分辨率反比", "type": "number", "exclusiveMinimum": 0.0, "default": 1.0
+            },
+            "minDist": {
+                "description": "圆心最小距离，正数像素。",
+                "title": "最小圆心距离（像素）", "type": "number", "exclusiveMinimum": 0.0, "default": 20.0
+            },
+            "param1": {
+                "description": "HOUGH_GRADIENT内部Canny高阈值。",
+                "title": "Canny 高阈值", "type": "number", "exclusiveMinimum": 0.0, "default": 100.0
+            },
+            "param2": {
+                "description": "HOUGH_GRADIENT圆心累加阈值。",
+                "title": "圆心累加器阈值", "type": "number", "exclusiveMinimum": 0.0, "default": 30.0
+            },
+            "minRadius": {"description": "最小半径>=0像素。", "title": "最小半径（像素）", "type": "integer", "minimum": 0, "default": 0},
+            "maxRadius": {
+                "description": "最大半径>=0像素；0作为OpenCV默认特殊值传入，正数时必须>=minRadius。",
+                "title": "最大半径（像素）", "type": "integer", "minimum": 0, "default": 0
+            },
         },
     }
     meta = OperatorMeta(

@@ -13,5 +13,18 @@
   },
   "paramSchema": {"type": "object", "properties": {}, "additionalProperties": false},
   "minCoreVersion": "0.6.1",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "after": {"title": "处理后", "description": "必须非None的执行依赖，只作为到达触发；false/0等非None值不会被当作缺失。"}
+    },
+    "outputs": {
+      "seconds": {
+        "title": "业务计时时长",
+        "description": "当前operator实例首次executeNode到本次executeNode的monotonic秒差；第一次为0，不是单节点执行耗时或日历时间。",
+        "unit": "s"
+      },
+      "text": {"title": "摘要", "description": "同一seconds截去小数后的HH:MM:SS，小时可超过两位。"}
+    }
+  }
 }

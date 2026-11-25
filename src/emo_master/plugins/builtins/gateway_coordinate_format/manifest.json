@@ -33,6 +33,7 @@
     "additionalProperties": false,
     "properties": {
       "channel": {
+        "description": "网关通道，决定机器人或 PLC 的请求和回执协议。",
         "title": "网关输入通道",
         "type": "string",
         "enum": [
@@ -47,6 +48,7 @@
         }
       },
       "plcRounding": {
+        "description": "仅 PLC 有效；requireInteger 拒绝非整数，其余为半值远离零/向零/下取整/上取整。",
         "title": "PLC 整数规则",
         "type": "string",
         "default": "requireInteger",
@@ -77,5 +79,31 @@
   "summary": "生成正常坐标双引号报文，不加换行或 EY；一个事务一个坐标对。",
   "minCoreVersion": "0.6.1",
   "maxCoreVersion": "1.x",
-  "iconKey": "default"
+  "iconKey": "default",
+  "resultSchema": {
+    "inputs": {
+      "points": {"title": "点集", "description": "必须恰好一个 Point2D，读取 x/y 及 coordinateSpace.unit；多目标需上游明确选择。"}
+    },
+    "outputs": {
+      "message": {
+        "title": "消息",
+        "description": "ASCII 编码 TcpMessage，含一对双引号坐标，不含换行或 EY。",
+        "fields": {
+          "type": {"title": "类型", "description": "固定tcpMessage类型标识。"},
+          "schemaVersion": {"title": "结构版本", "description": "COMMUNICATION_PAYLOAD_SCHEMA_VERSION报文契约版本。"},
+          "data": {"title": "数据", "description": "原始字节经encoding可逆表示的内容；可能包含业务敏感数据，不在通用参数快照中复制。"},
+          "encoding": {"title": "编码", "description": "固定ascii；data等于text，实际请求不带换行和EY后缀。"},
+          "byteLength": {"title": "字节长度", "description": "还原后的字节长度，不是data字符数。", "unit": "byte"}
+        }
+      },
+      "text": {"title": "摘要", "description": "同一请求字节的可读文本。"},
+      "expectedAck": {"title": "预期回执", "description": "根据本次规范化请求推导的精确 ACK；robot 为双坐标 EY，PLC 仅 X 符号 D7 与幅值 D6。"}
+    },
+    "diagnostics": {
+      "channel": {"title": "通道", "description": "本次使用的网关协议分支。"},
+      "robotRounding": {"title": "机器人坐标舍入规则", "description": "固定 decimalHalfAwayFromZero；代码在 PLC 分支也填入，不能解释成 PLC 实际采用此规则。"},
+      "coordinateUnit": {"title": "坐标单位", "description": "输入点 coordinateSpace.unit 的原始单位。"},
+      "unitConversion": {"title": "单位换算", "description": "固定 false：报文生成不换算坐标单位。"}
+    }
+  }
 }

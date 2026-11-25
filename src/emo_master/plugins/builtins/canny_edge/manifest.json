@@ -31,6 +31,7 @@
     "type": "object",
     "properties": {
       "thresholdLow": {
+        "description": "Canny低阈值，0..255且必须小于高阈值。",
         "title": "低阈值",
         "type": "integer",
         "minimum": 0,
@@ -38,6 +39,7 @@
         "default": 50
       },
       "thresholdHigh": {
+        "description": "Canny高阈值，0..255且高于低阈值。",
         "title": "高阈值",
         "type": "integer",
         "minimum": 0,
@@ -45,19 +47,45 @@
         "default": 150
       },
       "apertureSize": {
+        "description": "传给Canny的Sobel孔径3/5/7。",
         "title": "Sobel 孔径大小",
         "type": "integer",
-        "enum": [3, 5, 7],
+        "enum": [
+          3,
+          5,
+          7
+        ],
         "default": 3
       },
       "l2Gradient": {
+        "description": "传给Canny的L2gradient开关。",
         "title": "使用 L2 梯度",
         "type": "boolean",
         "default": false
       }
     },
-    "required": ["thresholdLow", "thresholdHigh"]
+    "required": [
+      "thresholdLow",
+      "thresholdHigh"
+    ]
   },
   "minCoreVersion": "0.1.0",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "image": {"title": "图像", "description": "uint8灰度或BGR图像。"},
+      "frame": {"title": "坐标框", "description": "输入图像有效内容矩形与回源坐标；缺失默认全图。"}
+    },
+    "outputs": {
+      "edges": {"title": "边缘图", "description": "灰度Canny边缘图，非零为边缘。"},
+      "overlay": {"title": "叠加图", "description": "BGR原图副本，边缘像素涂绿(0,255,0)；灰度先转BGR。"},
+      "frame": {"title": "坐标框", "description": "输入frame规范化后透传。"}
+    },
+    "metrics": {
+      "latencyMs": {"title": "算子内部耗时", "description": "从executeNode开始到Canny和绿色叠加完成的内部耗时。", "unit": "ms", "group": "duration"}
+    },
+    "diagnostics": {
+      "text": {"title": "摘要", "description": "Canny edge detection completed 摘要。"}
+    }
+  }
 }

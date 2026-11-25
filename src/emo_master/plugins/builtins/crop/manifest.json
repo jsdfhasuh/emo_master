@@ -41,16 +41,68 @@
   "paramSchema": {
     "type": "object",
     "properties": {
-      "x": {"title": "X 坐标", "type": "number", "default": 0.0},
-      "y": {"title": "Y 坐标", "type": "number", "default": 0.0},
-      "width": {"title": "宽度（像素）", "type": "number", "minimum": 0.0, "default": 0.0},
-      "height": {"title": "高度（像素）", "type": "number", "minimum": 0.0, "default": 0.0},
-      "clip": {"title": "裁剪到图像边界", "type": "boolean", "default": true},
-      "paddingLeft": {"title": "左侧填充（像素）", "type": "integer", "minimum": 0, "default": 0},
-      "paddingTop": {"title": "顶部填充（像素）", "type": "integer", "minimum": 0, "default": 0},
-      "paddingRight": {"title": "右侧填充（像素）", "type": "integer", "minimum": 0, "default": 0},
-      "paddingBottom": {"title": "底部填充（像素）", "type": "integer", "minimum": 0, "default": 0},
+      "x": {
+        "description": "无roi输入时矩形左上x，有限像素坐标。",
+        "title": "X 坐标",
+        "type": "number",
+        "default": 0.0
+      },
+      "y": {
+        "description": "无roi输入时矩形左上y。",
+        "title": "Y 坐标",
+        "type": "number",
+        "default": 0.0
+      },
+      "width": {
+        "description": "无roi输入时矩形宽；0为从x到图像右边。",
+        "title": "宽度（像素）",
+        "type": "number",
+        "minimum": 0.0,
+        "default": 0.0
+      },
+      "height": {
+        "description": "无roi输入时矩形高；0为从y到图像下边。",
+        "title": "高度（像素）",
+        "type": "number",
+        "minimum": 0.0,
+        "default": 0.0
+      },
+      "clip": {
+        "description": "true把取整roi裁至图像；false只要越界即error。",
+        "title": "裁剪到图像边界",
+        "type": "boolean",
+        "default": true
+      },
+      "paddingLeft": {
+        "description": "裁剪结果左侧增加的像素数，非roi向外扩展量。",
+        "title": "左侧填充（像素）",
+        "type": "integer",
+        "minimum": 0,
+        "default": 0
+      },
+      "paddingTop": {
+        "description": "裁剪结果上侧增加的像素数，非roi向外扩展量。",
+        "title": "顶部填充（像素）",
+        "type": "integer",
+        "minimum": 0,
+        "default": 0
+      },
+      "paddingRight": {
+        "description": "裁剪结果右侧增加的像素数，非roi向外扩展量。",
+        "title": "右侧填充（像素）",
+        "type": "integer",
+        "minimum": 0,
+        "default": 0
+      },
+      "paddingBottom": {
+        "description": "裁剪结果下侧增加的像素数，非roi向外扩展量。",
+        "title": "底部填充（像素）",
+        "type": "integer",
+        "minimum": 0,
+        "default": 0
+      },
       "padValue": {
+        "description": "裁剪后显式padding区域的常量，BGR三个通道相同。",
         "title": "填充值",
         "type": "integer",
         "minimum": 0,
@@ -60,5 +112,32 @@
     }
   },
   "minCoreVersion": "0.2.0",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "image": {"title": "图像", "description": "uint8灰度/BGR图像。"},
+      "roi": {"title": "感兴趣区域", "description": "可选bbox2d，优先于x/y/width/height；与frame空间必须一致。"},
+      "frame": {"title": "坐标框", "description": "输入有效内容与回源空间；缺省且有roi时沿用roi空间建立全图frame。"}
+    },
+    "outputs": {
+      "image": {"title": "图像", "description": "roi向外floor/ceil取整，边界裁切后的像素副本，再加显式padding。"},
+      "frame": {"title": "坐标框", "description": "裁区与输入有效内容交集，映射到输出中并排除padding，带回源坐标。"}
+    },
+    "metrics": {
+      "latencyMs": {"title": "算子内部耗时", "description": "入口至裁剪、padding和frame构建完成的内部耗时。", "unit": "ms", "group": "duration"},
+      "crop": {
+        "title": "最终裁剪范围",
+        "description": "实际裁切后的[left,top,width,height]；体现roi覆盖和边界裁切。",
+        "unit": "像素",
+        "group": "parameter"
+      },
+      "padding": {"title": "填充像素", "description": "实际[left,top,right,bottom]padding。", "unit": "像素", "group": "parameter"},
+      "outputWidth": {"title": "输出宽度", "description": "实际输出宽含padding。", "unit": "像素", "group": "result"},
+      "outputHeight": {"title": "输出高度", "description": "实际输出高含padding。", "unit": "像素", "group": "result"}
+    },
+    "diagnostics": {
+      "text": {"title": "摘要", "description": "裁剪填边完成摘要。"}
+    },
+    "captureParams": [["padValue"]]
+  }
 }

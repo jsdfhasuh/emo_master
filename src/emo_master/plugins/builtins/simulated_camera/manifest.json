@@ -11,5 +11,57 @@
   "paramSchema": {"type": "object", "properties": {}, "additionalProperties": false},
   "deviceRequirements": {"camera": {"deviceTypeId": "device.simulated.camera", "requiredCapabilities": ["capture"]}},
   "minCoreVersion": "0.6.1",
-  "maxCoreVersion": "0.x"
+  "maxCoreVersion": "0.x",
+  "resultSchema": {
+    "outputs": {
+      "image": {"title": "图像", "description": "合成uint8 BGR图：蓝通道为x%256，绿通道为采集sequence%256，红通道为曝光/增益函数。"},
+      "frame": {
+        "title": "坐标框",
+        "description": "默认像素框，sourceId为本次frameId而非真实硬件ID。",
+        "fields": {
+          "type": {"title": "类型", "description": "固定bbox2d图像有效内容矩形类型。"},
+          "schemaVersion": {"title": "结构版本", "description": "坐标契约版本；这些图像来源构建仿射坐标系。"},
+          "x": {"title": "横坐标", "description": "有效内容矩形左上角x，来源图像为0。", "unit": "pixel"},
+          "y": {"title": "纵坐标", "description": "有效内容矩形左上角y，来源图像为0。", "unit": "pixel"},
+          "width": {"title": "宽度", "description": "本次真实图像宽度。", "unit": "pixel"},
+          "height": {"title": "高度", "description": "本次真实图像高度。", "unit": "pixel"},
+          "coordinateSpace": {
+            "title": "坐标空间",
+            "description": "记录原点、X 轴方向、Y 轴方向、单位、参考空间、来源标识、图像宽度、图像高度、回源变换矩阵。",
+            "fields": {
+              "origin": {"title": "原点", "description": "固定topLeft，坐标原点在左上角。"},
+              "xAxis": {"title": "X 轴方向", "description": "固定right，横轴向右。"},
+              "yAxis": {"title": "Y 轴方向", "description": "固定down，纵轴向下。"},
+              "unit": {"title": "单位", "description": "固定pixel，未进行物理单位标定。"},
+              "reference": {"title": "参考空间", "description": "本坐标系参考标签，具体来源见该算子frame输出说明。"},
+              "sourceId": {"title": "来源标识", "description": "本次共享内存帧的frameId，来自descriptor而非固定serial。"},
+              "imageWidth": {"title": "图像宽度", "description": "坐标空间图像宽度；声明未知时不输出。", "unit": "pixel"},
+              "imageHeight": {"title": "图像高度", "description": "坐标空间图像高度；声明未知时不输出。", "unit": "pixel"},
+              "transformToSource": {"title": "回源变换矩阵", "description": "仿射数组[a,b,c,d,e,f]，x′=a*x+c*y+e，y′=b*x+d*y+f。本算子创建单位变换。"}
+            }
+          }
+        }
+      }
+    },
+    "diagnostics": {
+      "deviceFrame": {
+        "title": "采集帧信息",
+        "description": "记录帧标识、名称、形状、数据类型、存储字节数、周期标识、代次、请求标识、执行计划修订。",
+        "fields": {
+          "frameId": {"title": "帧标识", "description": "本次共享内存原图引用ID。"},
+          "name": {"title": "名称", "description": "共享内存段名称，技术字段，不是图片文件路径。"},
+          "shape": {"title": "形状", "description": "图像维度数组。"},
+          "dtype": {"title": "数据类型", "description": "固定uint8。"},
+          "nbytes": {"title": "存储字节数", "description": "实际原图字节数。"},
+          "cycleId": {"title": "周期标识", "description": "采集所属运行周期ID。"},
+          "generation": {
+            "title": "代次",
+            "description": "FrameStore调用方传入的设备操作运行代号；不与acquisition.connectionGeneration或streamGeneration混用。"
+          },
+          "requestId": {"title": "请求标识", "description": "本次采集请求ID。"},
+          "planRevision": {"title": "执行计划修订", "description": "采集冻结的在线计划修订号。"}
+        }
+      }
+    }
+  }
 }

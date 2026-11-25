@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass, field
 from typing import Any, Callable, Mapping
 
@@ -13,6 +12,7 @@ from emo_master.apps.runtime.execution.operator_executor import (
     missingRequiredKeys as _missingRequiredKeys,
 )
 from emo_master.apps.runtime.execution.errors import WorkflowExecutionError as WorkflowExecutionError
+from emo_master.apps.runtime.execution.parameter_inspection import ParameterInspection
 from emo_master.apps.runtime.workflow.cancellation import CancellationToken
 from emo_master.apps.runtime.workflow.background_outputs import BackgroundOutputs, pendingTaskId
 from emo_master.apps.runtime.workflow.branch_activity import BranchActivity
@@ -21,7 +21,9 @@ from emo_master.core.contracts.port_types import (
     isPortRequired,
 )
 from emo_master.core.workflow.models import CompiledProject
+from emo_master.core.contracts.log_safety import REDACTED, isCredentialKey, redactLogText
 from emo_master.core.contracts.run_inspection import finishInspection, startInspection
+from emo_master.core.plugin.models import PluginDescriptor
 from emo_master.core.workflow.parameter_bindings import captureBoundValue
 
 
@@ -194,6 +196,10 @@ class WorkflowRunner:
                 node = workflow.nodeById[nodeId]
                 nodeContext = context.forNode(node.nodeId)
                 nodeInput = dict(nodeInputs.get(nodeId, {}))
+                descriptor = self.operatorRegistry.get(node.operatorId) if node.kind == "operator" and node.operatorId else None
+                manifest = descriptor.manifest if isinstance(descriptor, PluginDescriptor) else None
+                identity = ({"operatorId": manifest.operatorId, "operatorVersion": manifest.version}
+                            if manifest is not None else {})
                 blockedBranches = branchActivity.blockingBranches(node)
                 missingInputs = _missingUpstreamInputs(
                     node, nodeInput, workflow.incomingEdges.get(nodeId, ())
@@ -213,7 +219,7 @@ class WorkflowRunner:
                         "node.skipped",
                         nodeContext,
                         f"node skipped: {node.nodeId}",
-                        payload={"status": "SKIPPED", "ioSummary": startInspection(nodeInput),
+                        payload={**identity, "status": "SKIPPED", "ioSummary": startInspection(nodeInput),
                                  "code": "E_BRANCH_NOT_SELECTED" if blockedBranches else "E_INPUT_NOT_PRODUCED",
                                  "message": "upstream branch was not selected" if blockedBranches else
                                  "upstream did not produce input" + (": " + ", ".join(missingInputs) if missingInputs else ""),
@@ -226,14 +232,16 @@ class WorkflowRunner:
                     boundValues.pop(nodeId, {}), enabled=nodeInput.get("enabled", True) is not False
                 )
                 self.publish("node.started", nodeContext, f"node started: {node.nodeId}",
-                             payload={"ioSummary": inspection})
+                             payload={**identity, "ioSummary": inspection})
+                parameters = (ParameterInspection(node.paramSchema, manifest.resultSchema)
+                              if manifest is not None and manifest.resultSchema and self.eventPublisher else None)
                 nodeDiagnostics = {}
                 try:
                     if self.debugController is not None:
                         self.debugController.before(node, nodeInput, nodeContext)
                     nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
                         node, nodeInput, supplied, nodeContext, cancellation,
-                        mapped
+                        mapped, parameterInspection=parameters,
                     )
                     self._validateNodeOutputs(node, nodeOutputs)
                     if self.debugController is not None:
@@ -266,6 +274,7 @@ class WorkflowRunner:
                     )
                     setattr(err, "diagnostics", failedDiagnostics)
                     failedPayload = {
+                        **identity,
                         "deviceBindings": self.operatorExecutor.bindingSnapshot(node),
                         "status": "FAILED",
                         "code": str(code),
@@ -274,6 +283,8 @@ class WorkflowRunner:
                         "diagnostics": failedDiagnostics,
                         "ioSummary": inspection,
                     }
+                    if parameters is not None and parameters.rows:
+                        failedPayload["parameterSummary"] = parameters.rows
                     self.publish(
                         "node.failed",
                         nodeContext,
@@ -292,12 +303,15 @@ class WorkflowRunner:
                 self._route(nodeId, nodeOutputs, workflow.outgoingEdges, nodeInputs)
                 cancellation.raise_if_cancelled()
                 payload = {
+                    **identity,
                     "status": "COMPLETED",
                     "outputs": _jsonSafe(nodeOutputs),
                     "metrics": _jsonSafe(nodeMetrics),
                     "diagnostics": _jsonSafe(nodeDiagnostics),
                     "ioSummary": finishInspection(inspection, nodeOutputs),
                 }
+                if parameters is not None and parameters.rows:
+                    payload["parameterSummary"] = parameters.rows
                 if previewCapture is not None:
                     payload["previewCapture"] = previewCapture
                 branch = _branchName(node.operatorId, nodeOutputs)
@@ -361,15 +375,17 @@ class WorkflowRunner:
                 self._backgroundOutputs.releaseBindings(values)
 
     def pollBackgroundTasks(self):
+        self.operatorExecutor.sqliteReceipts.poll(self.operatorExecutor.backgroundTasks)
         self._backgroundOutputs.poll()
 
     def waitForBackgroundTasks(self):
         self._backgroundOutputs.waitForIdle()
+        self.operatorExecutor.sqliteReceipts.poll(self.operatorExecutor.backgroundTasks)
 
     def prepareDispatchValue(self, value):
         return self._backgroundOutputs.forTransfer(value)
 
-    def _runNode(self, node, nodeInput, supplied, context, cancellation, boundValues=None):
+    def _runNode(self, node, nodeInput, supplied, context, cancellation, boundValues=None, *, parameterInspection=None):
         if node.kind == "workflow_input":
             return {
                 key: supplied[key]
@@ -388,7 +404,8 @@ class WorkflowRunner:
             if node.kind == "dispatch":
                 nodeInput = self.prepareDispatchValue(nodeInput)
             return self.dispatchRunner.run(node, nodeInput, context, cancellation)
-        return self.operatorExecutor.invoke(node, nodeInput, context, cancellation, boundValues)
+        return self.operatorExecutor.invoke(node, nodeInput, context, cancellation, boundValues,
+                                            parameterInspection=parameterInspection)
 
     def disposeOperators(self) -> WorkflowExecutionError | None:
         return self.operatorExecutor.disposeOperators()
@@ -468,7 +485,7 @@ class WorkflowRunner:
         return self.eventPublisher(
             eventType=eventType,
             context=context,
-            message=message,
+            message=redactLogText(message),
             level=level,
             code=code,
             payload={} if payload is None else payload,
@@ -506,15 +523,18 @@ class WorkflowRunner:
 
 
 def _jsonSafe(value: object) -> object:
-    try:
-        json.dumps(value)
+    if value is None or isinstance(value, (int, float)):
         return value
-    except (TypeError, ValueError):
-        if isinstance(value, dict):
-            return {str(key): _jsonSafe(item) for key, item in value.items()}
-        if isinstance(value, (list, tuple)):
-            return [_jsonSafe(item) for item in value]
-        return str(value)
+    if isinstance(value, str):
+        return redactLogText(value)
+    if isinstance(value, dict):
+        return {str(key): REDACTED if isCredentialKey(str(key)) else _jsonSafe(item)
+                for key, item in value.items()}
+    if isinstance(value, list):
+        return [_jsonSafe(item) for item in value]
+    if isinstance(value, tuple):
+        return tuple(_jsonSafe(item) for item in value)
+    return redactLogText(str(value))
 
 
 def _missingKeys(interface: Mapping[str, object], values: Mapping[str, object]) -> list[str]:

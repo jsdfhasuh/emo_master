@@ -1,0 +1,329 @@
+{
+  "communication.plc.slmp_read": {
+    "type": "object",
+    "xDeviceActionFields": [
+      "device",
+      "startAddress",
+      "dataType",
+      "count",
+      "outputIndex"
+    ],
+    "properties": {
+      "frameEncoding": {
+        "title": "通信格式",
+        "type": "string",
+        "enum": [
+          "binary",
+          "ascii"
+        ],
+        "default": "binary",
+        "xOptionLabels": {
+          "binary": "MC 3E · 二进制（Binary）",
+          "ascii": "MC 3E · ASCII"
+        }
+      },
+      "host": {
+        "title": "主机地址",
+        "type": "string",
+        "default": "127.0.0.1"
+      },
+      "port": {
+        "title": "端口",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 65535,
+        "default": 10001
+      },
+      "device": {
+        "title": "PLC 软元件",
+        "type": "string",
+        "enum": [
+          "D",
+          "M",
+          "d",
+          "m"
+        ],
+        "default": "D"
+      },
+      "startAddress": {
+        "title": "起始地址",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 16777215,
+        "default": 0
+      },
+      "connectTimeoutMs": {
+        "title": "连接超时（毫秒）",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 60000,
+        "default": 2000
+      },
+      "responseTimeoutMs": {
+        "title": "响应超时（毫秒）",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 60000,
+        "default": 2000
+      },
+      "retryCount": {
+        "title": "异常重试次数",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 3,
+        "default": 1
+      },
+      "retryDelayMs": {
+        "title": "重试间隔（毫秒）",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 10000,
+        "default": 0
+      },
+      "networkNo": {
+        "title": "网络编号",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 255,
+        "default": 0
+      },
+      "pcNo": {
+        "title": "PC 编号",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 255,
+        "default": 255
+      },
+      "moduleIoNo": {
+        "title": "模块 I/O 编号",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 65535,
+        "default": 1023
+      },
+      "moduleStationNo": {
+        "title": "模块站号",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 255,
+        "default": 0
+      },
+      "monitoringTimer": {
+        "title": "监视定时器（250 毫秒单位）",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 65535,
+        "default": 0
+      },
+      "dataType": {
+        "title": "数据类型",
+        "type": "string",
+        "enum": [
+          "uint16",
+          "int16",
+          "uint32",
+          "int32",
+          "float32",
+          "bit"
+        ],
+        "default": "uint16"
+      },
+      "count": {
+        "title": "数量",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 960,
+        "default": 1
+      },
+      "outputIndex": {
+        "title": "输出值索引",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 959,
+        "default": 0
+      }
+    }
+  },
+  "communication.plc.slmp_write": {
+    "type": "object",
+    "xDeviceActionFields": [
+      "device",
+      "startAddress",
+      "dataType",
+      "values"
+    ],
+    "properties": {
+      "frameEncoding": {
+        "title": "通信格式",
+        "type": "string",
+        "enum": [
+          "binary",
+          "ascii"
+        ],
+        "default": "binary",
+        "xOptionLabels": {
+          "binary": "MC 3E · 二进制（Binary）",
+          "ascii": "MC 3E · ASCII"
+        }
+      },
+      "host": {
+        "title": "主机地址",
+        "type": "string",
+        "default": "127.0.0.1"
+      },
+      "port": {
+        "title": "端口",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 65535,
+        "default": 10001
+      },
+      "device": {
+        "title": "PLC 软元件",
+        "type": "string",
+        "enum": [
+          "D",
+          "M",
+          "d",
+          "m"
+        ],
+        "default": "D"
+      },
+      "startAddress": {
+        "title": "起始地址",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 16777215,
+        "default": 0
+      },
+      "connectTimeoutMs": {
+        "title": "连接超时（毫秒）",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 60000,
+        "default": 2000
+      },
+      "responseTimeoutMs": {
+        "title": "响应超时（毫秒）",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 60000,
+        "default": 2000
+      },
+      "retryCount": {
+        "title": "异常重试次数",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 3,
+        "default": 0
+      },
+      "retryDelayMs": {
+        "title": "重试间隔（毫秒）",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 10000,
+        "default": 0
+      },
+      "networkNo": {
+        "title": "网络编号",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 255,
+        "default": 0
+      },
+      "pcNo": {
+        "title": "PC 编号",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 255,
+        "default": 255
+      },
+      "moduleIoNo": {
+        "title": "模块 I/O 编号",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 65535,
+        "default": 1023
+      },
+      "moduleStationNo": {
+        "title": "模块站号",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 255,
+        "default": 0
+      },
+      "monitoringTimer": {
+        "title": "监视定时器（250 毫秒单位）",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 65535,
+        "default": 0
+      },
+      "dataType": {
+        "title": "数据类型",
+        "type": "string",
+        "enum": [
+          "uint16",
+          "int16",
+          "uint32",
+          "int32",
+          "float32"
+        ],
+        "default": "uint16"
+      },
+      "values": {
+        "title": "写入值",
+        "type": "array",
+        "items": {
+          "type": "number"
+        },
+        "default": []
+      }
+    }
+  },
+  "vision.collection.number_pair": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": false
+  },
+  "vision.compare.number": {
+    "type": "object",
+    "properties": {
+      "operator": {
+        "title": "比较运算符",
+        "type": "string",
+        "enum": [
+          "eq",
+          "ne",
+          "lt",
+          "lte",
+          "gt",
+          "gte"
+        ],
+        "default": "gte"
+      },
+      "rightValue": {
+        "title": "右侧比较值",
+        "type": "number",
+        "default": 0.0
+      }
+    }
+  },
+  "vision.math.exact_integer": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": false
+  },
+  "vision.value.number": {
+    "type": "object",
+    "properties": {
+      "value": {
+        "title": "数值",
+        "type": "number",
+        "default": 0.0,
+        "xExample": 0.5,
+        "description": "填写有限数值，可使用整数、小数或科学计数法，例如 0.5 或 1e-6；不接受 NaN 或无穷大。"
+      }
+    }
+  }
+}

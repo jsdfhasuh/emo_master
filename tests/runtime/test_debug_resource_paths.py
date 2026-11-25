@@ -99,6 +99,10 @@ def testSessionUsesLocalOrMatchingRuntimeRootAndNeverRemoteClientDirectory(runti
         if expected:
             assert record["status"] == "SUCCEEDED", record
             assert record["rawParams"]["imagePath"] == "image.png"
+            assert record["effectiveParams"]["imagePath"] == "image.png"
+            assert {"path": ["imagePath"], "value": str(Path(expected) / "image.png"),
+                    "stage": "call", "source": "resource"} in record["parameterSummary"]
+            assert record["sourceIdentity"]["operatorId"] == "vision.io.image_loader"
             raw = debug.download(record["outputAssets"]["image"]["assetId"])["content"]
             pixels = cv2.imdecode(np.frombuffer(raw, np.uint8), cv2.IMREAD_UNCHANGED)
             assert np.all(pixels == (40 if transport == "embedded" else 190))
@@ -108,6 +112,7 @@ def testSessionUsesLocalOrMatchingRuntimeRootAndNeverRemoteClientDirectory(runti
             assert debug.snapshot()["session"]["resourceRoot"] == expected
         else:
             assert record["code"] == "E_PARAM_INVALID"
+            assert "ioSummary" not in record
         assert payload == before
     finally:
         debug.close()
@@ -130,6 +135,9 @@ def testRelativeWritesKeepIsolationAndExplicitConfirmation(runtime, tmp_path, op
             assert record["status"] == "SUCCEEDED", record
             isolated = Path(record["diagnostics"]["debugDatabasePath"])
             assert isolated.parent != tmp_path
+            assert record["effectiveParams"]["databasePath"] == path.name
+            assert {"path": ["databasePath"], "value": str(isolated),
+                    "stage": "call", "source": "resource"} in record["parameterSummary"]
             with closing(sqlite3.connect(isolated)) as db:
                 assert db.execute("SELECT value FROM records").fetchall() == [(7,)]
         elif operator == "vision.io.result_writer":

@@ -5,7 +5,7 @@ from copy import deepcopy
 import time
 
 from emo_master.core.contracts.run_inspection import clipText, encodedBytes
-from .node_run_inspection import NodeRunInspection
+from .node_run_inspection import NodeRunInspection, applySqliteCompletion
 
 RUN_METADATA_LIMIT = 512 * 1024
 
@@ -189,6 +189,11 @@ class RunResultHistory:
             self.setStatus(run.jobId, kind.split('.')[1].upper())
         elif kind == 'node.started':
             run.status = 'RUNNING'
+        elif kind == 'sqlite.write.finished' and all(isinstance(value, str) for value in identifiers):
+            for entry in self.executions.get(identifiers, ()):
+                if entry['run'] is run and applySqliteCompletion(entry['record'], event):
+                    executionChanged = True
+                    break
         elif kind == 'artifact.created':
             artifact = event.get('payload', {}).get('artifact', {})
             if isinstance(artifact, dict) and all(isinstance(value, str) for value in identifiers):

@@ -8,8 +8,14 @@ class FlowErrorOperator:
     meta = OperatorMeta("vision.flow.error", "停止并报告技术错误", "1.0.0",
         {"after": {"type": "any", "required": True, "nullable": False}}, {},
         {"type": "object", "additionalProperties": False, "properties": {
-            "code": {"title": "错误码", "type": "string", "default": "E_WORKFLOW_GUARD", "pattern": "^E_[A-Z0-9_]+$"},
-            "message": {"title": "错误说明", "type": "string", "default": "技术条件不满足，停止当前流程", "minLength": 1}}})
+            "code": {
+                "description": "主动报告的技术错误码，符合E_[A-Z0-9_]+。",
+                "title": "错误码", "type": "string", "default": "E_WORKFLOW_GUARD", "pattern": "^E_[A-Z0-9_]+$"
+            },
+            "message": {
+                "description": "主动错误说明；非空白文本，不由算子自动推断根因。",
+                "title": "错误说明", "type": "string", "default": "技术条件不满足，停止当前流程", "minLength": 1
+            }}})
 
     def validateParams(self, params):
         if set(params) - {"code", "message"} or not isinstance(params.get("code", "E_WORKFLOW_GUARD"), str) or not re.fullmatch(r"E_[A-Z0-9_]+", params.get("code", "E_WORKFLOW_GUARD")):

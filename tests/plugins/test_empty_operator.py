@@ -5,3 +5,4 @@ def testEmptyOperatorReturnsOk() -> None:
   operatorInstance = EmptyOperator()
   result = operatorInstance.executeNode({"image": object()}, {}, {})
   assert result["status"] == "ok"
+  assert "latencyMs" not in result.get("metrics", {})

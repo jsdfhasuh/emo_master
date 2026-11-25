@@ -170,6 +170,6 @@ def testInstalledFfmpegAcceptsTimeoutOptionsOnLocalVideo(tmp_path, monkeypatch):
 
 
 def testManifestMatchesImplementation():
-    manifest = json.loads(Path(module.__file__).with_name("manifest.json").read_text())
+    manifest = json.loads(Path(module.__file__).with_name("manifest.json").read_text(encoding="utf-8"))
     for field in ("inputPorts", "outputPorts", "paramSchema"):
         assert manifest[field] == getattr(RtspCameraOperator.meta, field)

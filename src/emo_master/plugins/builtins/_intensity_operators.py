@@ -69,8 +69,12 @@ class HistogramOperator:
     _PARAM_SCHEMA = {
         "type": "object",
         "properties": {
-            "bins": {"title": "直方图区间数", "type": "integer", "minimum": 1, "maximum": 256, "default": 256},
+            "bins": {
+                "description": "均匀划分0..256的区间数，1..256；binEdges有bins+1项。",
+                "title": "直方图区间数", "type": "integer", "minimum": 1, "maximum": 256, "default": 256
+            },
             "normalization": {
+                "description": "counts保留每区间计数；probability除以选中像素数；空选区保持0。",
                 "title": "归一化方式",
                 "type": "string",
                 "enum": ["counts", "probability"],

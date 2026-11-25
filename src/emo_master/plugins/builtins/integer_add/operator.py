@@ -8,7 +8,7 @@ SCHEMA = {
     "properties": {
         name: {"title": title, "type": "integer", "default": 0,
                "minimum": -(2**63), "maximum": 2**63 - 1,
-               "description": "未连接对应输入时使用；连接输入后以本次输入为准。"}
+               "description": "对应操作数输入缺失时使用的备用整数，默认值为 0。"}
         for name, title in (("leftValue", "左侧默认值"), ("rightValue", "右侧默认值"))
     },
     "additionalProperties": False,
@@ -47,5 +47,15 @@ class IntegerAddOperator:
         try:
             validateValue(value, "integer")
         except VariableError:
-            return dict(status="error", error=dict(code="E_RESULT_INVALID", message="整数相加结果超出 64 位有符号整数范围。"))
-        return dict(status="ok", outputs=dict(value=value))
+            result = dict(status="error", error=dict(code="E_RESULT_INVALID", message="整数相加结果超出 64 位有符号整数范围。"))
+        else:
+            result = dict(status="ok", outputs=dict(value=value))
+        fallbacks = []
+        for port, operand in (("left", left), ("right", right)):
+            if port not in inputs:
+                name = port + "Value"
+                fallbacks.append({"path": [name], "value": operand,
+                                  "source": "prepared" if name in params else "automatic"})
+        if fallbacks:
+            result["diagnostics"] = {"effectiveParameters": fallbacks}
+        return result

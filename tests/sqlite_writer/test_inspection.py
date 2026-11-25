@@ -48,6 +48,57 @@ def testMalformedReceiptCannotCrashRemoteInspectorOrInventCommit():
     assert receiptSummary({**receipt, 'elapsedMs': float('nan')}, identity)['elapsedMs'] is None
 
 
+def testLateBackgroundReceiptUpdatesOnlyTheMatchingInvocation():
+    from emo_master.apps.designer.state.run_result_history import RunResultHistory
+
+    history = RunResultHistory()
+    history.accept('job')
+    for index in (1, 2):
+        started = event('node.started', 2 * index - 1, node='writer', execution=str(index))
+        completed = event('node.completed', 2 * index, node='writer', execution=str(index))
+        identity = {key: started[key] for key in ('jobId', 'workflowId', 'nodeId', 'nodeRunId', 'workflowRunId')}
+        queued = dict(writeId=f'write-{index}', status='QUEUED', rowsAffected=None, primaryKey=None,
+                      execution=identity, elapsedMs=3, error=None)
+        completed['payload']['diagnostics'] = {'sqliteReceipt': queued}
+        assert history.applyEvent(started)
+        assert history.applyEvent(completed)
+        if index == 1:
+            first = queued
+
+    final = event('sqlite.write.finished', 5, node='writer', execution='1')
+    receipt = dict(first, status='COMMITTED', rowsAffected=1, primaryKey=51, elapsedMs=656)
+    final['payload'] = {'background': True, 'receipt': receipt}
+    assert history.applyEvent(final)
+    latest = history.view('main', 'writer')
+    assert latest['record']['sqliteReceipt']['status'] == 'QUEUED'
+    assert '等待写入结果' in sqliteReceiptText(latest['observation']['sqliteReceipt'])
+    history.selectPrevious(True)
+    older = history.view('main', 'writer')['record']
+    assert older['sqliteReceipt']['writeId'] == 'write-1'
+    assert '656.000 ms' in sqliteReceiptText(older['sqliteReceipt'])
+    assert older['sqliteReceipt']['primaryKey'] == 51
+
+    final['nodeRunId'] = '2'
+    final['payload']['receipt'] = dict(receipt, execution=queued['execution'])
+    assert history.applyEvent(final)
+    history.selectPrevious(False)
+    assert history.view('main', 'writer')['record']['sqliteReceipt']['status'] == 'QUEUED'
+    final['payload']['receipt'] = dict(queued, status='CANCELLED', rowsAffected=0)
+    assert history.applyEvent(final)
+    assert '写入已取消' in sqliteReceiptText(history.view('main', 'writer')['record']['sqliteReceipt'])
+
+
+def testBackgroundCompletionIsIncludedInOperationalLog():
+    from emo_master.apps.runtime.events.jsonl_writer import _isOperationalEvent, _projectEvent
+    from emo_master.apps.runtime.events.models import RuntimeEvent
+
+    final = RuntimeEvent('job', 'sqlite.write.finished', 'SQLite 后台写入已入库', nodeRunId='writer-run',
+                         payloadJson='{"background": true, "receipt": {"writeId": "w1", "status": "COMMITTED"}}')
+    assert _isOperationalEvent(final)
+    assert _projectEvent(final)['payload']['receipt']['writeId'] == 'w1'
+    assert not _isOperationalEvent(RuntimeEvent('job', 'sqlite.write.finished', 'COMMITTED'))
+
+
 def testSelectedCanvasClearNotifiesOnlyAfterWrappersAndDependencyHintsAreRemoved(ownedFlowScene, retainedQtApplication):
     scene = ownedFlowScene()
     for node in ('source', 'writer'):

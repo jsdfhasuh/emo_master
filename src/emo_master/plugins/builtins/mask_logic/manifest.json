@@ -52,10 +52,30 @@
           "not": "取反",
           "subtract": "差集（A 减 B）"
         },
-        "description": "取反仅需 maskA；其他操作需两个尺寸相同的二值掩码。"
+        "description": "二值集合运算；not只需A，其余需要B。"
       }
     }
   },
   "minCoreVersion": "0.2.0",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "maskA": {"title": "A 掩膜", "description": "必需非空二维uint8掩码，非零先归一化为255。"},
+      "maskB": {"title": "B 掩膜", "description": "除not外必须提供，同shape；not分支不使用。"},
+      "frameA": {"title": "A 图像坐标框", "description": "A掩码有效矩形/坐标；缺失默认全图。"},
+      "frameB": {"title": "B 图像坐标框", "description": "二元操作可选；缺失沿用frameA，提供时须同空间并与A矩形求交。"}
+    },
+    "outputs": {
+      "mask": {"title": "掩膜", "description": "and/or/xor/not/subtract(A与非B)所得0/255掩码。"},
+      "frame": {"title": "坐标框", "description": "not沿用A；其余取A/B有效矩形交集，即使or也不是矩形并集。"}
+    },
+    "metrics": {
+      "latencyMs": {"title": "算子内部耗时", "description": "输入检查、归一化及逻辑运算的内部耗时，不含后续前景计数。", "unit": "ms", "group": "duration"},
+      "operation": {"title": "操作", "description": "实际执行的操作名。", "group": "parameter"},
+      "foregroundPixels": {"title": "前景像素数", "description": "结果mask全图非零像素数。", "unit": "像素", "group": "business"}
+    },
+    "diagnostics": {
+      "text": {"title": "摘要", "description": "实际操作的完成摘要。"}
+    }
+  }
 }

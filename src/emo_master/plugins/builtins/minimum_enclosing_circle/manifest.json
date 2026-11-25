@@ -30,12 +30,15 @@
         "title": "轮廓处理方式",
         "type": "string",
         "default": "perContour",
-        "enum": ["perContour", "allContours"],
+        "enum": [
+          "perContour",
+          "allContours"
+        ],
         "xOptionLabels": {
           "perContour": "各轮廓分别求圆",
           "allContours": "合并全部轮廓点求单圆"
         },
-        "description": "合并模式将当前输入集合的所有轮廓顶点一起求一个最小外接圆；不是平均圆心或合并多个图像。"
+        "description": "perContour每个轮廓单独求最小外接圆；allContours合并所有轮廓顶点求单圆，不平均圆心。"
       }
     },
     "additionalProperties": false
@@ -45,5 +48,19 @@
   "summary": "逐轮廓或合并轮廓点集计算最小外接圆，保持来源和坐标空间；不是 Hough 圆或质心。",
   "minCoreVersion": "0.6.1",
   "maxCoreVersion": "1.x",
-  "iconKey": "default"
+  "iconKey": "default",
+  "resultSchema": {
+    "inputs": {
+      "contours": {"title": "轮廓", "description": "强类型轮廓集合；取其polygon.points，保留coordinateSpace。"}
+    },
+    "outputs": {
+      "circles": {"title": "圆", "description": "按scope把每轮廓或全部轮廓点合并后交cv2.minEnclosingCircle得到的圆集合；每圆center/radius用当前像素空间。"},
+      "circleCount": {"title": "圆数量", "description": "输出圆数量：perContour对应轮廓数；allContours非空为1，输入空为0。", "unit": "个"}
+    },
+    "diagnostics": {
+      "algorithm": {"title": "算法", "description": "固定实际调用的算法名cv2.minEnclosingCircle。"},
+      "scope": {"title": "作用范围", "description": "本次真实采用的合并/逐轮廓模式。"},
+      "sourceContourIds": {"title": "来源轮廓标识", "description": "本次输入所有轮廓的ID列表，用于来源说明。"}
+    }
+  }
 }

@@ -34,7 +34,7 @@
           "ccomp": "两级层级",
           "tree": "完整树形层级"
         },
-        "description": "选择轮廓保留范围及父子层级结构。"
+        "description": "external/list/ccomp/tree决定轮廓和层级，分别为仅外轮廓/无层级列表/两层/完整树。"
       },
       "approximation": {
         "title": "轮廓近似方式",
@@ -48,10 +48,52 @@
           "none": "保留全部轮廓点",
           "simple": "压缩直线段"
         },
-        "description": "压缩直线段可减少轮廓点；保留全部点适合需要逐点信息的处理。"
+        "description": "none保留全部点，simple压缩共线点。"
       }
     }
   },
   "minCoreVersion": "0.3.0",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "mask": {"title": "掩膜", "description": "uint8单通道mask，非零归一化为255，再与frame有效区相交。"},
+      "frame": {"title": "坐标框", "description": "有效矩形与回源坐标；影响实际提取范围。"}
+    },
+    "outputs": {
+      "polygons": {"title": "多边形", "description": "保留轮廓的Polygon2D列表，至少3个唯一点且面积非零。"},
+      "contours": {
+        "title": "轮廓",
+        "description": "同一批保留轮廓及层级关联，带depth/isHole。",
+        "fields": {
+          "items": {
+            "title": "集合条目",
+            "description": "集合条目的有序列表。",
+            "items": {
+              "title": "集合条目",
+              "description": "记录标识、多边形、层级深度、孔洞标志、父轮廓标识、首个子轮廓标识、上一个同层轮廓标识、下一个同层轮廓标识。",
+              "fields": {
+                "id": {"title": "标识", "description": "按保留顺序重新编号contour-1等。"},
+                "polygon": {"title": "多边形", "description": "当前frame坐标中的原始轮廓点；非物理毫米。", "unit": "当前坐标单位"},
+                "depth": {"title": "层级深度", "description": "原始hierarchy沿parent链的深度。", "unit": "层"},
+                "isHole": {"title": "孔洞标志", "description": "depth奇数为True；由当前retrieval层级决定。"},
+                "parentId": {"title": "父轮廓标识", "description": "OpenCV层级索引映射到保留id；指向被丢弃项则为null。"},
+                "firstChildId": {"title": "首个子轮廓标识", "description": "OpenCV层级索引映射到保留id；指向被丢弃项则为null。"},
+                "previousSiblingId": {"title": "上一个同层轮廓标识", "description": "OpenCV层级索引映射到保留id；指向被丢弃项则为null。"},
+                "nextSiblingId": {"title": "下一个同层轮廓标识", "description": "OpenCV层级索引映射到保留id；指向被丢弃项则为null。"}
+              }
+            }
+          }
+        }
+      },
+      "frame": {"title": "坐标框", "description": "规范化输入frame透传。"}
+    },
+    "metrics": {
+      "latencyMs": {"title": "算子内部耗时", "description": "executeNode入口至输出payload构建后的内部耗时。", "unit": "ms", "group": "duration"},
+      "contourCount": {"title": "轮廓数量", "description": "过滤退化轮廓后的items数量。", "unit": "个", "group": "business"},
+      "droppedDegenerateCount": {"title": "舍弃的退化对象数", "description": "唯一点不足3或面积<=1e-12的丢弃数。", "unit": "个", "group": "result"}
+    },
+    "diagnostics": {
+      "text": {"title": "摘要", "description": "提取与丢弃数量摘要。"}
+    }
+  }
 }

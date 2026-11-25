@@ -167,8 +167,9 @@ class DebugArtifactTools:
             selection = deepcopy(self.selection())
             if selection is None:
                 raise ValueError('请先选择完整结果')
-            path = self._savePath('导出原始数据与调用身份', '调试结果.emodebug.zip', '.emodebug.zip',
-                                  '完整结果包 (*.emodebug.zip)')
+            title = ('导出脱敏结果与调用身份' if selection['identity'].get('resultKind') == 'operator-debug'
+                     else '导出原始数据与调用身份')
+            path = self._savePath(title, '调试结果.emodebug.zip', '.emodebug.zip', '完整结果包 (*.emodebug.zip)')
             if path:
                 self.submitSave('artifact:export', lambda: exportResult(path, selection,
                     self.window.connection, cancelled=self.cancelled.is_set), path)
@@ -182,8 +183,11 @@ class DebugArtifactTools:
         if selection is None:
             return
         suffix = '.png' if selection.get('mime') == 'image/png' else '.json'
-        path = self._savePath('保存完整原始数据（身份信息请另导出完整结果包）', 'value' + suffix,
-                              suffix, '完整原始数据 (*' + suffix + ')')
+        label = '完整原始数据'
+        if selection['identity'].get('resultKind') == 'operator-debug':
+            label = '原始附件' if 'assetRef' in selection['wire'] else '当前显示值'
+        path = self._savePath('保存' + label + '（身份信息见结果包）', 'value' + suffix,
+                              suffix, label + ' (*' + suffix + ')')
         if path:
             self.submitSave('artifact:raw', lambda: exportRawResult(path, selection,
                 self.window.connection, cancelled=self.cancelled.is_set), path)

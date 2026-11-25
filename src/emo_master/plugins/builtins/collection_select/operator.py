@@ -28,15 +28,20 @@ _PARAM_SCHEMA: dict[str, object] = {
     "type": "object",
     "properties": {
         "mode": {
+            "description": "first/last选当前顺序首/末项；index选0起索引；topK选当前顺序前count项，本算子不先排序。",
             "title": "选择模式",
             "type": "string",
             "enum": ["first", "last", "index", "topK"],
             "default": "first",
         },
         "index": {"title": "元素索引", "type": "integer", "minimum": 0, "default": 0,
-                  "description": "按索引选择时使用；连接 index 输入后，以本次输入为准。"},
-        "count": {"title": "数量", "type": "integer", "minimum": 1, "default": 1},
+                  "description": "仅mode=index使用的0起索引；运行输入index优先于此备用参数。"},
+        "count": {
+            "description": "仅topK使用的前K项数量，超出集合长度时返回现有项。",
+            "title": "数量", "type": "integer", "minimum": 1, "default": 1
+        },
         "onOutOfRange": {
+            "description": "仅index模式越界时：empty返回空同类型集合；error返回E_PARAM_INVALID。",
             "title": "索引越界处理",
             "type": "string",
             "enum": ["empty", "error"],
@@ -139,16 +144,22 @@ class CollectionSelectOperator:
         except CollectionInputError as err:
             return _error(err.code, str(err))
         selected: list[CollectionItem]
+        diagnostics: dict[str, object] = {}
         if mode == "topK":
             selected = list(collection.items[: cast(int, params.get("count", 1))])
         elif mode == "index":
             index = cast(int, index)
+            diagnostics["effectiveParameters"] = [
+                {"path": ["index"], "value": index, "source": "input" if "index" in inputs else "normalized"}
+            ]
             if index >= len(collection.items):
                 if params.get("onOutOfRange", "empty") == "error":
-                    return _error(
+                    result = _error(
                         "E_PARAM_INVALID",
                         f"index {index} is outside collection of size {len(collection.items)}",
                     )
+                    result["diagnostics"] = diagnostics
+                    return result
                 selected = []
             else:
                 selected = [collection.items[index]]
@@ -157,6 +168,7 @@ class CollectionSelectOperator:
         else:
             selected = list(collection.items[-1:])
         outputName = collection.outputName("selected")
+        diagnostics["text"] = f"Selected {len(selected)} items using {mode}"
         return {
             "status": "ok",
             "outputs": {
@@ -168,7 +180,7 @@ class CollectionSelectOperator:
                 "collectionKind": collection.kind,
                 "selectedCount": len(selected),
             },
-            "diagnostics": {"text": f"Selected {len(selected)} items using {mode}"},
+            "diagnostics": diagnostics,
         }
 
 

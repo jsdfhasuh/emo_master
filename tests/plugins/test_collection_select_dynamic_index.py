@@ -44,6 +44,9 @@ def testDynamicOutOfRangeUsesExistingPolicy(behavior):
         assert result["outputs"]["selectedCount"] == 0
     else:
         assert result["error"]["code"] == "E_PARAM_INVALID"
+    assert result["diagnostics"]["effectiveParameters"] == [
+        {"path": ["index"], "value": 99, "source": "input"}
+    ]
 
 
 @pytest.mark.parametrize("port", ["detections", "blobs", "contours", "measurements", "lines", "circles", "matches"])

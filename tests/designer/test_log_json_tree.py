@@ -1,4 +1,7 @@
 import json
+from pathlib import Path
+
+import numpy as np
 
 from PySide2.QtCore import Qt
 from PySide2.QtTest import QTest
@@ -8,11 +11,103 @@ from emo_master.apps.designer.ui import log_json_tree, log_record_detail
 from emo_master.apps.designer.ui.log_dialog import StructuredLogEntry
 from emo_master.apps.designer.ui.log_json_tree import LogJsonTree
 from emo_master.apps.designer.ui.log_record_detail import LogRecordDetail
+from emo_master.plugins.builtins.annotate.operator import AnnotateOperator
+from emo_master.core.contracts.run_inspection import startInspection, finishInspection
+from emo_master.plugins.builtins.patchcore_inference.operator import PatchCoreInferenceOperator
+from emo_master.plugins.builtins.sqlite_writer.operator import SqliteWriterOperator
+from tests.plugins.patchcore_fixture import makeDeployment
+from tests.sqlite_writer.test_dependencies import config
 
 
 def child(parent, name):
     return next(parent.child(index) for index in range(parent.childCount())
                 if parent.child(index).text(0) == name)
+
+
+def builtinDefinition(folder):
+    manifest = Path(__file__).resolve().parents[2] / "src/emo_master/plugins/builtins" / folder / "manifest.json"
+    return json.loads(manifest.read_text(encoding="utf-8"))
+
+
+def testBusinessOverviewUsesRecordedScalarOutputsAndSQLiteReceipt(designerApplication, tmp_path):
+    def overview(folder, inputs, result):
+        assert result["status"] == "ok", result
+        definition = builtinDefinition(folder)
+        record = {"eventType": "node.completed", "payload": {
+            "operatorId": definition["operatorId"], "operatorVersion": definition["version"],
+            "status": "COMPLETED", "diagnostics": result["diagnostics"], "metrics": result.get("metrics", {}),
+            "ioSummary": finishInspection(startInspection(inputs), result["outputs"]),
+        }}
+        detail = LogRecordDetail(operatorLookup=lambda *_: definition)
+        detail.setEvent(record)
+        root = detail.readable.invisibleRootItem()
+        assert child(root, "状态").text(1) == "已完成"
+        section = child(root, "运行概览")
+        assert json.loads(detail.rawTree.toPlainText()) == record
+        return {section.child(i).text(0): section.child(i).text(1) for i in range(section.childCount())}
+
+    model = makeDeployment(tmp_path / "model", score=1.)
+    inputs = {"image": np.zeros((8, 12, 3), np.uint8)}
+    patchcore = PatchCoreInferenceOperator()
+    try:
+        result = patchcore.executeNode(inputs, {"modelPath": str(model), "drawOverlay": False, "drawHeatmap": False}, {})
+        rows = overview("patchcore_inference", inputs, result)
+        assert {key: rows[key] for key in ("得分（score）", "阈值（threshold）", "异常判定（isAnomaly）", "标签（label）")} == {
+            "得分（score）": "1.0", "阈值（threshold）": "2.5", "异常判定（isAnomaly）": "false", "标签（label）": "OK",
+        }
+        assert rows["算子内部耗时（latencyMs）"].endswith(" ms")
+    finally:
+        patchcore.disposeOperator()
+
+    # A missing mapped input with failurePolicy=continue completes the node but cannot commit a row.
+    result = SqliteWriterOperator().executeNode({}, config(tmp_path / "business.sqlite3", failure="continue"), {})
+    assert result["outputs"]["receipt"]["status"] == "FAILED"
+    rows = overview("sqlite_writer", {}, result)
+    assert rows["数据库写入状态（sqliteReceipt.status）"] == "FAILED"
+    assert rows["影响行数（sqliteReceipt.rowsAffected）"] == "0"
+
+
+def testBackgroundSqliteReceiptsKeepSubmissionAndFinalOutcomeDistinct(designerApplication):
+    definition = builtinDefinition("sqlite_writer")
+    detail = LogRecordDetail(operatorLookup=lambda *_: definition)
+    identity = {"operatorId": definition["operatorId"], "operatorVersion": definition["version"]}
+    run = {"jobId": "job", "workflowId": "main", "workflowRunId": "flow", "nodeId": "db", "nodeRunId": "run"}
+    queued = {"writeId": "same-write", "execution": run, "status": "QUEUED", "rowsAffected": None}
+    final = {**queued, "status": "FAILED", "rowsAffected": 0, "future": {"flag": False}}
+    event = {**run, "eventType": "sqlite.write.finished", "payload": {"background": True, "receipt": final, "extra": 0}}
+    detail.setEvent(event)
+    root = detail.readable.invisibleRootItem()
+    assert detail.title.text() == "SQLite 后台写入结果"
+    receipt = child(root, "后台最终回执（receipt）")
+    assert child(receipt, "写入标识（writeId）").text(1) == "same-write"
+    assert child(receipt, "数据库写入状态（status）").text(1) == "FAILED"
+    assert child(receipt, "影响行数（rowsAffected）").text(1) == "0"
+    child(receipt, "future").setExpanded(True)
+    assert child(child(receipt, "future"), "flag").text(1) == "false"
+    assert child(child(root, "记录数据"), "extra").text(1) == "0"
+    assert json.loads(detail.rawTree.toPlainText()) == event
+
+    unmatched = {**event, "nodeRunId": "other"}
+    detail.setEvent(unmatched)
+    assert detail.title.text() == "sqlite.write.finished"
+    assert json.loads(detail.rawTree.toPlainText()) == unmatched
+
+    debug = {"sourceIdentity": identity, "executionId": "run", "outputs": {"receipt": queued},
+             "diagnostics": {"sqliteReceipt": final}, "status": "SUCCEEDED"}
+    detail.setDebugResult(debug, sessionId="debug", generation=1)
+    accepted = child(root, "提交时输出（已入队）").child(0)
+    accepted.setExpanded(True)
+    assert child(accepted, "数据库写入状态（status）").text(1) == "QUEUED"
+    assert child(accepted, "影响行数（rowsAffected）").text(1) == "null"
+    section = child(root, "后台最终回执")
+    assert child(section, "数据库写入状态（sqliteReceipt.status）").text(1) == "FAILED"
+    assert child(section, "影响行数（sqliteReceipt.rowsAffected）").text(1) == "0"
+    assert json.loads(detail.rawTree.toPlainText()) == debug
+
+    other = {**debug, "diagnostics": {"sqliteReceipt": {**final, "writeId": "other-write"}}}
+    detail.setDebugResult(other, sessionId="debug", generation=1)
+    assert child(root, "已返回输出") and child(root, "运行概览")
+    assert json.loads(detail.rawTree.toPlainText()) == other
 
 
 def testJsonTreePreservesTypesAndExpandsNestedData(designerApplication):
@@ -174,13 +269,15 @@ def testWorkbenchReadsReceivedIoSummaryMetricsAndReasons(designerApplication):
 
 
 def testCompletedModelShowsRecordedBindingAndLoadedPathBeforePorts(designerApplication):
+    definition = builtinDefinition("yolo_inference")
+    identity = {"operatorId": definition["operatorId"], "operatorVersion": definition["version"]}
     digest = "42" * 32
     loaded = rf"C:\runtime\configuration-resources\station\{digest}.onnx"
     source = {"path": "assets/三标签.onnx", "resourceId": "labels", "sha256": digest,
-              "configuredPath": "D:/models/previous.onnx"}
-    record = {"eventType": "node.completed", "payload": {
+              "configuredPath": "D:/models/previous.onnx", "future": {"empty": None}}
+    record = {"eventType": "node.completed", "payload": {**identity,
         "diagnostics": {"modelPath": loaded, "modelSource": source, "provider": "CPU"}}}
-    detail = LogRecordDetail()
+    detail = LogRecordDetail(operatorLookup=lambda *_: definition)
     detail.setEvent(record)
     root = detail.readable.invisibleRootItem()
     model = child(root, "使用的模型")
@@ -191,10 +288,16 @@ def testCompletedModelShowsRecordedBindingAndLoadedPathBeforePorts(designerAppli
     assert child(model, "填写路径（未生效）").text(1) == source["configuredPath"]
     assert child(model, "资源 ID").text(1) == "labels"
     assert child(model, "SHA-256").text(1) == digest
-    assert child(root, "诊断").childCount() == 1 and child(child(root, "诊断"), "provider").text(1) == "CPU"
+    diagnostics = child(root, "诊断")
+    assert diagnostics.childCount() == 2 and child(diagnostics, "执行提供程序（provider）").text(1) == "CPU"
+    leftover = child(diagnostics, "modelSource")
+    leftover.setExpanded(True)
+    future = child(leftover, "future")
+    future.setExpanded(True)
+    assert child(future, "empty").text(1) == "null"
     assert json.loads(detail.rawTree.toPlainText()) == record
 
-    detail.setEvent({"eventType": "node.completed", "payload": {"diagnostics": {
+    detail.setEvent({"eventType": "node.completed", "payload": {**identity, "diagnostics": {
         "modelPath": loaded, "modelSource": {"path": "models/当前模型.onnx", "sha256": digest}}}})
     model = child(root, "使用的模型")
     assert model.text(1) == "当前模型.onnx · 节点选定文件"
@@ -203,7 +306,7 @@ def testCompletedModelShowsRecordedBindingAndLoadedPathBeforePorts(designerAppli
     assert child(model, "SHA-256").text(1) == digest
 
     # Historical records may identify only the Runtime copy. This event has no source filename.
-    detail.setEvent({"eventType": "node.completed", "payload": {"diagnostics": {"modelPath": loaded}}})
+    detail.setEvent({"eventType": "node.completed", "payload": {**identity, "diagnostics": {"modelPath": loaded}}})
     model = child(root, "使用的模型")
     assert model.text(1) == "来源未记录" and model.childCount() == 2
     assert child(model, "SHA-256").text(1) == digest
@@ -211,11 +314,22 @@ def testCompletedModelShowsRecordedBindingAndLoadedPathBeforePorts(designerAppli
 
     # A digest-like name elsewhere is just a filename unless a fingerprint was recorded.
     direct = f"D:/models/{digest}.onnx"
-    detail.setEvent({"eventType": "node.completed", "payload": {"diagnostics": {
+    detail.setEvent({"eventType": "node.completed", "payload": {**identity, "diagnostics": {
         "modelPath": direct, "modelSource": {"path": direct}}}})
     model = child(root, "使用的模型")
     assert model.text(1).endswith(" · 直接文件") and model.childCount() == 1
     assert child(model, "实际加载路径").text(1) == direct
+
+    for unresolved in ({}, {**identity, "operatorVersion": "other"}):
+        event = {"eventType": "node.completed", "payload": {**unresolved, "diagnostics": record["payload"]["diagnostics"]}}
+        detail.setEvent(event)
+        assert "使用的模型" not in [root.child(i).text(0) for i in range(root.childCount())]
+        diagnostics = child(root, "诊断")
+        assert child(diagnostics, "modelPath").text(1) == loaded
+        original = child(diagnostics, "modelSource")
+        original.setExpanded(True)
+        assert child(original, "path").text(1) == source["path"]
+        assert json.loads(detail.rawTree.toPlainText()) == event
 
 
 def testFrameworkPresentationTranslatesOnlyKnownFieldsAndCopiesOriginalValues(designerApplication, monkeypatch):
@@ -251,3 +365,112 @@ def testFrameworkPresentationTranslatesOnlyKnownFieldsAndCopiesOriginalValues(de
     assert child(root, "状态").text(1) == "UNRECOGNIZED"
     detail.setEvent({"eventType": "node.completed", "payload": {"status": "COMPLETED"}})
     assert child(root, "状态").text(1) == "已完成"
+
+
+def testJobAndDebugExplainOnlyMatchingOperatorFieldsAndKeepRawValues(designerApplication, monkeypatch):
+    copies = []
+    monkeypatch.setattr(log_json_tree, "_copyText", copies.append)
+    definition = {"operatorId": "test.operator", "version": "1.2", "paramSchema": {"properties": {
+        "options": {
+            "properties": {"limit": {"title": "限制", "description": "限制说明", "xUnit": "px"}},
+            "xFieldDescriptions": {"constant": {"title": "常量", "description": "显式提供的常量"}},
+        }}},
+        "resultSchema": {
+            "inputs": {"amount": {"title": "输入数值", "description": "实际输入"}},
+            "outputs": {"objects": {"title": "对象集合", "description": "实际结果集合",
+                                    "items": {"title": "对象", "fields": {"score": {
+                                        "title": "评分", "description": "对象得分", "unit": "分"}}}}},
+            "metrics": {"latencyMs": {"title": "提交用时", "description": "只统计后台提交", "unit": "ms",
+                                      "group": "duration"}},
+            "diagnostics": {"effectiveLimit": {"title": "实际限制", "description": "归一化后的值",
+                                                "group": "parameter"}},
+        }}
+    detail = LogRecordDetail(operatorLookup=lambda *_: definition)
+    summary = [
+        {"path": ["options", "limit"], "value": None, "stage": "call", "source": "prepared"},
+        {"path": ["options", "limit"], "value": 0, "stage": "effective", "source": "input"},
+    ]
+    payload = {"operatorId": "test.operator", "operatorVersion": "1.2",
+               "metrics": {"latencyMs": 0.25, "unknown": False}, "diagnostics": {"effectiveLimit": 0},
+               "parameterSummary": summary}
+    event = {"eventType": "node.completed", "payload": {**payload, "ioSummary": {
+        "version": 1, "inputs": {"items": [{"port": "amount", "value": {"kind": "scalar", "value": 0}}],
+                                 "portCount": 1},
+        "outputs": {"items": [{"port": "objects", "value": {"kind": "collection", "count": 1}}],
+                    "portCount": 1},
+    }}}
+    detail.setEvent(event, nodeElapsedMs=3)
+    root = detail.readable.invisibleRootItem()
+    assert child(root, "节点总耗时").text(1) == "3 ms · 节点起止事件"
+    latency = child(child(root, "运行概览"), "提交用时（latencyMs）")
+    assert latency.text(1) == "0.25 ms" and "只统计后台提交" in latency.toolTip(0)
+    assert child(child(root, "输入摘要"), "输入数值（amount）").text(1) == "0"
+    output = child(child(root, "输出摘要"), "对象集合（objects）")
+    assert "1 项" in output.text(1) and "仅显示数量" in output.text(1)
+    output.setExpanded(True)
+    assert child(output, "count").text(1) == "1"
+    assert child(child(root, "指标"), "unknown").text(1) == "false"
+    param = "限制（options.limit）"
+    assert child(child(root, "本次调用参数"), param).text(1) == "null · 准备后的节点参数"
+    assert child(child(root, "本次生效参数"), param).text(1) == "0 px · 输入覆盖"
+    assert child(child(root, "本次生效参数"), "实际限制（effectiveLimit）").text(1) == "0 · 诊断"
+    detail.copyRecordButton.click()
+    assert json.loads(copies[-1]) == event
+
+    result = {"sourceIdentity": {"operatorId": "test.operator", "operatorVersion": "1.2", "generation": 1},
+              "metrics": payload["metrics"], "diagnostics": payload["diagnostics"], "parameterSummary": summary,
+              "elapsedMs": 1.5, "outputs": {"objects": [{"score": 0, "extra": ""}]},
+              "effectiveParams": {"options": {"limit": 1, "constant": None}}}
+    detail.setDebugResult(result, sessionId="session", generation=1)
+    assert child(root, "调试执行耗时").text(1) == "1.5 ms"
+    output = child(child(root, "已返回输出"), "对象集合（objects）")
+    output.setExpanded(True)
+    entry = child(output, "对象（0）")
+    entry.setExpanded(True)
+    score = child(entry, "评分（score）")
+    assert score.text(1) == "0 分" and child(entry, "extra").text(1) == '""'
+    prepared = child(root, "准备阶段参数")
+    prepared.setExpanded(True)
+    options = child(prepared, "options")
+    options.setExpanded(True)
+    preparedLimit = child(options, "限制（limit）")
+    assert preparedLimit.text(1) == "1 px" and "限制说明" in preparedLimit.toolTip(0)
+    assert child(options, "常量（constant）").text(1) == "null"
+    detail.readable.setCurrentItem(score)
+    detail.copyValueButton.click()
+    assert json.loads(copies[-1]) == 0
+    assert json.loads(detail.rawTree.toPlainText()) == result
+
+    mismatched = {**result, "sourceIdentity": {**result["sourceIdentity"], "operatorVersion": "older"}}
+    detail.setDebugResult(mismatched, sessionId="session", generation=1)
+    assert child(child(root, "已返回输出"), "objects")
+    assert child(child(root, "指标"), "latencyMs").text(1) == "0.25"
+    assert child(child(root, "本次生效参数"), "options.limit").text(1) == "0 · 输入覆盖"
+    assert json.loads(detail.rawTree.toPlainText()) == mismatched
+
+
+def testAnnotateClassStylesExplainDynamicMembersAndCopyActualValues(designerApplication, monkeypatch):
+    copies = []
+    monkeypatch.setattr(log_json_tree, "_copyText", copies.append)
+    schema = AnnotateOperator.meta.paramSchema["properties"]["classStyles"]
+    style = {"displayLabel": "安全锥", "color": [0, 128, 255], "futureField": None}
+    styles = {"safety-cone": style}
+    tree = log_record_detail._ReadableTree()
+    group = tree.field("classStyles", styles, semantics=schema, expand=True)
+    member = child(group, "safety-cone")
+    assert schema["additionalProperties"]["description"] in member.toolTip(0)
+    member.setExpanded(True)
+    label = child(member, "显示标签（displayLabel）")
+    assert label.text(1) == "安全锥" and "不修改输入 label" in label.toolTip(0)
+    color = child(member, "类别颜色（BGR）（color）")
+    color.setExpanded(True)
+    firstChannel = child(color, "颜色通道值（0）")
+    assert (firstChannel.text(1), firstChannel.text(2)) == ("0", "number")
+    assert "按 B、G、R 顺序" in firstChannel.toolTip(0)
+    unknown = child(member, "futureField")
+    assert (unknown.text(1), unknown.text(2), unknown.toolTip(0)) == ("null", "null", "futureField")
+
+    for item in (group, member, color, firstChannel):
+        tree.setCurrentItem(item)
+        tree.copySelectedValue()
+    assert [json.loads(value) for value in copies] == [styles, style, [0, 128, 255], 0]

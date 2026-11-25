@@ -26,5 +26,13 @@
   "iconKey": "calculator",
   "summary": "输出有限数值的绝对值，不改变倍率或取整。",
   "minCoreVersion": "0.6.1",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "value": {"title": "值", "description": "非布尔的有限int或float原数值。"}
+    },
+    "outputs": {
+      "value": {"title": "值", "description": "有限数值绝对值；保留int/float原类型，不取整或改变单位。"}
+    }
+  }
 }

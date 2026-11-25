@@ -37,16 +37,27 @@ _INTERPOLATIONS = {
 _PARAM_SCHEMA: dict[str, object] = {
     "type": "object",
     "properties": {
-        "width": {"title": "宽度（像素）", "type": "integer", "minimum": 1},
-        "height": {"title": "高度（像素）", "type": "integer", "minimum": 1},
-        "mode": {"title": "缩放模式", "type": "string", "enum": list(_MODES), "default": "stretch"},
+        "width": {
+            "description": "目标宽；fit时实际输出宽可能更小，stretch/letterbox输出目标宽。",
+            "title": "宽度（像素）", "type": "integer", "minimum": 1
+        },
+        "height": {
+            "description": "目标高；fit时实际输出高可能更小，stretch/letterbox输出目标高。",
+            "title": "高度（像素）", "type": "integer", "minimum": 1
+        },
+        "mode": {
+            "description": "stretch各向拉伸；fit等比放入目标边界不加边；letterbox等比居中加边到目标大小。",
+            "title": "缩放模式", "type": "string", "enum": list(_MODES), "default": "stretch"
+        },
         "interpolation": {
+            "description": "图像缩放插值nearest/linear/area/cubic。",
             "title": "插值方式",
             "type": "string",
             "enum": list(_INTERPOLATIONS),
             "default": "linear",
         },
         "padValue": {
+            "description": "仅letterbox的四周填充值；三通道显式重复为三元组。",
             "title": "填充值",
             "type": "integer",
             "minimum": 0,

@@ -26,5 +26,13 @@
   "iconKey": "calculator",
   "summary": "将有限数值向零截断为整数；不四舍五入，拒绝布尔值、文本和非有限值。",
   "minCoreVersion": "0.6.1",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "value": {"title": "值", "description": "非布尔的有限int或float原数值。"}
+    },
+    "outputs": {
+      "value": {"title": "值", "description": "Python int向0截去小数；-0.8变0，不是floor或四舍五入。"}
+    }
+  }
 }

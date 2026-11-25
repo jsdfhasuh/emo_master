@@ -276,6 +276,11 @@ def testSortIsStableAndAlwaysPlacesMissingValuesLast() -> None:
         "large",
         "missing-circularity",
     ]
+    automatic = operator.executeNode({"blobs": _blobs().toPayload()}, {"key": ""}, {})
+    assert automatic["outputs"] == descending["outputs"]
+    assert automatic["diagnostics"]["effectiveParameters"] == [
+        {"path": ["key"], "value": "area", "source": "automatic"}
+    ]
 
 
 def testSelectSupportsIndexTopKAndOutOfRangePolicies() -> None:

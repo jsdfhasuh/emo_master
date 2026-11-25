@@ -65,6 +65,11 @@ def testRealRunnerSingleRecordFullJsonFalsyAndReceipt(tmp_path, value):
         assert stored is None if value is None else json.loads(stored) == value
         assert writeId == receipt["writeId"]
     assert [e['eventType'] for e in events].count('sqlite.write.started') == 1
+    started = next(event["payload"]["receipt"] for event in events if event["eventType"] == "sqlite.write.started")
+    assert started["status"] == "UNKNOWN" and started["rowsAffected"] is None
+    completed = next(event["payload"] for event in events if event["eventType"] == "node.completed"
+                     and event["context"].callerNodeId == "writer")
+    assert completed["diagnostics"]["mappingSources"] == {"node_output": 1}
 
 
 def testWriteIdMappingCannotDivergeFromCommittedReceipt(tmp_path):
@@ -74,9 +79,12 @@ def testWriteIdMappingCannotDivergeFromCommittedReceipt(tmp_path):
                 'storageType': 'TEXT', 'missing': 'error'}
     rows = [mapping(), identity]
     parseConfig(config(path, rows))
-    receipt, _, _ = actualRun(path, 7, rows=rows)
+    receipt, _, events = actualRun(path, 7, rows=rows)
     with sqlite3.connect(path) as connection:
         assert connection.execute('SELECT write_id FROM records').fetchone()[0] == receipt['writeId']
+    completed = next(event["payload"] for event in events if event["eventType"] == "node.completed"
+                     and event["context"].callerNodeId == "writer")
+    assert completed["diagnostics"]["mappingSources"] == {"node_output": 1, "context": 1}
     with pytest.raises(SqliteWriterError, match='write_id 为写入身份'):
         parseConfig(config(path, [mapping(), {**identity, 'source': {'kind': 'constant', 'value': 'wrong'}}]))
     with pytest.raises(SqliteWriterError, match='write_id 必须与本次回执'):

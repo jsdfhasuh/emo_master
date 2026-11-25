@@ -9,6 +9,7 @@ import threading
 import time
 from typing import TYPE_CHECKING, Callable
 
+from emo_master.core.contracts.log_safety import REDACTED, isSensitiveLogKey, redactLogText
 from emo_master.core.contracts.operator_logging import OperatorLoggerProtocol
 
 if TYPE_CHECKING:
@@ -16,17 +17,6 @@ if TYPE_CHECKING:
 
 
 _LEVEL_VALUES = {"DEBUG": 10, "INFO": 20, "WARN": 30, "ERROR": 40}
-_SENSITIVE_KEY_PARTS = (
-    "password",
-    "secret",
-    "token",
-    "authorization",
-    "credential",
-    "apikey",
-    "privatekey",
-)
-
-
 @dataclass
 class _Bucket:
     tokens: float
@@ -129,7 +119,7 @@ class OperatorLogManager:
             self._eventCount += 1
         if summary:
             self._publishSuppressed(context, operatorId, phase, summary)
-        safeMessage, messageTruncated = _truncateUtf8(str(message), 4096)
+        safeMessage, messageTruncated = _truncateUtf8(redactLogText(str(message)), 4096)
         safeCode, _ = _truncateUtf8(str(code), 256)
         safePayload, payloadTruncated = _safePayload(payload)
         eventPayload: dict[str, object] = {
@@ -364,7 +354,7 @@ class BufferedOperatorLogger(OperatorLoggerProtocol):
             normalized = _normalizeLevel(level)
             if not self.isEnabledFor(normalized):
                 return
-            safeMessage, truncated = _truncateUtf8(str(message), 4096)
+            safeMessage, truncated = _truncateUtf8(redactLogText(str(message)), 4096)
             safePayload, payloadTruncated = _safePayload(payload)
             record: dict[str, object] = {
                 "level": normalized,
@@ -440,7 +430,7 @@ def _safeValue(value: object, *, depth: int, seen: set[int]) -> object:
     if isinstance(value, float):
         return value if math.isfinite(value) else "<non-finite>"
     if isinstance(value, str):
-        return _truncateUtf8(value, 4096)[0]
+        return _truncateUtf8(redactLogText(value), 4096)[0]
     if isinstance(value, (bytes, bytearray, memoryview)):
         return f"<bytes:{len(value)}>"
     if depth >= 8:
@@ -454,9 +444,8 @@ def _safeValue(value: object, *, depth: int, seen: set[int]) -> object:
             result: dict[str, object] = {}
             for rawKey, item in value.items():
                 key = _truncateUtf8(str(rawKey), 256)[0]
-                normalizedKey = "".join(character for character in key.casefold() if character.isalnum())
-                if any(part in normalizedKey for part in _SENSITIVE_KEY_PARTS):
-                    result[key] = "<redacted>"
+                if isSensitiveLogKey(str(rawKey)):
+                    result[key] = REDACTED
                 else:
                     result[key] = _safeValue(item, depth=depth + 1, seen=seen)
             return result

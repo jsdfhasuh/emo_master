@@ -20,8 +20,24 @@
   "paramSchema": {
     "type": "object",
     "properties": {
-      "bins": {"title": "直方图区间数", "type": "integer", "minimum": 1, "maximum": 256, "default": 256},
-      "normalization": {"title": "归一化方式", "type": "string", "enum": ["counts", "probability"], "default": "counts"}
+      "bins": {
+        "description": "均匀划分0..256的区间数，1..256；binEdges有bins+1项。",
+        "title": "直方图区间数",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 256,
+        "default": 256
+      },
+      "normalization": {
+        "description": "counts保留每区间计数；probability除以选中像素数；空选区保持0。",
+        "title": "归一化方式",
+        "type": "string",
+        "enum": [
+          "counts",
+          "probability"
+        ],
+        "default": "counts"
+      }
     }
   },
   "minCoreVersion": "0.3.0",
@@ -34,5 +50,62 @@
     "controllerEntry": "emo_master.plugins.builtins.histogram.editor:HistogramEditorController",
     "fallback": "schemaForm",
     "previewMode": "pure"
+  },
+  "resultSchema": {
+    "inputs": {
+      "image": {"title": "图像", "description": "uint8灰度或BGR；通道顺序为GRAY或B,G,R。"},
+      "frame": {"title": "坐标框", "description": "有效内容矩形/坐标；统计选择区先取此矩形。"},
+      "roi": {"title": "感兴趣区域", "description": "可选geometry2d选择区，与frame空间一致后取交集；点/线/圆/矩形/旋转框/多边形按geometryMask栅格化。"},
+      "mask": {"title": "掩膜", "description": "同尺寸uint8非零选择区，与frame及roi继续取交集。"},
+      "maskFrame": {"title": "掩膜坐标框", "description": "仅mask存在时可提供；空间相同，并用其有效矩形进一步限制mask。"}
+    },
+    "outputs": {
+      "histogram": {
+        "title": "直方图",
+        "description": "Histogram payload：coordinateSpace,colorSpace,normalization,pixelCount,binEdges,channels[name,values]；范围[0,256)，按所选像素计算。",
+        "fields": {
+          "type": {"title": "类型", "description": "固定 histogram。"},
+          "schemaVersion": {"title": "结构版本", "description": "固定 payload 1.2；与算子版本1.1.0不同。"},
+          "coordinateSpace": {"title": "坐标空间", "description": "输入 frame 的坐标空间。"},
+          "colorSpace": {"title": "颜色空间", "description": "灰度图为 GRAY，三通道图为 BGR。"},
+          "normalization": {"title": "归一化方式", "description": "counts 原始像素计数，probability 除以 pixelCount。"},
+          "pixelCount": {"title": "像素数", "description": "最终 frame/ROI/mask 交集选择的像素数；每通道共用。", "unit": "px"},
+          "binEdges": {
+            "title": "分箱边界",
+            "description": "分箱边界条目的有序列表。",
+            "items": {"title": "分箱边界条目", "description": "linspace(0,256,bins+1) 的分箱边界。", "unit": "像素强度"}
+          },
+          "channels": {
+            "title": "通道列表",
+            "description": "通道列表的有序列表。",
+            "items": {
+              "title": "通道列表",
+              "description": "记录名称、值列表。",
+              "fields": {
+                "name": {"title": "名称", "description": "灰度为 GRAY；彩色按 B、G、R 顺序。"},
+                "values": {
+                  "title": "值列表",
+                  "description": "值列表条目的有序列表。",
+                  "items": {
+                    "title": "值列表条目",
+                    "description": "各强度区间的浮点形式计数或相对频数；空选区全0，非空 probability 各通道和为1。",
+                    "unit": "counts:px / probability:0–1"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "frame": {"title": "坐标框", "description": "规范化输入frame透传，不改为roi统计包围框。"}
+    },
+    "metrics": {
+      "latencyMs": {"title": "算子内部耗时", "description": "含验证/选区/直方图计算与payload构造的算子内部耗时。", "unit": "ms", "group": "duration"},
+      "pixelCount": {"title": "像素数", "description": "frame∩roi∩mask最终非零选区的像素数，每个通道共用。", "unit": "像素", "group": "business"},
+      "bins": {"title": "分箱数", "description": "实际采用的直方图区间数；不是性能值。", "unit": "区间", "group": "parameter"}
+    },
+    "diagnostics": {
+      "text": {"title": "摘要", "description": "包含实际选中像素数的完成说明。"}
+    }
   }
 }

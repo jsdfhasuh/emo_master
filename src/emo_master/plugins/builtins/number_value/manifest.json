@@ -19,10 +19,22 @@
         "type": "number",
         "default": 0.0,
         "xExample": 0.5,
-        "description": "填写有限数值，可使用整数、小数或科学计数法，例如 0.5 或 1e-6；不接受 NaN 或无穷大。"
+        "description": "待输出的有限数值；支持整数、小数和科学计数法，禁止NaN/Infinity/bool。"
       }
     }
   },
   "minCoreVersion": "0.2.0",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "outputs": {
+      "value": {"title": "值", "description": "本次params.value转换为float后的常数输出；不是未解析的原配置值。"}
+    },
+    "metrics": {
+      "latencyMs": {"title": "算子内部耗时", "description": "内部参数校验与转换耗时。", "unit": "ms", "group": "duration"}
+    },
+    "diagnostics": {
+      "text": {"title": "摘要", "description": "本次实际输出float值摘要。"}
+    },
+    "captureParams": [["value"]]
+  }
 }

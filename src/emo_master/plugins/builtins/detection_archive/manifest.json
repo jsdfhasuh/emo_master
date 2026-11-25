@@ -17,18 +17,67 @@
     "type": "object",
     "properties": {
       "outputPath": {
-        "title": "\u8f93\u51fa\u8def\u5f84\u6a21\u677f",
-        "description": "\u4f7f\u7528\u6b64\u8def\u5f84\u7684\u6240\u5728\u76ee\u5f55\u548c\u6587\u4ef6\u540d\u524d\u7f00\uff1b\u81ea\u52a8\u6dfb\u52a0 UTC \u65f6\u95f4\u548c\u5e8f\u53f7\uff0c\u4e0d\u8986\u76d6\u5386\u53f2\u56fe\u7247\u3002\u88c1\u526a\u56fe PNG\uff0c\u6807\u6ce8\u56fe JPG\u3002",
-        "type": "string", "default": "outputs/captures/capture.jpg",
-        "xWidget": "file", "xFileMode": "save", "xFilter": "JPEG (*.jpg)"
+        "title": "输出路径模板",
+        "description": "输出模板的目录和stem；实际加UTC时间、实例session、序号，crop固定png，overlay固定jpg。",
+        "type": "string",
+        "default": "outputs/captures/capture.jpg",
+        "xWidget": "file",
+        "xFileMode": "save",
+        "xFilter": "JPEG (*.jpg)"
       },
       "minIntervalMs": {
-        "title": "\u6700\u5c0f\u4fdd\u5b58\u95f4\u9694\uff08\u6beb\u79d2\uff09",
-        "type": "integer", "minimum": 0, "default": 2000
+        "description": "完整成功保存后的冷却间隔毫秒，使用monotonic；跨While保持、跨Job重置。",
+        "title": "最小保存间隔（毫秒）",
+        "type": "integer",
+        "minimum": 0,
+        "default": 2000
       }
     },
-    "required": ["outputPath"]
+    "required": [
+      "outputPath"
+    ]
   },
   "minCoreVersion": "0.1.0",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "image": {"title": "图像", "description": "uint8灰度/BGR原图，用于按检测bbox裁剪。"},
+      "frame": {"title": "坐标框", "description": "原图坐标框，需与detections坐标空间一致。"},
+      "detections": {"title": "检测结果", "description": "DetectionCollection，逐个bbox裁剪，空集合可跳过保存。"},
+      "overlay": {"title": "叠加图", "description": "上游已生成的整帧标注图；uint8，宽高必须与image一致，本算子不自行绘制。"}
+    },
+    "outputs": {
+      "saved": {"title": "保存完成", "description": "本次所有crop与overlay完成保存时true；无检测/冷却跳过为false。"},
+      "cropCount": {"title": "裁剪信息数量", "description": "本次实际完成保存的裁剪图数量；成功跳过为0。"},
+      "result": {
+        "title": "结果",
+        "description": "{saved,reason,cropPaths,overlayPath}；reason为saved/no_detections/cooldown。",
+        "fields": {
+          "saved": {"title": "保存完成", "description": "全部裁剪图与叠加图保存成功才为true；跳过为false。"},
+          "reason": {"title": "原因", "description": "saved/no_detections/cooldown，说明保存或跳过的真实分支。"},
+          "cropPaths": {
+            "title": "裁剪文件路径",
+            "description": "裁剪文件路径条目的有序列表。",
+            "items": {"title": "裁剪文件路径条目", "description": "已成功保存的裁剪PNG路径；成功结果完整，跳过为空；中途失败路径另在diagnostics.archiveProgress。"}
+          },
+          "overlayPath": {"title": "叠加图路径", "description": "已成功保存的叠加JPG路径；跳过为null。"}
+        }
+      }
+    },
+    "diagnostics": {
+      "archiveProgress": {
+        "title": "归档进度",
+        "description": "记录阶段、检测序号、检测标识、裁剪文件路径、已保存裁剪图数、叠加图路径。",
+        "fields": {
+          "stage": {"title": "阶段", "description": "crop/saveCrop/saveOverlay/completed阶段。"},
+          "detectionIndex": {"title": "检测序号", "description": "正在处理的检测一基序号；保存overlay/完成时null。"},
+          "detectionId": {"title": "检测标识", "description": "正在处理检测ID；overlay/完成时null。"},
+          "cropPaths": {"title": "裁剪文件路径", "description": "已成功保存的裁剪文件路径列表，失败时保留部分结果。"},
+          "savedCropCount": {"title": "已保存裁剪图数", "description": "已成功保存裁剪数量。"},
+          "overlayPath": {"title": "叠加图路径", "description": "成功保存的标注图路径，否则null。"}
+        }
+      }
+    },
+    "captureParams": [["outputPath"], ["minIntervalMs"]]
+  }
 }

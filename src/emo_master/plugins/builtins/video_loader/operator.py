@@ -33,15 +33,18 @@ class VideoLoaderOperator:
             "type": "object",
             "properties": {
                 "videoPath": {
+                    "description": "视频文件路径；上游videoPath输入优先；strip/expanduser/resolve。",
                     "title": "\u89c6\u9891\u6587\u4ef6", "type": "string", "default": "",
                     "xWidget": "file", "xFileMode": "open",
                     "xFilter": "\u89c6\u9891\u6587\u4ef6 (*.mp4 *.avi *.mkv *.mov *.wmv *.m4v *.webm *.mpg *.mpeg);;\u6240\u6709\u6587\u4ef6 (*)",
                 },
                 "intervalSec": {
+                    "description": "以0为锚点的视频时间采样间隔秒；取达到下一时间网格的首帧。",
                     "title": "\u53d6\u5e27\u95f4\u9694\uff08\u79d2\uff09", "type": "number",
                     "exclusiveMinimum": 0.0, "default": 1.0,
                 },
                 "colorMode": {
+                    "description": "彩色BGR或灰度；不影响源时间戳。",
                     "title": "\u989c\u8272\u6a21\u5f0f", "type": "string",
                     "enum": ["color", "grayscale"], "default": "color",
                 },
@@ -177,7 +180,13 @@ class VideoLoaderOperator:
             return {
                 "status": "ok", "outputs": outputs,
                 "metrics": {"latencyMs": round((perf_counter() - started) * 1000, 3)},
-                "diagnostics": {"text": f"Video sample {self._index}: {timestamp:.3f}s (frame {frameIndex})"},
+                "diagnostics": {
+                    "text": f"Video sample {self._index}: {timestamp:.3f}s (frame {frameIndex})",
+                    "effectiveParameters": [{
+                        "path": ["videoPath"], "value": outputs["videoPath"],
+                        "source": "input" if "videoPath" in inputs else "normalized",
+                    }],
+                },
             }
         except (OSError, ValueError, cv2.error) as err:
             self.disposeOperator()

@@ -28,19 +28,51 @@
     "type": "object",
     "properties": {
       "sourceSpace": {
+        "description": "输入像素应按此颜色空间解读；本算子无法从数组自行确认真实色序。",
         "title": "源颜色空间",
         "type": "string",
-        "enum": ["BGR", "RGB", "GRAY", "HSV", "LAB"],
+        "enum": [
+          "BGR",
+          "RGB",
+          "GRAY",
+          "HSV",
+          "LAB"
+        ],
         "default": "BGR"
       },
       "targetSpace": {
+        "description": "输出目标空间BGR/RGB/GRAY/HSV/LAB。",
         "title": "目标颜色空间",
         "type": "string",
-        "enum": ["BGR", "RGB", "GRAY", "HSV", "LAB"],
+        "enum": [
+          "BGR",
+          "RGB",
+          "GRAY",
+          "HSV",
+          "LAB"
+        ],
         "default": "GRAY"
       }
     }
   },
   "minCoreVersion": "0.2.0",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "image": {"title": "图像", "description": "uint8图像，源颜色空间由sourceSpace声明；GRAY二维，其余三通道。"},
+      "frame": {"title": "坐标框", "description": "输入图像有效内容矩形与回源坐标；缺失默认全图。"}
+    },
+    "outputs": {
+      "image": {"title": "图像", "description": "目标颜色空间图像；相同空间返回copy，否则先转BGR再转目标。"},
+      "frame": {"title": "坐标框", "description": "不改变几何，输入frame透传。"}
+    },
+    "metrics": {
+      "latencyMs": {"title": "算子内部耗时", "description": "从入口到颜色转换结束的内部耗时。", "unit": "ms", "group": "duration"},
+      "sourceSpace": {"title": "源空间", "description": "实际配置的输入颜色空间，不是自动探测。", "group": "parameter"},
+      "targetSpace": {"title": "目标空间", "description": "实际目标颜色空间。", "group": "parameter"}
+    },
+    "diagnostics": {
+      "text": {"title": "摘要", "description": "源空间→目标空间的完成摘要。"}
+    }
+  }
 }

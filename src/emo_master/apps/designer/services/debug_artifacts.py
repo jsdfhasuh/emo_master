@@ -11,6 +11,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 from emo_master.apps.runtime.operator_debug.assets import CACHE_BYTES, VALUE_BYTES, decode
 from emo_master.apps.runtime.operator_debug.contracts import encode, parse
 from emo_master.apps.runtime.operator_debug.data import companionPort
+from emo_master.core.contracts.log_safety import displayOutputUrls
 from emo_master.core.contracts.port_types import matchesPortSpec
 
 
@@ -166,9 +167,17 @@ def loadFixture(path, types, connection, *, cancelled=lambda: False):
 
 def exportResult(path, selection, connection, *, cancelled=lambda: False):
     raw, mime, provenance = materializeReference(connection, selection['wire'])
-    decode(raw, mime)
+    value, _ = decode(raw, mime)
+    identity = selection['identity']
+    if identity.get('resultKind') == 'operator-debug':
+        identity = displayOutputUrls(identity)
+        provenance = displayOutputUrls(provenance)
+        if mime == 'application/json':
+            display = displayOutputUrls(value)
+            if display != value:
+                raw = encode(display, VALUE_BYTES).encode('utf-8')
     filename = 'value.png' if mime == 'image/png' else 'value.json'
-    metadata = dict(format='emo-debug-result', version=1, identity=selection['identity'],
+    metadata = dict(format='emo-debug-result', version=1, identity=identity,
                     port=selection['port'], provenance=provenance, mime=mime,
                     bytes=len(raw), sha256=_sha(raw), file=filename)
     writeArchive(path, metadata, {filename: raw}, cancelled=cancelled)

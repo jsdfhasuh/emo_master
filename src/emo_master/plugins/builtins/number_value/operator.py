@@ -24,7 +24,7 @@ _PARAM_SCHEMA: dict[str, object] = {
             "type": "number",
             "default": 0.0,
             "xExample": 0.5,
-            "description": "填写有限数值，可使用整数、小数或科学计数法，例如 0.5 或 1e-6；不接受 NaN 或无穷大。",
+            "description": "待输出的有限数值；支持整数、小数和科学计数法，禁止NaN/Infinity/bool。",
         }
     },
 }

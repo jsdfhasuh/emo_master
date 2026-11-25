@@ -43,5 +43,79 @@
         "send"
       ]
     }
+  },
+  "resultSchema": {
+    "inputs": {
+      "session": {"title": "会话引用", "description": "同Job同设备且原连接世代仍有效的会话引用。"},
+      "data": {"title": "数据", "description": "用绑定设备encoding编码并按appendNewline追加LF的待发送文本。"}
+    },
+    "outputs": {
+      "receipt": {
+        "title": "回执",
+        "description": "绑定原连接的发送回执：deviceId/requestId/jobId/channelId/serviceGeneration/connectionGeneration、outcome、bytesRequested/bytesSent、deviceConfirmed=false、code/message；schemaVersion1.1。",
+        "fields": {
+          "deviceId": {"title": "设备标识", "description": "绑定设备ID。"},
+          "requestId": {"title": "请求标识", "description": "本次请求ID。"},
+          "jobId": {"title": "作业标识", "description": "原始JobID。"},
+          "channelId": {"title": "通道标识", "description": "通道ID。"},
+          "serviceGeneration": {"title": "服务代次", "description": "服务启动世代。"},
+          "connectionGeneration": {"title": "连接代次", "description": "客户端连接世代。"},
+          "outcome": {
+            "title": "结果状态",
+            "description": "NOT_SENT 表示未交给传输层；SENT_TO_TRANSPORT 表示已交给传输层；OUTCOME_UNKNOWN 表示无法确认是否已交给传输层。"
+          },
+          "bytesRequested": {"title": "请求字节数", "description": "请求字节数。", "unit": "byte"},
+          "bytesSent": {"title": "发送字节数", "description": "本机socket接受的字节数。", "unit": "byte"},
+          "deviceConfirmed": {"title": "设备已确认", "description": "固定false；不表示设备执行确认。"},
+          "code": {"title": "状态或错误码", "description": "失败码；成功为空串。"},
+          "message": {"title": "消息", "description": "结果说明。"},
+          "schemaVersion": {"title": "结构版本", "description": "1.1契约版本。"},
+          "type": {"title": "类型", "description": "tcpSendReceipt类型标识。"}
+        }
+      }
+    },
+    "diagnostics": {
+      "tcpReceipt": {
+        "title": "TCP 发送回执",
+        "description": "记录设备标识、请求标识、作业标识、通道标识、服务代次、连接代次、结果状态、请求字节数、发送字节数、设备已确认、状态或错误码、消息、结构版本、类型。",
+        "fields": {
+          "deviceId": {"title": "设备标识", "description": "绑定设备ID。"},
+          "requestId": {"title": "请求标识", "description": "本次请求ID。"},
+          "jobId": {"title": "作业标识", "description": "原始JobID。"},
+          "channelId": {"title": "通道标识", "description": "通道ID。"},
+          "serviceGeneration": {"title": "服务代次", "description": "服务启动世代。"},
+          "connectionGeneration": {"title": "连接代次", "description": "客户端连接世代。"},
+          "outcome": {
+            "title": "结果状态",
+            "description": "NOT_SENT 表示未交给传输层；SENT_TO_TRANSPORT 表示已交给传输层；OUTCOME_UNKNOWN 表示无法确认是否已交给传输层。"
+          },
+          "bytesRequested": {"title": "请求字节数", "description": "请求字节数。"},
+          "bytesSent": {"title": "发送字节数", "description": "本机socket接受的字节数。"},
+          "deviceConfirmed": {"title": "设备已确认", "description": "固定false；不表示设备执行确认。"},
+          "code": {"title": "状态或错误码", "description": "失败码；成功为空串。"},
+          "message": {"title": "消息", "description": "结果说明。"},
+          "schemaVersion": {"title": "结构版本", "description": "1.1契约版本。"},
+          "type": {"title": "类型", "description": "tcpSendReceipt类型标识。"}
+        }
+      },
+      "deviceSettings": {
+        "title": "设备工作参数",
+        "description": "来源为本次实际绑定和解析的设备工作参数，其中会显示当前动作使用的字段。",
+        "group": "parameter",
+        "fields": {
+          "slot": {"title": "设备槽", "description": "本次动作绑定的设备槽。"},
+          "deviceTypeId": {"title": "设备类型", "description": "已绑定并完成准入的设备类型标识。"},
+          "schemaVersion": {"title": "设备定义版本", "description": "本次解析使用的设备定义结构版本。"},
+          "values": {
+            "title": "生效值",
+            "description": "依绑定设备定义解析后的选定工作值。",
+            "fields": {
+              "encoding": {"title": "发送编码", "description": "本次将待发送文本转为字节使用的编码。"},
+              "appendNewline": {"title": "追加换行", "description": "文本或报文字节后是否追加 LF。"}
+            }
+          }
+        }
+      }
+    }
   }
 }

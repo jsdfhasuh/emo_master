@@ -11,7 +11,7 @@ from emo_master.core.contracts.geometry2d import Point2D, PayloadValidationError
 from emo_master.plugins.builtins._geometry_bridges import OperatorMeta, error, port
 
 
-CHANNEL = {"title": "网关输入通道", "type": "string", "enum": ["plc", "robot"], "default": "robot",
+CHANNEL = {"description": "网关通道，决定机器人或 PLC 的请求和回执协议。", "title": "网关输入通道", "type": "string", "enum": ["plc", "robot"], "default": "robot",
            "xGlobalVariableBindingDisabled": True, "xOptionLabels": {"plc": "PLC 正常坐标", "robot": "机器人正常坐标"}}
 
 
@@ -43,7 +43,7 @@ class GatewayCoordinateFormatOperator:
          "expectedAck": {"type": "string", "required": True, "nullable": False}},
         {"type": "object", "additionalProperties": False, "properties": {
             "channel": CHANNEL,
-            "plcRounding": {"title": "PLC 整数规则", "type": "string", "default": "requireInteger",
+            "plcRounding": {"description": "仅 PLC 有效；requireInteger 拒绝非整数，其余为半值远离零/向零/下取整/上取整。", "title": "PLC 整数规则", "type": "string", "default": "requireInteger",
                 "enum": ["requireInteger", "halfAwayFromZero", "towardZero", "floor", "ceil"],
                 "xEnabledWhen": {"channel": ["plc"]},
                 "xOptionLabels": {"requireInteger": "拒绝非整数", "halfAwayFromZero": "半值向远离零方向舍入", "towardZero": "向零截断", "floor": "向下取整", "ceil": "向上取整"}}}})

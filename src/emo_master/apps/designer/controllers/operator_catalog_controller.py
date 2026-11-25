@@ -65,6 +65,7 @@ class OperatorCatalogController:
                         outputPortSpecs if isinstance(outputPortSpecs, dict) else {}
                     ),
                     "paramSchema": paramSchema if isinstance(paramSchema, dict) else {},
+                    "resultSchema": getattr(operatorInfo, "resultSchema", {}),
                     "deviceRequirements": getattr(operatorInfo, "deviceRequirements", {}),
                     "editorSpec": (
                         dict(getattr(operatorInfo, "editorSpec", {}))

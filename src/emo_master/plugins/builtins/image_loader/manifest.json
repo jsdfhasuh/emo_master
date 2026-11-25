@@ -20,6 +20,7 @@
     "type": "object",
     "properties": {
       "imagePath": {
+        "description": "本次读取文件路径；实现直接Path检查/读取，不自行相对workspace拼接。",
         "title": "图像路径",
         "type": "string",
         "default": "",
@@ -28,14 +29,59 @@
         "xFilter": "图片文件 (*.png *.jpg *.jpeg *.bmp *.tif *.tiff)"
       },
       "colorMode": {
+        "description": "彩色模式输出 BGR 三通道，灰度模式输出单通道。",
         "title": "颜色模式",
         "type": "string",
-        "enum": ["color", "grayscale"],
+        "enum": [
+          "color",
+          "grayscale"
+        ],
         "default": "color"
       }
     },
-    "required": ["imagePath"]
+    "required": [
+      "imagePath"
+    ]
   },
   "minCoreVersion": "0.1.0",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "outputs": {
+      "image": {"title": "图像", "description": "OpenCV解码的BGR彩色或单通道灰度numpy图像。"},
+      "frame": {
+        "title": "坐标框",
+        "description": "覆盖图像宽高的默认bbox2d/像素坐标系，sourceId为实际路径resolve结果。",
+        "fields": {
+          "type": {"title": "类型", "description": "固定bbox2d图像有效内容矩形类型。"},
+          "schemaVersion": {"title": "结构版本", "description": "坐标契约版本；这些图像来源构建仿射坐标系。"},
+          "x": {"title": "横坐标", "description": "有效内容矩形左上角x，来源图像为0。", "unit": "pixel"},
+          "y": {"title": "纵坐标", "description": "有效内容矩形左上角y，来源图像为0。", "unit": "pixel"},
+          "width": {"title": "宽度", "description": "本次真实图像宽度。", "unit": "pixel"},
+          "height": {"title": "高度", "description": "本次真实图像高度。", "unit": "pixel"},
+          "coordinateSpace": {
+            "title": "坐标空间",
+            "description": "记录原点、X 轴方向、Y 轴方向、单位、参考空间、来源标识、图像宽度、图像高度、回源变换矩阵。",
+            "fields": {
+              "origin": {"title": "原点", "description": "固定topLeft，坐标原点在左上角。"},
+              "xAxis": {"title": "X 轴方向", "description": "固定right，横轴向右。"},
+              "yAxis": {"title": "Y 轴方向", "description": "固定down，纵轴向下。"},
+              "unit": {"title": "单位", "description": "固定pixel，未进行物理单位标定。"},
+              "reference": {"title": "参考空间", "description": "本坐标系参考标签，具体来源见该算子frame输出说明。"},
+              "sourceId": {"title": "来源标识", "description": "实际图像文件解析后的绝对路径。"},
+              "imageWidth": {"title": "图像宽度", "description": "坐标空间图像宽度；声明未知时不输出。", "unit": "pixel"},
+              "imageHeight": {"title": "图像高度", "description": "坐标空间图像高度；声明未知时不输出。", "unit": "pixel"},
+              "transformToSource": {"title": "回源变换矩阵", "description": "仿射数组[a,b,c,d,e,f]，x′=a*x+c*y+e，y′=b*x+d*y+f。本算子创建单位变换。"}
+            }
+          }
+        }
+      }
+    },
+    "metrics": {
+      "latencyMs": {"title": "算子内部耗时", "description": "校验+检查文件+读取解码耗时，在构建frame前计时结束。", "unit": "ms", "group": "duration"}
+    },
+    "diagnostics": {
+      "text": {"title": "摘要", "description": "固定Image loaded成功摘要。"}
+    },
+    "captureParams": [["imagePath"], ["colorMode"]]
+  }
 }

@@ -16,6 +16,7 @@
     "type": "object",
     "properties": {
       "enabled": {
+        "description": "当前仅验证布尔类型；代码没有按该值分支，false仍执行并返回ok。",
         "title": "启用",
         "type": "boolean",
         "default": true
@@ -24,5 +25,22 @@
     "required": []
   },
   "minCoreVersion": "0.1.0",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "image": {"title": "图像", "description": "只检查image键存在；此示例算子并不读取像素、形状或图像质量。"}
+    },
+    "outputs": {
+      "result": {
+        "title": "结果",
+        "description": "固定示例JSON {ok:true}；仅表示执行示例路径，不能代表视觉检测合格。",
+        "fields": {
+          "ok": {"title": "成功标志", "description": "固定true示例值；不代表检测通过或质量合格。"}
+        }
+      }
+    },
+    "diagnostics": {
+      "text": {"title": "摘要", "description": "固定示例执行文本。"}
+    }
+  }
 }

@@ -52,7 +52,7 @@
           "dot": "点积",
           "scalarMultiply": "标量乘法"
         },
-        "description": "选择测量、几何变换或坐标运算；参数和输出含义随模式变化。"
+        "description": "计算模式决定输出集合；measure测量、transform先变换后测量、scalarMultiply缩放后测量，add/subtract/dot按两组点配对运算。"
       },
       "pairing": {
         "title": "坐标配对方式",
@@ -66,7 +66,7 @@
           "strict": "逐项配对（数量相同）",
           "broadcast": "单点广播"
         },
-        "description": "相加、相减、点积使用此配对方式；广播允许一侧仅有一个点。",
+        "description": "仅add/subtract/dot：strict等长逐项配对；broadcast允许一侧恰有一个点。",
         "xVisibleWhen": {
           "mode": [
             "add",
@@ -85,9 +85,9 @@
       "scalarValue": {
         "title": "标量值",
         "type": "number",
-        "default": 1,
+        "default": 1.0,
         "xExample": 1.5,
-        "description": "标量乘法的备用系数；连接 scalar 输入时优先使用输入值。",
+        "description": "仅scalarMultiply备用系数；可负、可0，只需有限，原坐标空间标识保留。",
         "xVisibleWhen": {
           "mode": [
             "scalarMultiply"
@@ -103,7 +103,7 @@
         "title": "闭合路径",
         "type": "boolean",
         "default": false,
-        "description": "测量时将末点与首点相连，计算闭合路径的周长与面积。",
+        "description": "measure/transform/scalarMultiply将点序视为闭合多边形；先去掉重复末首点并要求至少3点和非零面积，再给周长/面积/polygon。",
         "xVisibleWhen": {
           "mode": [
             "measure",
@@ -122,10 +122,10 @@
       "offsetX": {
         "title": "水平偏移",
         "type": "number",
-        "default": 0,
+        "default": 0.0,
         "xUnit": "坐标单位",
-        "xExample": 10,
-        "description": "坐标变换的水平平移量，单位与输入坐标一致。",
+        "xExample": 10.0,
+        "description": "transform完成缩放/旋转后的X方向平移，单位pixel。",
         "xVisibleWhen": {
           "mode": [
             "transform"
@@ -140,10 +140,10 @@
       "offsetY": {
         "title": "垂直偏移",
         "type": "number",
-        "default": 0,
+        "default": 0.0,
         "xUnit": "坐标单位",
-        "xExample": -5,
-        "description": "坐标变换的垂直平移量，单位与输入坐标一致。",
+        "xExample": -5.0,
+        "description": "transform完成缩放/旋转后的Y方向平移，单位pixel。",
         "xVisibleWhen": {
           "mode": [
             "transform"
@@ -158,10 +158,10 @@
       "scaleX": {
         "title": "水平缩放比例",
         "type": "number",
-        "default": 1,
+        "default": 1.0,
         "xUnit": "倍",
-        "xExample": 1,
-        "description": "水平缩放系数；1 表示保持原大小。",
+        "xExample": 1.0,
+        "description": "transform绕pivot的X方向缩放倍数。",
         "xVisibleWhen": {
           "mode": [
             "transform"
@@ -176,10 +176,10 @@
       "scaleY": {
         "title": "垂直缩放比例",
         "type": "number",
-        "default": 1,
+        "default": 1.0,
         "xUnit": "倍",
-        "xExample": 1,
-        "description": "垂直缩放系数；1 表示保持原大小。",
+        "xExample": 1.0,
+        "description": "transform绕pivot的Y方向缩放倍数。",
         "xVisibleWhen": {
           "mode": [
             "transform"
@@ -194,12 +194,12 @@
       "rotationDegrees": {
         "title": "旋转角度（度）",
         "type": "number",
-        "minimum": -360,
-        "maximum": 360,
-        "default": 0,
+        "minimum": -360.0,
+        "maximum": 360.0,
+        "default": 0.0,
         "xUnit": "°",
-        "xExample": 90,
-        "description": "绕选定中心旋转的角度；图像坐标中正角度为顺时针。",
+        "xExample": 90.0,
+        "description": "transform绕pivot旋转角度；图像坐标y向下，正角度在图像中顺时针。",
         "xVisibleWhen": {
           "mode": [
             "transform"
@@ -227,7 +227,7 @@
           "first": "第一个点",
           "custom": "自定义坐标"
         },
-        "description": "选择缩放和旋转所使用的中心。",
+        "description": "origin用(0,0)，centroid用点均值，first用首点，custom用pivotX/Y；同时用于缩放和旋转。",
         "xVisibleWhen": {
           "mode": [
             "transform"
@@ -242,10 +242,10 @@
       "pivotX": {
         "title": "旋转中心 X 坐标",
         "type": "number",
-        "default": 0,
+        "default": 0.0,
         "xUnit": "坐标单位",
-        "xExample": 0,
-        "description": "自定义中心的 X 坐标，单位与输入坐标一致。",
+        "xExample": 0.0,
+        "description": "仅transform且pivot=custom使用的中心X。",
         "xVisibleWhen": {
           "mode": [
             "transform"
@@ -266,10 +266,10 @@
       "pivotY": {
         "title": "旋转中心 Y 坐标",
         "type": "number",
-        "default": 0,
+        "default": 0.0,
         "xUnit": "坐标单位",
-        "xExample": 0,
-        "description": "自定义中心的 Y 坐标，单位与输入坐标一致。",
+        "xExample": 0.0,
+        "description": "仅transform且pivot=custom使用的中心Y。",
         "xVisibleWhen": {
           "mode": [
             "transform"
@@ -291,5 +291,50 @@
     "xModeOperator": "vision.geometry.coordinate_calculator"
   },
   "minCoreVersion": "0.3.0",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "resultSchema": {
+    "inputs": {
+      "points": {"title": "点集", "description": "非空同一坐标空间的强类型点列表；模式measure/transform/scalarMultiply用它测量，二元模式作为左侧。"},
+      "otherPoints": {"title": "另一组点", "description": "add/subtract/dot的右侧非空点列表；strict要求等长，broadcast允许一侧单点；其他模式禁止提供。"},
+      "scalar": {"title": "标量", "description": "仅scalarMultiply使用的有限倍数；优先于scalarValue，其他模式提供时报错。"}
+    },
+    "outputs": {
+      "points": {"title": "点集", "description": "measure原点/transform变换点/scalarMultiply缩放点，add返回配对相加点；其他模式不返回此端口。"},
+      "centroid": {"title": "点坐标均值中心", "description": "处理后点集所有点的坐标算术平均，不是多边形面积质心。"},
+      "bounds": {"title": "范围", "description": "处理后点集轴对齐最小外包框，保持原coordinateSpace。"},
+      "segmentLengths": {"title": "线段长度列表", "description": "按输入点序每一相邻点对的欧氏距离列表，不包含闭合末首段。"},
+      "pathLength": {"title": "路径长度", "description": "相邻点段长度之和，不包含末首闭合段。"},
+      "perimeter": {"title": "周长", "description": "closed=false等于pathLength；closed=true再加末点到首点距离。"},
+      "signedArea": {"title": "有向面积", "description": "closed=true时鞋带公式有符号面积；closed=false固定0。图像y向下时正负不能直接套用数学坐标方向。"},
+      "area": {"title": "闭合路径面积", "description": "abs(signedArea)，仅closed时有面积意义；非闭合输出0。"},
+      "firstToLastDistance": {"title": "首尾距离", "description": "首点与末点直线欧氏距离，不是整条路径长度。"},
+      "firstToLastAngleDegrees": {"title": "首尾方向角", "description": "atan2(末点y-首点y,末点x-首点x)角度；首末重合时0。"},
+      "polygon": {"title": "多边形", "description": "仅closed=true且至少3点且非零面积时返回的闭合多边形；重复末尾首点先去掉。"},
+      "vectors": {"title": "向量列表", "description": "仅subtract：每对left-right的二维向量，携带原坐标空间。"},
+      "magnitudes": {"title": "向量模长", "description": "仅subtract：对应vectors的欧氏模长。"},
+      "values": {"title": "值列表", "description": "仅dot：逐配对点坐标点积x1*x2+y1*y2列表。"},
+      "dotSum": {"title": "点积之和", "description": "仅dot：values求和，不是向量间夹角。"},
+      "resultCount": {"title": "结果数", "description": "当前模式生成的点/向量/点积项数量，非全模式都代表目标数。"}
+    },
+    "metrics": {
+      "latencyMs": {"title": "算子内部耗时", "description": "从本算子入口到成功结果构造的内部耗时，含校验/运算。", "unit": "ms", "group": "duration"},
+      "mode": {"title": "模式", "description": "本次采用的计算模式；分类信息。", "group": "parameter"},
+      "resultCount": {"title": "结果数", "description": "与outputs.resultCount重复，含义取决于模式。", "unit": "个", "group": "business"}
+    },
+    "diagnostics": {
+      "text": {"title": "摘要", "description": "实际模式及生成项数的文字摘要。"},
+      "effectiveParameters": {"title": "实际生效参数", "description": "实际使用的标量或旋转中心坐标。仅在对应计算模式下提供。"},
+      "transformPivot": {
+        "title": "实际旋转和缩放中心",
+        "description": "仅坐标变换模式提供，坐标取自本次点集或显式配置。",
+        "group": "parameter",
+        "fields": {
+          "mode": {"title": "计算来源", "description": "origin 使用原点，centroid 使用点坐标均值，first 使用首点，custom 使用手动配置。"},
+          "x": {"title": "中心横坐标", "description": "本次变换实际使用的横坐标。", "unit": "当前坐标单位"},
+          "y": {"title": "中心纵坐标", "description": "本次变换实际使用的纵坐标。", "unit": "当前坐标单位"}
+        }
+      }
+    },
+    "captureParams": [["pairing"], ["closed"], ["offsetX"], ["offsetY"], ["scaleX"], ["scaleY"], ["rotationDegrees"]]
+  }
 }

@@ -170,3 +170,12 @@ OPENSPEC_TELEMETRY=0 DO_NOT_TRACK=1 OPENSPEC_NO_UPDATE_CHECK=1 \
 | 桌面交接准备 | 2.10 / 1.3 演示保留数值比较入口并加入小图与合成检测的动态类别样式场景。生成、编译、保存重读、实际 Designer 加载入口及离屏调试导出通过，`drawnCount=1`。P3.5 独立交互仍待验收。 |
 
 Windows Python 3.10 / PySide2 离屏的 Runtime 和 Designer 受影响分组 173 项通过。82 个内置算子仍全部注册且零拒绝。逐字段静态核对、协议生成一致性、OpenSpec strict、Ruff、mypy 和差异检查通过。真实设备连接和独立原生桌面交互未执行。
+
+### 修复提交检查
+
+实际修复提交为 `bb386ed8e4fd85f271712580cccc4c54cedfe09e`。该提交的干净 worktree 上重新执行三条复审回归，3 项通过。GitHub 检查核对的是同一个修复 SHA。
+
+- 源码 CI 四个分片及两平台覆盖汇总均通过。JUnit 显示 Linux 9,885 通过、40 跳过，Windows 9,919 通过、6 跳过，零失败或错误。两平台均实际执行并通过 R1–R3 的三条回归。[源码 CI](https://github.com/jsdfhasuh/emo_master/actions/runs/45572492587)
+- Web CI 三项首次运行通过，含 Windows 合成数据下的所属 Runtime 联调。[Web CI](https://github.com/jsdfhasuh/emo_master/actions/runs/45572492542)
+
+随后提交补录本节、README 与清单，范围限这三份 OpenSpec Markdown。该文档提交的自动检查另见 [PR20 Checks](https://github.com/jsdfhasuh/emo_master/pull/20/checks)。P3.5 依照 [独立桌面走查](desktop-walkthrough.md) 交接。

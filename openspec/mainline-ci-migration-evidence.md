@@ -226,3 +226,31 @@ Both ran natively on GitHub-hosted Windows, pinned to product `7fccb4988ad0e4abd
 - [Native Windows Release source-only 45814989002](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45814989002/job/139892286350) / [V2 45829285048](https://github.com/jsdfhasuh/test/actions/runs/45829285048): **9,904 passed / 6 original skips / 0 failures** (9,910 JUnit), including 37/37 ONNX-named cases; actual native desktop 1920×1080, version `v0.6.6` cross-check. Ciphertext 15120199572, four verified inner files. `publish_requested=false`: no tag created, packager invoked or Release published. Separate BuildOnly validation above does not imply official Release permission or publication acceptance.
 
 Same-product original SQLite Failure continues separately. Product remains Public, formal branch protection/required gate and durable live routing remain disabled; these source/build-only results are not final 12/12 nor acceptance of a private or official release path.
+
+### 2026-11-26: Aligned original SQLite Failure scope passed
+
+[Hosted Windows 45817694069, job 139901574128](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45817694069/job/139901574128), product `7fccb4988ad0e4abd390110dbb29c80151f5bb3b`, public controller `c4280d4bb1a58d2d7befe84984426355bfe099bf`, attempt 1, no packager. The original workload and validator sequence finished in 81m05s. [Private V2 45833518406](https://github.com/jsdfhasuh/test/actions/runs/45833518406) at `2466c937a347f4b970c2b4833172833302561783` downloaded artifact 15122851330 and verified ZIP SHA-256 `8b236dff8a2f7385c5cadb6b91ed28128f0c5f3f1aebfd321e61c5d4b282739a`, decrypted, and checked all inner file hashes. No plaintext was uploaded.
+
+- **9,893 passed / 17 original skips / 0 failed** in 9,910 JUnit cases. The exact previous failure `testWaitingCaptureAndCancellationThroughRealProcesses[slots1-False]` was present precisely once and passed. There is no failure-only dispatch result or observer report in this successful run, as expected; no previous cause inferred.
+- All six workload checkpoints are 0. The original observability validator returned `no_failure_observed`, distinct from the isolated **5/5** controls and a successful independent control validator. Journal contained 89,225 records, exit 0, no open phase, failure or truncated tail. Strict matching detected 78 unmatched events in the diagnostic fallback, so the original JUnit, not diagnostic counts, is the coverage authority.
+
+#### Same-product hosted evidence index (not production cutover)
+
+Original workflow inventory verified on `main` `48b30191884ad5ef5d96e8d26591104d16d54a58`. Each row below uses product `7fccb4988ad0e4abd390110dbb29c80151f5bb3b`. Public controller and builder versions are **not interchangeable**; explicit pins and V2 identities are recorded above.
+
+| Original workflow | Hosted run | Private V2 proof / acceptance boundary |
+|---|---|---|
+| `ci.yml` | [45815106836](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45815106836) | [45825627659](https://github.com/jsdfhasuh/test/actions/runs/45825627659), full two-platform disjoint shards, not product-event gating |
+| `display-session-contract.yml` | [45814756318](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45814756318) | [45817297968](https://github.com/jsdfhasuh/test/actions/runs/45817297968), 72/72 |
+| `release-windows.yml` | [45814989002](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45814989002) | [45829285048](https://github.com/jsdfhasuh/test/actions/runs/45829285048), original source validation only; no tag/build publication |
+| `runtime-a18-diagnostics.yml` | [45814988989](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45814988989) | [45825627631](https://github.com/jsdfhasuh/test/actions/runs/45825627631), original 9,893 pass and independent WAL 3/3 |
+| `runtime-capture-diagnostics.yml` | [45812110525](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45812110525) | [45825817389](https://github.com/jsdfhasuh/test/actions/runs/45825817389), original 9,893 pass, exact 500 ms dual-image case passed |
+| `runtime-credit-diagnostics.yml` | [45809892164](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45809892164) | [45811966165](https://github.com/jsdfhasuh/test/actions/runs/45811966165), exact 384/384 mixed-client image writes |
+| `runtime-sqlite-append-controls.yml` | [45814756296](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45814756296) | [45817298046](https://github.com/jsdfhasuh/test/actions/runs/45817298046), 7/7 |
+| `runtime-sqlite-failure-diagnostics.yml` | [45817694069](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45817694069) | [45833518406](https://github.com/jsdfhasuh/test/actions/runs/45833518406), original 9,893 pass and independent 5/5 |
+| `runtime-stop-diagnostics.yml` | [45814989074](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45814989074) | [45829285036](https://github.com/jsdfhasuh/test/actions/runs/45829285036), original 9,893 pass and complete Stop report |
+| `runtime-windows.yml` | [45812373557](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45812373557) | [45814674165](https://github.com/jsdfhasuh/test/actions/runs/45814674165), Runtime source 134 pass and frozen package BuildOnly; no publication |
+| `validate-windows-package.yml` | [45812373557](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45812373557) | [45814674165](https://github.com/jsdfhasuh/test/actions/runs/45814674165), Designer BuildOnly + frozen pytest 16; installer hash was verified, installer not executed |
+| `web-panel-ci.yml` | [45814756358](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45814756358) | [45817298022](https://github.com/jsdfhasuh/test/actions/runs/45817298022), 4/4 original profiles including independent software Runtime |
+
+All 12 inventory rows now have same-product hosted evidence **at the scope stated**, not 12/12 production acceptance. Genuine event pilots and optional status readback recorded earlier do not satisfy durable automatic routing or exact current candidate end-to-end gates. This record does not activate formal routing, a required check, Private checkout or official publication. The product main and original workflows remain intact.

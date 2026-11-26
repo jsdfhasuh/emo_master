@@ -149,7 +149,7 @@ def measuredJob(spec, cancelEvent, eventQueue):
             wrap(trace, patch, ResultCollector, "output", "capture.freeze_total",
                  lambda _self, context, _outputs, **_kw: contextDetails(context))
             wrap(trace, patch, ResultCollector, "image", "capture.image_copy_descriptor",
-                 lambda _self, key, value, item: {"source": key,
+                 lambda _self, key, value, item, *, targets=None: {"source": key,
                      "result_key": item["identity"]["resultKey"], "raw_bytes": int(value.nbytes)
                      if hasattr(value, "nbytes") else None})
             trace.call("job.worker_total", runJobProcess, spec, cancelEvent, eventQueue)

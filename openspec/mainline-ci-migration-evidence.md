@@ -68,3 +68,13 @@ Candidate `ca57a5641686446360034b8f49cd31286c0a1e2a`; public `46445fca7d656b7bfd
 
 - Public CI `437f273ee059dd889b7acd4ede77ce4cab2d3b9a`: SQLite phase journal records setup/call/teardown boundaries, outcomes and session finish independently of JUnit. Original test selection/order, assertions and 70-minute pilot bound are unchanged. Full SQLite observer is not started by the telemetry commit. Synthetic 5/5 local, Windows smoke/V2 recovery pending. Standalone threshold fix `770bfad` unchanged; 95% partial observation is not a pass.
 - Product broker now searches creator-bearing status history by page and fails closed for repeated IDs or an exhausted bound; 19 local envelope/broker/reducer tests passed. The registered public pilot and formal dispatcher inputs remain different; real product push/PR/manual events and required checks are not approved or verified by this change.
+
+### 2026-11-26: aligned hosted Web/Runtime and Windows BuildOnly receipts
+
+Executed product SHA: `21b324602842c24001f1c29b6b469efabf23728e` (the SHA below this documentation-only change). Public workflow SHA: `c1e61a4dd3c23d48038c2f3bc30449444e8314e1`. Windows BuildOnly callable SHA: `79067e427e4c1fd905d6a28c515f883ca733a8ca`; packager scripts: `e0204fe6fe83b0f31818d88e4f296c70e230d172`.
+
+- [Public Web/Runtime](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45737320141): 4/4 jobs successful (Linux Web, Windows Web automatic/manual recipe, Windows owning Runtime). [Private V2 receipt](https://github.com/jsdfhasuh/test/actions/runs/45738468080): 4/4 encrypted archives, outer and inner SHA-256 verified; 22/19/22/7 evidence files respectively, not test counts.
+- [Public Windows BuildOnly](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45737321292): Designer and Runtime 2/2 jobs successful. [Private V2 receipt](https://github.com/jsdfhasuh/test/actions/runs/45738468023): 4/4 encrypted package/diagnostic archives; Designer and Runtime each had two assets with SHA-256 matching their build manifest. No Release writes.
+- [Windows SQLite stage-journal smoke](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45737248920) at public `437f273`: 5/5 synthetic cases; [private V2 receipt](https://github.com/jsdfhasuh/test/actions/runs/45737478743) recovered and checked the five records. Activated one [original SQLite observer](https://github.com/jsdfhasuh/emo_master_ci/actions/runs/45737609461) at public `91f7251`, same product candidate; still running at this update. Smoke is not a product pass.
+
+No change to required gates, product event wiring, release, repository visibility or formal 12/12 acceptance. The Web and packaging runs read still-public product source; this is not proof of private source checkout.

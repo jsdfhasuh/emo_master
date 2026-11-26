@@ -80,6 +80,33 @@ class BrokerTest(unittest.TestCase):
             adapter(fake)._post_shadow(SHA, {"context": "ubuntu-latest / Python 3.10"})
         self.assertEqual(fake.posts, [])
 
+    def test_status_history_pagination_finds_newest_marker_or_fails_closed(self):
+        context = "dot/source-v2-shadow/linux"
+        first = [{"id": i, "context": "other"} for i in range(200, 100, -1)]
+        target = {"id": 100, "context": context.upper()}
+        for second, expected in (([target], target), ([], None), ([first[-1], target], ValueError)):
+            queries = []
+            def simulate(req):
+                queries.append(urlsplit(req.full_url).query)
+                return 200, json.dumps(first if len(queries) == 1 else second).encode()
+            with self.subTest(second=second):
+                if expected is ValueError:
+                    with self.assertRaisesRegex(ValueError, "changed during pagination"):
+                        adapter(simulate)._status(SHA, context)
+                else:
+                    self.assertEqual(adapter(simulate)._status(SHA, context), expected)
+                self.assertEqual(queries, ["per_page=100&page=1", "per_page=100&page=2"])
+
+    def test_status_history_budget_never_claims_absence(self):
+        pages = []
+        def simulate(req):
+            start = len(pages) * 100 + 1
+            pages.append(req.full_url)
+            return 200, json.dumps([{"id": i, "context": "other"} for i in range(start, start+100)]).encode()
+        with self.assertRaisesRegex(ValueError, "complete status history"):
+            adapter(simulate)._status(SHA, "dot/source-v2-shadow/linux")
+        self.assertEqual(len(pages), 20)
+
     def test_report_live_api_shapes_via_fake_transport_binds_only_shadow_context(self):
         from dataclasses import replace
         with TemporaryDirectory() as root:

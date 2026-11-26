@@ -121,12 +121,24 @@ class SourceBroker:
 
     def _status(self, check, context):
         require(context in SHADOW_CONTEXTS.values(), "not a non-required Source context")
-        rows = self._api(f"{PRODUCT_PATH}/commits/{sha(check)}/statuses?per_page=100", result_type=list)
-        require(len(rows) < 100 and all(isinstance(row, dict) for row in rows),
-                "could not inspect complete status history")
-        # GitHub orders status history most recent first. Unlike the combined
-        # endpoint, this endpoint includes creator and older predecessors.
-        return next((row for row in rows if str(row.get("context", "")).casefold() == context.casefold()), None)
+        prefix = f"{PRODUCT_PATH}/commits/{sha(check)}/statuses"
+        # API pages are newest first. Never treat an exhausted search budget
+        # as an absent marker. Reject repeats if history shifts mid-traversal.
+        seen = set()
+        for page in range(1, 21):
+            rows = self._api(f"{prefix}?per_page=100&page={page}", result_type=list)
+            require(len(rows) <= 100, "invalid status history page")
+            for row in rows:
+                require(isinstance(row, dict) and isinstance(row.get("context"), str),
+                        "invalid status history row")
+                row_id = ident(row.get("id"))
+                require(row_id not in seen, "status history changed during pagination")
+                seen.add(row_id)
+                if row["context"].casefold() == context.casefold():
+                    return row
+            if len(rows) < 100:
+                return None
+        raise ValueError("could not inspect complete status history")
 
     def _post_shadow(self, check, payload):
         require(payload.get("context") in SHADOW_CONTEXTS.values(), "not a non-required Source context")

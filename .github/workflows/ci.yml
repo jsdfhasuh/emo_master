@@ -15,7 +15,60 @@ concurrency:
   cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
 
 jobs:
+  manual-receipt-pilot:
+    if: github.repository_id == '1343796337' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/dot/source-manual-receipt-pilot'
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Stage bounded request without checkout or cross-repository secret
+        shell: python
+        run: |
+          import json, os, re
+          from pathlib import Path
+
+          def need(ok):
+              if not ok:
+                  raise SystemExit("source shadow request refused")
+
+          env = os.environ
+          need(env["GITHUB_REPOSITORY_ID"] == "1343796337")
+          ref = "refs/heads/dot/source-manual-receipt-pilot"
+          need(env["GITHUB_REF"] == ref)
+          sha = env["GITHUB_SHA"]
+          need(bool(re.fullmatch(r"[0-9a-f]{40}", sha)) and sha != "0" * 40)
+          run, attempt = env["GITHUB_RUN_ID"], env["GITHUB_RUN_ATTEMPT"]
+          need(bool(re.fullmatch(r"[1-9][0-9]{0,19}",run)))
+          need(bool(re.fullmatch(r"[1-9][0-9]{0,5}",attempt)))
+          body = Path(env["GITHUB_EVENT_PATH"]).read_bytes()
+          need(len(body) <= 32 * 1024 * 1024)
+          payload = json.loads(body)
+          need(payload.get("repository",{}).get("id") == 1343796337)
+          event = env["GITHUB_EVENT_NAME"]
+          before = None
+          if event == "push":
+              need(payload.get("ref") == ref and payload.get("after") == sha and payload.get("deleted") is False)
+              before = payload.get("before")
+              need(isinstance(before,str) and bool(re.fullmatch(r"[0-9a-f]{40}", before)))
+              if before == "0"*40:
+                  before = None
+          else:
+              need(event == "workflow_dispatch" and payload.get("ref") in (ref, ref.removeprefix("refs/heads/"))
+                   and not payload.get("inputs"))
+          record = dict(source_event_name=event, source_ref=ref, source_repository_id=1343796337,
+                        source_head_sha=sha, source_base_sha=None, source_merge_sha=None,
+                        source_before_sha=before, source_pr_number=None, check_sha=sha, execution_sha=sha,
+                        request_id=f"{run}-{attempt}")
+          with (Path(env["RUNNER_TEMP"]) / "ci-request.json").open("x", encoding="ascii") as out:
+              json.dump(record, out, sort_keys=True)
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: ci-request-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/ci-request.json
+          if-no-files-found: error
+          retention-days: 3
+
   scope:
+    if: ${{ !(github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/dot/source-manual-receipt-pilot') }}
     name: Select source checks
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -123,7 +176,7 @@ jobs:
           if-no-files-found: ignore
   linux-summary:
     needs: [scope, linux]
-    if: ${{ always() }}
+    if: ${{ always() && !(github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/dot/source-manual-receipt-pilot') }}
     # Keep the original Linux check for full runs, scope skips and selector failures.
     name: ubuntu-latest / Python 3.10
     runs-on: ubuntu-latest
@@ -166,7 +219,7 @@ jobs:
           build/linux-shards/test-results-ubuntu-latest-py3.10-other/ci-shard.json
   windows-summary:
     needs: [scope, windows]
-    if: ${{ always() }}
+    if: ${{ always() && !(github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/dot/source-manual-receipt-pilot') }}
     # Preserve the original required check name; neither shard can pass this gate alone.
     name: windows-latest / Python 3.10
     runs-on: ubuntu-latest

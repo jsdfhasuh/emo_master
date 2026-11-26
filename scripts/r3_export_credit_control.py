@@ -33,14 +33,15 @@ REQUIRED_CREDIT_STAGES = ("parent.export_submit", "parent.task_dequeued", "paren
     "parent.pipe_poll", "parent.pipe_recv", "parent.export_callback", "parent.credit_release", "parent.asset_adopt")
 
 
-def childCommand(directory, platformName, mode, hubTrace=False):
+def childCommand(directory, platformName, mode, hubTrace=False, fileSubphases=False):
     if mode not in {"off", "on"}:
         raise ValueError("unknown export-credit observer mode")
     command = [sys.executable, str(ROOT / "scripts" / "r3_policy_measure.py"), "--child",
         "--output", str(directory), "--arm", "none_qt", "--count", str(COUNT),
         "--warmup", str(WARMUP), "--qt-platform", platformName, "--asset-split-trace", "--startup-barrier"]
     return (command + (["--export-credit-trace", "--capture-credit-trace"] if mode == "on" else [])
-            + (["--hub-tick-trace"] if hubTrace else []))
+            + (["--hub-tick-trace"] if hubTrace else [])
+            + (["--asset-file-subphases"] if fileSubphases else []))
 
 
 def creditBoundaries(payload, trace):
@@ -277,7 +278,8 @@ def run(args):
         entry = {"position": position, "observer_mode": mode,
             "disk_preflight": base.diskPreflight(directory),
             "watchdog": base.supervisedTrial(childCommand(directory, args.qt_platform, mode,
-                         hubTrace=position == 3 and os.environ.get("EMO_CREDIT_HUB_TICK_TRACE") == "1"), directory)}
+                         hubTrace=position == 3 and os.environ.get("EMO_CREDIT_HUB_TICK_TRACE") == "1",
+                         fileSubphases=os.environ.get("EMO_CREDIT_ASSET_FILE_SUBPHASES") == "1"), directory)}
         payload, fields = policy.trialEvidence(directory, args.output, WARMUP, "none_qt")
         if payload is not None:
             entry.update(fields)

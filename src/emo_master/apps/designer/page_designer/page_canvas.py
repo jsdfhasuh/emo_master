@@ -372,7 +372,18 @@ class PageCanvas(DesignerGraphicsView):
         super().keyPressEvent(event)
 
     def resizeEvent(self, event):
+        manualCenter = None
+        oldSize = event.oldSize()
+        if hasattr(self, 'sizeTimer') and not self.autoFit and not oldSize.isEmpty():
+            # The viewport already has its new dimensions, while the view's
+            # scroll transform still describes the old frame. Preserve the
+            # old midpoint before Qt can clamp the scroll range on resize.
+            previousTransform, invertible = self.viewportTransform().inverted()
+            if invertible:
+                manualCenter = previousTransform.map(QPointF(oldSize.width() / 2, oldSize.height() / 2))
         super().resizeEvent(event)
+        if manualCenter is not None:
+            self.centerOn(manualCenter)
         if hasattr(self, 'sizeTimer'):
             self.sizeTimer.start(0)
 

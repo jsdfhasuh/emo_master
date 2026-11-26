@@ -378,11 +378,11 @@ def installed(trace, root):
         return initialize
 
     def image_factory(original):
-        def image(collector, key, value, item):
+        def image(collector, key, value, item, **kwargs):
             active = trace_ref()
             scope = active.observe(active.enter_image, collector, key, value, item) if active is not None else None
             try:
-                return original(collector, key, value, item)
+                return original(collector, key, value, item, **kwargs)
             finally:
                 if scope is not None:
                     active.leave_image(scope)

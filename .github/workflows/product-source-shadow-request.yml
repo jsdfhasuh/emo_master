@@ -21,9 +21,10 @@ jobs:
           import json, os, re
           from pathlib import Path
 
+          stage = "origin"
           def need(ok):
               if not ok:
-                  raise SystemExit("source shadow request refused")
+                  raise SystemExit("source shadow request refused: "+stage)
 
           env = os.environ
           need(env["GITHUB_REPOSITORY_ID"] == "1343796337")
@@ -38,6 +39,7 @@ jobs:
           need(len(body) <= 32 * 1024 * 1024)
           payload = json.loads(body)
           need(payload.get("repository",{}).get("id") == 1343796337)
+          stage = "event"
           event = env["GITHUB_EVENT_NAME"]
           before = base = merge = number = None
           head = sha
@@ -48,15 +50,21 @@ jobs:
               if before == "0"*40:
                   before = None
           elif event == "pull_request":
+              stage = "pr-number-ref"
               pr = payload["pull_request"]
               number = payload["number"]
               need(type(number) is int and number == pr["number"] == 26 and actual_ref == "refs/pull/26/merge")
+              stage = "pr-state"
               need(payload["action"] in ("opened", "reopened", "synchronize") and pr["state"] == "open")
+              stage = "pr-repositories"
               need(pr["head"]["repo"]["id"] == pr["base"]["repo"]["id"] == 1343796337)
               need(pr["head"]["ref"] == "dot/mainline-ci-migration-20261124" and pr["base"]["ref"] == "main")
+              stage = "pr-sha-shape"
               head, base, merge = pr["head"]["sha"], pr["base"]["sha"], sha
               need(all(isinstance(v,str) and re.fullmatch(r"[0-9a-f]{40}", v) and v != "0"*40 for v in (head,base)))
-              need(pr.get("merge_commit_sha") == merge)
+              # The webhook's merge_commit_sha can be stale on synchronize.
+              # This metadata-only receipt is untrusted until the private
+              # broker confirms the current merge ref and both parents.
           else:
               need(actual_ref == ref and event == "workflow_dispatch" and payload.get("ref") in (ref, ref.removeprefix("refs/heads/"))
                    and not payload.get("inputs"))

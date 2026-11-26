@@ -691,6 +691,32 @@ class ReportTests(unittest.TestCase):
             self.assertEqual(reporter.main(args), 1)
         self.assertEqual(destination.read_bytes(), first)
 
+    def test_sealed_transport_retains_complete_report_without_printing_details(self):
+        original = self.build()
+        original["sentinel_payload"] = "x" * (reporter.REPORT_BYTES + 1)
+        args = ["--evidence", str(self.evidence), "--repo", str(self.repo), "--expected-sha", SHA,
+                "--original-step", "success"]
+        with patch.object(reporter, "build_report", return_value=original):
+            legacy = self.evidence / "legacy-rejected.json"
+            with contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(reporter.main(args + ["--output-json", str(legacy)]), 1)
+            self.assertEqual(json.loads(legacy.read_bytes())["error_code"], "complete_report_exceeds_stdout_budget")
+            out = self.evidence / "sealed.json"
+            with contextlib.redirect_stdout(io.StringIO()) as receipts:
+                self.assertEqual(reporter.main(args + ["--output-json", str(out), "--sealed-output-only"]), 0)
+            self.assertEqual(out.read_bytes(), reporter.encoded(original))
+            self.assertEqual(receipts.getvalue(), "credit_report_observation=COMPLETE\n")
+            original["observation_status"] = "INVALID"
+            rejected = self.evidence / "failed-sealed.json"
+            with contextlib.redirect_stdout(io.StringIO()) as receipts:
+                self.assertEqual(reporter.main(args + ["--output-json", str(rejected), "--sealed-output-only"]), 1)
+            self.assertEqual(json.loads(rejected.read_bytes())["observation_status"], "INVALID")
+            self.assertEqual(receipts.getvalue(), "credit_report_observation=INVALID\n")
+            with patch.object(reporter, "SEALED_REPORT_BYTES", reporter.REPORT_BYTES), contextlib.redirect_stdout(io.StringIO()):
+                hard_cap = self.evidence / "sealed-cap.json"
+                self.assertEqual(reporter.main(args + ["--output-json", str(hard_cap), "--sealed-output-only"]), 1)
+                self.assertEqual(json.loads(hard_cap.read_bytes())["error_code"], "sealed_report_exceeds_byte_budget")
+
     def test_transport_round_trip_and_missing_part_integrity(self):
         result = self.build()
         output = reporter.transport(result)

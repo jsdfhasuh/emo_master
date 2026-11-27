@@ -31,3 +31,10 @@ The migration SHALL map the twelve original workflow routes and preserve existin
 #### Scenario: A newly routed required workflow does not return its expected result
 - **WHEN** the replacement cannot prove the required result for the correct commit
 - **THEN** the migration stops and the rollback restores the verified former route and checks without weakening acceptance
+
+
+#### Scenario: Owner-coordinated isolated Source rehearsal
+- **WHEN** the owner explicitly authorizes one fixed Source shadow rehearsal with the existing owner credential
+- **THEN** the reviewed private entrypoint verifies actual deployment, Environment, branch and worker protection before any reservation or write
+- **AND** it coordinates its one writer using persistent non-force-update claims and independent API readback
+- **AND** the result targets only the optional Source shadow context, does not imply platform-level isolation from other owner clients, and does not establish a formal Required Check.

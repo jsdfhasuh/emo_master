@@ -35,3 +35,10 @@ Product baseline `48b3019`, tested product candidate `7fccb49`, evidence-only de
 ## Open Questions
 
 The private ledger ref and enforcement are not yet provisioned; the actual required context configuration was not returned by the current integration. The full private-source relay and hosted durable write path still require verification.
+
+
+### One-off Source rehearsal: owner coordination, not identity isolation
+
+The owner explicitly approved reusing the existing private PAT for a single shadow run. This trusts the owner and the reviewed private deployment. GitHub does **not** distinguish other clients using the owner's identity; workflow concurrency coordinates only this automation, not external status API requests. This exception is **not** a foundation for formal Required Checks.
+
+Before arming the rehearsal, read the authenticated account and fixed repository IDs, verify the deployed workflow and script revisions against the reviewed private change and current Actions attempt, and confirm the Environment permits only the private main branch. Verify effective branch and exact tag protections, no force-push/delete or bypass for the ledger, and no updates/deletion to the tag. Only the fixed public Source registration and optional `emo-ci-shadow/source` on the fixed test SHA are allowed. Reserve durable ledger ownership before dispatch, never repeat an ambiguous POST, and independently read the resolved run and optional status. The existing production isolation requirements are unchanged.

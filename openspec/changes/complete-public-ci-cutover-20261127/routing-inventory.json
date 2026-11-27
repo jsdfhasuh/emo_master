@@ -1,0 +1,574 @@
+{
+  "product_main": "48b30191884ad5ef5d96e8d26591104d16d54a58",
+  "product_evidence": "7fccb4988ad0e4abd390110dbb29c80151f5bb3b",
+  "evidence_doc": "c87c2b08826ae61765165b898a5382912a17035d",
+  "required_checks": "Unknown: branch protection API returned HTTP 403 Resource not accessible by integration. Do not infer required contexts from YAML.",
+  "routes": {
+    "ci.yml": {
+      "workflow_name": "CI",
+      "triggers": {
+        "push": {
+          "branches": [
+            "main",
+            "agent/runtime-workflow-architecture-v1"
+          ]
+        },
+        "pull_request": {
+          "branches": [
+            "main"
+          ]
+        },
+        "workflow_dispatch": ""
+      },
+      "permissions": {
+        "contents": "read"
+      },
+      "concurrency": {
+        "group": "${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && github.run_id || github.event.pull_request.number || github.ref }}",
+        "cancel-in-progress": "${{ github.event_name != 'workflow_dispatch' }}"
+      },
+      "jobs": {
+        "scope": {
+          "name": "Select source checks",
+          "runs-on": "ubuntu-latest",
+          "timeout-minutes": "5"
+        },
+        "linux": {
+          "needs": "scope",
+          "if": "needs.scope.outputs.run_full == 'true'",
+          "name": "Linux source (${{ matrix.shard }}) / Python 3.10",
+          "runs-on": "ubuntu-latest",
+          "timeout-minutes": "60",
+          "strategy": {
+            "fail-fast": "false",
+            "matrix": {
+              "shard": [
+                "runtime",
+                "other"
+              ]
+            }
+          }
+        },
+        "windows": {
+          "needs": "scope",
+          "if": "needs.scope.outputs.run_full == 'true'",
+          "name": "Windows source (${{ matrix.shard }}) / Python 3.10",
+          "runs-on": "windows-latest",
+          "timeout-minutes": "90",
+          "strategy": {
+            "fail-fast": "false",
+            "matrix": {
+              "shard": [
+                "runtime",
+                "other"
+              ]
+            }
+          }
+        },
+        "linux-summary": {
+          "needs": [
+            "scope",
+            "linux"
+          ],
+          "if": "${{ always() }}",
+          "name": "ubuntu-latest / Python 3.10",
+          "runs-on": "ubuntu-latest",
+          "timeout-minutes": "5"
+        },
+        "windows-summary": {
+          "needs": [
+            "scope",
+            "windows"
+          ],
+          "if": "${{ always() }}",
+          "name": "windows-latest / Python 3.10",
+          "runs-on": "ubuntu-latest",
+          "timeout-minutes": "5"
+        }
+      },
+      "public_path": ".github/workflows/source-v2-shadow.yml",
+      "hosted_run": 45815106836,
+      "public_sha": "3e2040f36473cf81034c6a1dea6368fc0bb69337",
+      "hosted_conclusion": "success",
+      "attempt": 1,
+      "private_proof": 45825627659,
+      "source_blob": "93718266e23979fef9f1ff54b230fc185c14883c"
+    },
+    "display-session-contract.yml": {
+      "workflow_name": "Windows display subscription and live contract",
+      "triggers": {
+        "workflow_dispatch": "",
+        "push": {
+          "branches": [
+            "agent/runtime-workflow-architecture-v1"
+          ],
+          "paths": [
+            ".github/workflows/display-session-contract.yml",
+            "src/emo_master/apps/runtime/grpc_server/**",
+            "src/emo_master/apps/runtime/presentation/**",
+            "src/emo_master/clients/runtime/**",
+            "src/emo_master/apps/operator_runtime/**",
+            "tests/runtime/presentation/test_display_subscriptions.py",
+            "tests/runtime/presentation/test_live_decisions.py",
+            "tests/ui/operator_view/test_five_display_sessions.py",
+            "tests/ui/presentation/test_latest_sampling_contract.py",
+            "tests/runtime/presentation/test_failed_capture_retirement.py",
+            "tests/runtime/presentation/test_capture_lane_lifetime.py",
+            "tests/runtime/presentation/test_export_diagnostics.py"
+          ]
+        }
+      },
+      "permissions": {
+        "contents": "read"
+      },
+      "concurrency": null,
+      "jobs": {
+        "native": {
+          "runs-on": "windows-latest",
+          "timeout-minutes": "15"
+        }
+      },
+      "public_path": ".github/workflows/display-session-v2-proof.yml",
+      "hosted_run": 45814756318,
+      "public_sha": "ce3868aff92ebdd78ee9e540c8f1b8a53df42700",
+      "hosted_conclusion": "success",
+      "attempt": 1,
+      "private_proof": 45817297968,
+      "source_blob": "602dc22cd59a33d64e9c97b2e406c4a5ed65abf1"
+    },
+    "release-windows.yml": {
+      "workflow_name": "Release Windows",
+      "triggers": {
+        "push": {
+          "tags": [
+            "v*"
+          ]
+        }
+      },
+      "permissions": {
+        "contents": "write"
+      },
+      "concurrency": null,
+      "jobs": {
+        "validate": {
+          "name": "Validate source and release version",
+          "runs-on": "windows-latest",
+          "timeout-minutes": "90"
+        },
+        "package": {
+          "name": "Build and publish Designer and Runtime",
+          "needs": "validate",
+          "uses": "jsdfhasuh/python_build_scripts/.github/workflows/release-emo-master.yml@91766f6d18ca9a333f64cf1c6030202457ec4a8a"
+        }
+      },
+      "public_path": ".github/workflows/windows-release-source-v2.yml",
+      "hosted_run": 45814989002,
+      "public_sha": "6dc4cf359b5c9bb838c21054e01340d61b6c1bbd",
+      "hosted_conclusion": "success",
+      "attempt": 1,
+      "private_proof": 45829285048,
+      "source_blob": "73db53d5dc1ff1bee6c2e4216054a861253268c3"
+    },
+    "runtime-a18-diagnostics.yml": {
+      "workflow_name": "Windows A18 phase diagnostics (not acceptance)",
+      "triggers": {
+        "workflow_dispatch": "",
+        "push": {
+          "branches": [
+            "agent/runtime-workflow-architecture-v1"
+          ],
+          "paths": [
+            ".github/workflows/runtime-a18-diagnostics.yml",
+            "scripts/r3_a18_thread_diagnostics.py",
+            "tests/test_r3_native_thread_origins.py",
+            "tests/ui/presentation/test_retained_acceptance_lifecycle.py"
+          ]
+        }
+      },
+      "permissions": {
+        "contents": "read"
+      },
+      "concurrency": {
+        "group": "windows-a18-diagnostics-${{ github.ref }}",
+        "cancel-in-progress": "false"
+      },
+      "jobs": {
+        "observe": {
+          "name": "Existing A18 checkpoints / original order / Windows / Python 3.10",
+          "runs-on": "windows-latest",
+          "timeout-minutes": "30"
+        }
+      },
+      "public_path": ".github/workflows/runtime-a18-original-v2.yml",
+      "hosted_run": 45814988989,
+      "public_sha": "6dc4cf359b5c9bb838c21054e01340d61b6c1bbd",
+      "hosted_conclusion": "success",
+      "attempt": 1,
+      "private_proof": 45825627631,
+      "source_blob": "55806d05b119719585f85d22fabcd49ed0ead2a7"
+    },
+    "runtime-capture-diagnostics.yml": {
+      "workflow_name": "Windows normal capture diagnostics (not acceptance)",
+      "triggers": {
+        "workflow_dispatch": "",
+        "push": {
+          "branches": [
+            "agent/runtime-workflow-architecture-v1"
+          ],
+          "paths": [
+            ".github/workflows/runtime-capture-diagnostics.yml",
+            "scripts/r3_sqlite_capture_diagnostics.py",
+            "tests/test_r3_sqlite_capture_diagnostics.py"
+          ]
+        }
+      },
+      "permissions": {
+        "contents": "read"
+      },
+      "concurrency": {
+        "group": "windows-capture-diagnostics-${{ github.ref }}",
+        "cancel-in-progress": "false"
+      },
+      "jobs": {
+        "observe": {
+          "name": "Instrumented original order / Windows / Python 3.10",
+          "runs-on": "windows-latest",
+          "timeout-minutes": "30"
+        }
+      },
+      "public_path": ".github/workflows/capture-v2-shadow.yml",
+      "hosted_run": 45812110525,
+      "public_sha": "a2e5becab6a7417edf53ed490afb8097d7de683d",
+      "hosted_conclusion": "success",
+      "attempt": 1,
+      "private_proof": 45825817389,
+      "source_blob": "eb4892c284501ba7edee4867770342bb25d03eb9"
+    },
+    "runtime-credit-diagnostics.yml": {
+      "workflow_name": "Windows export credit diagnostics (not acceptance)",
+      "triggers": {
+        "workflow_dispatch": "",
+        "push": {
+          "branches": [
+            "agent/runtime-workflow-architecture-v1"
+          ],
+          "paths": [
+            ".github/workflows/runtime-credit-diagnostics.yml",
+            "scripts/r3_export_credit_report.py",
+            "scripts/r3_hosted_credit_guard.py",
+            "scripts/r3_export_credit_control.py",
+            "scripts/r3_export_credit_trace.py",
+            "scripts/r3_capture_credit_trace.py",
+            "scripts/r3_policy_measure.py",
+            "scripts/r3_measure.py",
+            "scripts/r3_asset_split_trace.py",
+            "scripts/r3_asset_split_analyze.py",
+            "tests/test_r3_export_credit_report.py",
+            "tests/test_r3_hosted_credit_guard.py",
+            "tests/runtime/presentation/test_r3_export_credit_control.py",
+            "tests/runtime/presentation/test_r3_export_credit_trace.py",
+            "tests/runtime/presentation/test_r3_capture_credit_trace.py",
+            "src/emo_master/apps/runtime/presentation/**",
+            "src/emo_master/ui/presentation/images.py",
+            "tests/ui/presentation/test_renderer.py"
+          ]
+        }
+      },
+      "permissions": {
+        "contents": "read"
+      },
+      "concurrency": {
+        "group": "windows-credit-diagnostics-${{ github.ref }}",
+        "cancel-in-progress": "false"
+      },
+      "jobs": {
+        "observe": {
+          "if": "github.ref == 'refs/heads/agent/runtime-workflow-architecture-v1'",
+          "name": "Native Qt / ABBA credit observer / Windows / Python 3.10",
+          "runs-on": "windows-latest",
+          "timeout-minutes": "20"
+        }
+      },
+      "public_path": ".github/workflows/runtime-credit-original-v2.yml",
+      "hosted_run": 45809892164,
+      "public_sha": "556f085ddb657d4ef27a87b70200a3cc42bdc87d",
+      "hosted_conclusion": "success",
+      "attempt": 1,
+      "private_proof": 45811966165,
+      "source_blob": "55def4dedc20b0348214881b5b77a54137dee073"
+    },
+    "runtime-sqlite-append-controls.yml": {
+      "workflow_name": "Windows SQLite append controls (not acceptance)",
+      "triggers": {
+        "workflow_dispatch": "",
+        "push": {
+          "branches": [
+            "agent/runtime-workflow-architecture-v1"
+          ],
+          "paths": [
+            ".github/workflows/runtime-sqlite-append-controls.yml",
+            "scripts/r3_sqlite_append_controls.py",
+            "tests/test_r3_sqlite_append_controls.py"
+          ]
+        }
+      },
+      "permissions": {
+        "contents": "read"
+      },
+      "concurrency": {
+        "group": "windows-sqlite-append-controls-${{ github.ref }}",
+        "cancel-in-progress": "false"
+      },
+      "jobs": {
+        "control": {
+          "name": "Fixed append lifetime and JSONL controls / Windows / Python 3.10",
+          "runs-on": "windows-latest",
+          "timeout-minutes": "10"
+        }
+      },
+      "public_path": ".github/workflows/sqlite-append-v2-proof.yml",
+      "hosted_run": 45814756296,
+      "public_sha": "ce3868aff92ebdd78ee9e540c8f1b8a53df42700",
+      "hosted_conclusion": "success",
+      "attempt": 1,
+      "private_proof": 45817298046,
+      "source_blob": "e4a08b1e2d5644bcd36d8cd70bc6fdc1cb1123fe"
+    },
+    "runtime-sqlite-failure-diagnostics.yml": {
+      "workflow_name": "Windows SQL failure diagnostics (not acceptance)",
+      "triggers": {
+        "workflow_dispatch": "",
+        "push": {
+          "branches": [
+            "agent/runtime-workflow-architecture-v1"
+          ],
+          "paths": [
+            ".github/workflows/runtime-sqlite-failure-diagnostics.yml",
+            "scripts/r3_sqlite_failure_diagnostics.py",
+            "scripts/r3_sqlite_phases.py",
+            "scripts/r3_sqlite_wal_metadata.py",
+            "scripts/r3_sqlite_controls.py",
+            "tests/test_r3_sqlite_failure_diagnostics.py",
+            "tests/test_r3_sqlite_phases.py",
+            "tests/test_r3_sqlite_wal_metadata.py",
+            "tests/test_r3_sqlite_controls.py"
+          ]
+        }
+      },
+      "permissions": {
+        "contents": "read"
+      },
+      "concurrency": {
+        "group": "windows-sqlite-failure-diagnostics-${{ github.ref }}",
+        "cancel-in-progress": "false"
+      },
+      "jobs": {
+        "observe": {
+          "name": "Failure points / original order / Windows / Python 3.10",
+          "runs-on": "windows-latest",
+          "timeout-minutes": "30"
+        }
+      },
+      "public_path": ".github/workflows/sqlite-failure-v2-proof.yml",
+      "hosted_run": 45817694069,
+      "public_sha": "c4280d4bb1a58d2d7befe84984426355bfe099bf",
+      "hosted_conclusion": "success",
+      "attempt": 1,
+      "private_proof": 45833518406,
+      "source_blob": "c1fbd421cd14d2473962b91faf86b418a90424d3"
+    },
+    "runtime-stop-diagnostics.yml": {
+      "workflow_name": "Windows stop diagnostics (not acceptance)",
+      "triggers": {
+        "workflow_dispatch": ""
+      },
+      "permissions": {
+        "contents": "read"
+      },
+      "concurrency": {
+        "group": "windows-stop-diagnostics-${{ github.ref }}",
+        "cancel-in-progress": "false"
+      },
+      "jobs": {
+        "observe": {
+          "name": "Instrumented original order / Windows / Python 3.10",
+          "runs-on": "windows-latest",
+          "timeout-minutes": "30"
+        }
+      },
+      "public_path": ".github/workflows/runtime-stop-original-v2.yml",
+      "hosted_run": 45814989074,
+      "public_sha": "6dc4cf359b5c9bb838c21054e01340d61b6c1bbd",
+      "hosted_conclusion": "success",
+      "attempt": 1,
+      "private_proof": 45829285036,
+      "source_blob": "4cd4ce5062e020d99cbda22ccdfa141dc83e1b67"
+    },
+    "runtime-windows.yml": {
+      "workflow_name": "Build Operator Runtime",
+      "triggers": {
+        "workflow_dispatch": {
+          "inputs": {
+            "source_ref": {
+              "description": "Source branch, tag or commit containing the operator Runtime",
+              "required": "true",
+              "type": "string"
+            },
+            "packager_ref": {
+              "description": "Packager commit containing configs/emo-master-runtime.json",
+              "required": "true",
+              "default": "91766f6d18ca9a333f64cf1c6030202457ec4a8a",
+              "type": "string"
+            }
+          }
+        }
+      },
+      "permissions": {
+        "contents": "write"
+      },
+      "concurrency": null,
+      "jobs": {
+        "validate": {
+          "runs-on": "windows-latest"
+        },
+        "package": {
+          "needs": "validate",
+          "uses": "jsdfhasuh/python_build_scripts/.github/workflows/release-windows.yml@91766f6d18ca9a333f64cf1c6030202457ec4a8a"
+        },
+        "verify_archive": {
+          "needs": [
+            "validate",
+            "package"
+          ],
+          "runs-on": "windows-latest"
+        }
+      },
+      "public_path": ".github/workflows/windows-package-mainline-v2-call.yml",
+      "hosted_run": 45812373557,
+      "public_sha": "61e22e10554a6454efd8b36febaedd2303db19e7",
+      "hosted_conclusion": "success",
+      "attempt": 1,
+      "private_proof": 45814674165,
+      "source_blob": "f854ede4b515c12fce5198dbd63651ff9b88267d"
+    },
+    "validate-windows-package.yml": {
+      "workflow_name": "Validate frozen Windows package (no release)",
+      "triggers": {
+        "pull_request": {
+          "branches": [
+            "agent/runtime-workflow-architecture-v1",
+            "main"
+          ],
+          "paths": [
+            ".github/workflows/release-windows.yml",
+            ".github/workflows/validate-windows-package.yml",
+            "src/emo_master/app_version.py",
+            "src/emo_master/__init__.py",
+            "pyproject.toml",
+            "scripts/verify_frozen_runtime.py",
+            "scripts/verify_windows_package.ps1",
+            "tests/test_release_workflow_contract.py",
+            "tests/test_frozen_runtime_validation.py"
+          ]
+        },
+        "workflow_dispatch": ""
+      },
+      "permissions": {
+        "contents": "write"
+      },
+      "concurrency": {
+        "group": "frozen-package-${{ github.event.pull_request.number || github.ref }}",
+        "cancel-in-progress": "false"
+      },
+      "jobs": {
+        "prepare": {
+          "runs-on": "windows-latest"
+        },
+        "package": {
+          "needs": "prepare",
+          "uses": "jsdfhasuh/python_build_scripts/.github/workflows/release-windows.yml@91766f6d18ca9a333f64cf1c6030202457ec4a8a"
+        },
+        "verify": {
+          "needs": [
+            "prepare",
+            "package"
+          ],
+          "runs-on": "windows-latest",
+          "timeout-minutes": "25"
+        }
+      },
+      "public_path": ".github/workflows/windows-package-mainline-v2-call.yml",
+      "hosted_run": 45812373557,
+      "public_sha": "61e22e10554a6454efd8b36febaedd2303db19e7",
+      "hosted_conclusion": "success",
+      "attempt": 1,
+      "private_proof": 45814674165,
+      "source_blob": "552fd7c1ddee981691a29354d2af1c888c1513c7"
+    },
+    "web-panel-ci.yml": {
+      "workflow_name": "Web panel isolated checks",
+      "triggers": {
+        "push": {
+          "branches": [
+            "main",
+            "codex/logging-and-designer-improvements"
+          ],
+          "paths": [
+            "web_panel/**",
+            "src/**",
+            "proto/**",
+            "requirements*.txt",
+            ".github/workflows/web-panel-ci.yml"
+          ]
+        },
+        "pull_request": {
+          "branches": [
+            "main"
+          ],
+          "paths": [
+            "web_panel/**",
+            "src/**",
+            "proto/**",
+            "requirements*.txt",
+            ".github/workflows/web-panel-ci.yml"
+          ]
+        },
+        "workflow_dispatch": ""
+      },
+      "permissions": {
+        "contents": "read"
+      },
+      "concurrency": {
+        "group": "${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && github.run_id || github.event.pull_request.number || github.ref }}",
+        "cancel-in-progress": "${{ github.event_name != 'workflow_dispatch' }}"
+      },
+      "jobs": {
+        "web-panel": {
+          "strategy": {
+            "fail-fast": "false",
+            "matrix": {
+              "os": [
+                "ubuntu-latest",
+                "windows-latest"
+              ]
+            }
+          },
+          "runs-on": "${{ matrix.os }}",
+          "timeout-minutes": "15"
+        },
+        "product-runtime": {
+          "name": "Owning Runtime integration (synthetic data, Windows)",
+          "runs-on": "windows-latest",
+          "timeout-minutes": "20"
+        }
+      },
+      "public_path": ".github/workflows/public-web-v2.yml",
+      "hosted_run": 45814756358,
+      "public_sha": "ce3868aff92ebdd78ee9e540c8f1b8a53df42700",
+      "hosted_conclusion": "success",
+      "attempt": 1,
+      "private_proof": 45817298022,
+      "source_blob": "ef1c2ee03cc391475816d5309ad44a5b12cf6448"
+    }
+  }
+}

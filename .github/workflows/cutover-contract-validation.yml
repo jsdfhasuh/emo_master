@@ -1,0 +1,31 @@
+name: Validate public CI cutover contracts (no deployment)
+on:
+  push:
+    branches: [dot/mainline-ci-migration-20261124]
+    paths:
+      - .github/workflows/cutover-contract-validation.yml
+      - scripts/ci_cutover/**
+      - openspec/changes/complete-public-ci-cutover-20261127/**
+permissions:
+  contents: read
+jobs:
+  validate:
+    if: github.repository_id == '1343796337' && github.ref == 'refs/heads/dot/mainline-ci-migration-20261124'
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '22.22.0'
+          package-manager-cache: false
+      - name: Verify cutover request, terminal and draft contracts
+        run: python3 -m unittest discover -s scripts/ci_cutover -p 'test_*.py' -v
+      - name: Strictly validate cutover OpenSpec
+        env:
+          OPENSPEC_TELEMETRY: 0
+          OPENSPEC_NO_UPDATE_CHECK: 1
+        run: npx --yes --package=@fission-ai/openspec@1.16.1 openspec validate complete-public-ci-cutover-20261127 --strict

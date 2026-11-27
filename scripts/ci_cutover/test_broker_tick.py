@@ -59,3 +59,48 @@ class Check(unittest.TestCase):
         self.f.claim()
         self.assertEqual(self.go(),'uncertain')
         self.assertEqual(self.f.posts,0)
+
+    def test_worker_green_without_v2_proof_waits_then_errors(self):
+        observation = Observation(G, 'success', 'missing')
+        self.assertEqual(self.go(2, observation), 'wait')
+        self.assertEqual(self.f.posts, 0)
+        self.assertEqual(self.go(3, observation), 'sealed')
+        self.assertEqual(self.f.state.decision, ('error', 'deadline_without_verified_result'))
+
+    def test_v2_verification_failure_never_publishes_success(self):
+        self.assertEqual(self.go(2, Observation(G, 'success', 'failure')), 'sealed')
+        self.assertEqual(self.f.state.decision, ('failure', 'verified_failure'))
+        self.assertEqual(self.f.posts, 1)
+
+    def test_status_receipt_then_mismatched_readback_does_not_repost(self):
+        def post_without_matching_readback(*args):
+            self.f.posts += 1
+            self.f.reply = 'foreign'
+        self.f.post = post_without_matching_readback
+        self.assertEqual(self.go(), 'uncertain')
+        self.assertEqual(self.go(), 'uncertain')
+        self.assertEqual(self.f.posts, 1)
+
+    def test_request_restart_after_readback_disconnect_does_not_repost(self):
+        original_post = self.f.post
+        def post_then_disconnect(*args):
+            original_post(*args)
+            def disconnect(*args):
+                raise ConnectionError('simulated GitHub readback disconnect')
+            self.f.read = disconnect
+        self.f.post = post_then_disconnect
+        with self.assertRaises(ConnectionError):
+            self.go()
+        self.assertEqual(self.f.state.phase, 'inflight')
+        self.f.read = lambda *args: 'exact'
+        self.assertEqual(self.go(), 'sealed')
+        self.assertEqual(self.f.posts, 1)
+
+    def test_prior_attempt_green_cannot_write_for_new_attempt(self):
+        generation = replace(G, attempt=G.attempt + 1)
+        self.f.state.generation = generation
+        older = Observation(G, 'success', 'success')
+        self.assertEqual(self.go(2, older, generation), 'wait')
+        self.assertEqual(self.f.posts, 0)
+        self.assertEqual(self.go(3, older, generation), 'sealed')
+        self.assertEqual(self.f.state.decision, ('error', 'matching_receipt_missing'))

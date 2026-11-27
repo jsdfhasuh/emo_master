@@ -1303,13 +1303,14 @@ class RuntimeJobLogs(QWidget):
         if not self.filters.isHidden():
             updateIdentityChoices(self.inputs, self.window.entries)
         matches = self._scopePredicate()
-        self._items.clear()
-        self._branches.clear()
         self.events.blockSignals(True)
         self.events.setUpdatesEnabled(False)
         scrollBar = self.events.verticalScrollBar()
         try:
+            # Keep the Python item wrappers alive until Qt has removed the native items.
             self.events.clear()
+            self._items.clear()
+            self._branches.clear()
             if self.mode.currentIndex():
                 for entry in sorted(filter(matches, self.window.entries), key=lambda row: (row.timestampMs, row.eventId)):
                     self.events.addTopLevelItem(self._entryItem(entry))

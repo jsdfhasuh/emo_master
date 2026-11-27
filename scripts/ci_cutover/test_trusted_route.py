@@ -22,7 +22,8 @@ class TestRoute(unittest.TestCase):
     def route(self, age=3):
         return bind(self.lane,self.request,self.run,now=10000,emitted=10000-age,read_ref=self.ref.get,
                     read_pr=lambda n:self.pr,read_parents=lambda h:self.parents,read_blob=lambda h,p:self.blob,
-                    read_worker_ref=lambda ref:self.worker)
+                    read_worker_ref=lambda ref:self.worker,resolve_runtime_source=lambda ref:B,
+                    resolve_runtime_packager=lambda ref:W)
     def make_pr(self):
         self.request.update(event="pull_request",ref="refs/pull/31/merge",base=B,merge=M,pr=31)
         self.run.update(event="pull_request",head_branch="trusted/topic",
@@ -85,9 +86,10 @@ class TestRoute(unittest.TestCase):
         with self.assertRaises(ValueError): self.route()
     def test_manual_inputs_and_helper_pin(self):
         self.run.update(event="workflow_dispatch")
-        self.request.update(event="workflow_dispatch",inputs={"packager_ref":W})
+        self.request.update(event="workflow_dispatch",inputs={"source_ref":"release-tested","packager_ref":W})
         with self.assertRaises(ValueError):self.route()
-        self.lane=replace(self.lane,manual_options=(("packager_ref",(W,)),),helper_blobs=(("scripts/receipt.py",E),))
-        self.assertEqual(self.route().inputs,(("packager_ref",W),))
+        self.lane=replace(self.lane,key="runtime-windows",packager_sha=W,manual_options=(("packager_ref",(W,)),("source_ref",("release-tested",))),helper_blobs=(("scripts/receipt.py",E),))
+        self.assertEqual(self.route().inputs,(("packager_ref",W),("source_ref","release-tested")))
+        self.assertEqual((self.route().check,self.route().execute,self.route().packager_sha),(H,B,W))
         self.lane=replace(self.lane,helper_blobs=(("scripts/receipt.py",W),))
         with self.assertRaises(ValueError):self.route()

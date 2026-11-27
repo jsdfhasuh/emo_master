@@ -56,6 +56,7 @@ class Lane:
     helper_blobs: tuple = ()
     # Optional manually requested input values are a private allowlist.
     manual_options: tuple = ()
+    packager_sha: str | None = None
 
 
 @dataclass(frozen=True)
@@ -77,6 +78,7 @@ class Bound:
     worker_ref: str
     contexts: tuple
     inputs: tuple
+    packager_sha: str | None
 
     def key(self):
         return f"{PRODUCT}/{self.run}/{self.attempt}/{self.route}"
@@ -85,7 +87,7 @@ class Bound:
         return asdict(self)
 
 
-def bind(lane, record, run, *, now, emitted, read_ref, read_pr, read_parents, read_blob, read_worker_ref):
+def bind(lane, record, run, *, now, emitted, read_ref, read_pr, read_parents, read_blob, read_worker_ref, resolve_runtime_source=None, resolve_runtime_packager=None):
     """Inputs run/ref/PR/parents/blob are authenticated observations, never artifact fields.
 
     Route policy is loaded from reviewed private deployment, never from a request.
@@ -150,5 +152,15 @@ def bind(lane, record, run, *, now, emitted, read_ref, read_pr, read_parents, re
              and not any(p in ("",".","..") for p in path.split("/"))
              and read_blob(execution,path)==sha(digest) for path,digest in lane.helper_blobs), "emitter helper not reviewed")
     need(read_worker_ref(lane.worker_ref)==sha(lane.worker_workflow_sha), "worker ref changed")
-    return Bound(lane.key,rid,attempt,event,ref,head,base,merge,pr,execution,execution,
-                 PUBLIC,lane.worker_workflow_id,lane.worker_workflow_sha,lane.worker_ref,lane.status_contexts,tuple(sorted(options.items())))
+    actual=execution
+    packager=None
+    if lane.key=="runtime-windows":
+        need(event=="workflow_dispatch" and set(options)=={"source_ref","packager_ref"} and
+             callable(resolve_runtime_source) and callable(resolve_runtime_packager), "runtime overrides not resolved")
+        actual=sha(resolve_runtime_source(options["source_ref"]))
+        packager=sha(resolve_runtime_packager(options["packager_ref"]))
+        need(packager==sha(lane.packager_sha), "runtime packager is not pinned")
+    else:
+        need(not options,"unexpected overrides for route")
+    return Bound(lane.key,rid,attempt,event,ref,head,base,merge,pr,execution,actual,
+                 PUBLIC,lane.worker_workflow_id,lane.worker_workflow_sha,lane.worker_ref,lane.status_contexts,tuple(sorted(options.items())),packager)

@@ -5,6 +5,7 @@ on:
     paths:
       - .github/workflows/cutover-contract-validation.yml
       - scripts/ci_cutover/**
+      - .github/workflows/emit-ci-cutover-request.yml
       - openspec/changes/complete-public-ci-cutover-20261127/**
 permissions:
   contents: read
@@ -29,3 +30,6 @@ jobs:
           OPENSPEC_TELEMETRY: 0
           OPENSPEC_NO_UPDATE_CHECK: 1
         run: npx --yes --package=@fission-ai/openspec@1.16.1 openspec validate complete-public-ci-cutover-20261127 --strict
+  emit-shadow:
+    needs: validate
+    uses: ./.github/workflows/emit-ci-cutover-request.yml

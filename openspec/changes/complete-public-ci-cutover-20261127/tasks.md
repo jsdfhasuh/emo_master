@@ -4,7 +4,9 @@
 - [x] Record the twelve entry points, filters, inputs and existing hosted evidence.
 - [x] Exercise reusable source/event ingress, terminal decision and draft asset contracts locally.
 - [x] Prove existing-token authentication and SHA-256 for a fixed synthetic private fixture on a private runner.
-- [ ] Record real strict OpenSpec validation for this change.
+- [x] Record [hosted strict OpenSpec validation and 32 initial contract tests](https://github.com/jsdfhasuh/emo_master/actions/runs/45914803174).
+- [x] Read actual branch prerequisites with the existing credential in private: [45914932261](https://github.com/jsdfhasuh/test/actions/runs/45914932261). Product main is unprotected and private ledger ref is 404; no required contexts exist on product main currently.
+- [x] Prepare inactive native-selector wrappers and a reusable credential-free event emitter; hosted push receipt is checked separately.
 
 ## 2. Non-production hosted integration
 

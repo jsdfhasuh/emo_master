@@ -201,6 +201,9 @@ def checkLogViews(window, first, second, queries, evidence, shot):
     QApplication.processEvents()
     click(jobs.filterToggle)
     assert jobs.filters.isVisible() and jobs.events.isVisible() and jobs.detail.isVisible()
+    # Expanding the panel resizes the native window. Let Windows paint the new
+    # backing store before asking for its pixels instead of capturing the old frame.
+    waitMs(200)
     shot(window, "05-log-filters")
     click(jobs.clearFilters)
     assert logs.sources.currentIndex() == 0 and jobs._filterValues() == {} and not jobs.search.text()

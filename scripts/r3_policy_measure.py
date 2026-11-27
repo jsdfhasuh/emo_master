@@ -56,7 +56,8 @@ def waitForInputGate(gate, cancelEvent):
 
 class StartupReadiness:
     """Bounded passive readiness evidence; no synthetic result or warmup input."""
-    def __init__(self):
+    def __init__(self, *, observe=False):
+        self.diagnostic = {"marks_ns": {}, "last_poll": None} if observe else None
         import multiprocessing
         context = multiprocessing.get_context("spawn")
         self.inputGate = (context.Event(), context.RawValue("q", 0), context.RawValue("q", 0))
@@ -87,7 +88,28 @@ class StartupReadiness:
         window.installEventFilter(observer)
         self.filters.append(observer)
 
+    def mark(self, label):
+        if self.diagnostic is not None:
+            self.diagnostic["marks_ns"][label] = time.perf_counter_ns()
+
+    def saveDiagnostic(self, output):
+        if self.diagnostic is None or not output.is_dir():
+            return
+        count = len(self.subscriptions)
+        payload = dict(schema=1, startup_budget_seconds=STARTUP_SECONDS, **self.diagnostic,
+            worker_entered_ns=self.inputGate[1].value or None,
+            worker_continued_ns=self.inputGate[2].value or None,
+            gate_opened_ns=self.openedNs, subscribed=count,
+            painted=sum(index in self.paints for index in range(2)))
+        try:
+            with (output / "startup-readiness-detail.json").open("x", encoding="ascii") as f:
+                json.dump(payload, f, sort_keys=True, separators=(",", ":"))
+        except OSError:
+            # Additional diagnostics must never replace an original trial failure.
+            pass
+
     def release(self, app, clients, windows, runtimeId):
+        self.mark("owner_release_entered")
         deadline = time.monotonic() + STARTUP_SECONDS
         while time.monotonic() < deadline:
             app.processEvents()
@@ -99,6 +121,11 @@ class StartupReadiness:
                         and not client.records and not client.errors)
             with self.lock:
                 subscribed = len(self.subscriptions) == 2
+            if self.diagnostic is not None:
+                self.diagnostic["last_poll"] = dict(
+                    at_ns=time.perf_counter_ns(), connected=connected,
+                    subscribed=subscribed, worker_entered=bool(self.inputGate[1].value),
+                    painted=len(self.paints), visible=sum(w.isVisible() for w in windows))
             if (len(connected) == 2 and all(connected) and subscribed and self.inputGate[1].value
                     and len(windows) == 2 and len(self.paints) == 2 and all(w.isVisible() for w in windows)):
                 self.clientsReadyNs = time.perf_counter_ns()
@@ -106,6 +133,7 @@ class StartupReadiness:
                 self.inputGate[0].set()
                 return
             time.sleep(.003)
+        self.mark("owner_release_expired")
         raise TimeoutError("measurement startup readiness incomplete")
 
     def report(self):
@@ -440,6 +468,8 @@ def normalTrial(root, arm, count, warmup, app, startup=None, hubProbe=None):
             raise RuntimeError(loaded.message)
         request = buildStartRequest(project.project.projectId, arm, capabilities.runtime_instance_id, uuid4().hex)
         stamps["start_request_ns"] = time.perf_counter_ns()
+        if startup is not None:
+            startup.mark("start_rpc_called")
         reply = stub.StartJob(request, timeout=10)
         stamps["start_reply_ns"] = time.perf_counter_ns()
         if not reply.ok or not reply.job_id or reply.legacy_snapshot_policy != ARM_SPECS[arm]["policy"]:
@@ -447,8 +477,11 @@ def normalTrial(root, arm, count, warmup, app, startup=None, hubProbe=None):
         job = reply.job_id
         if startup is not None:
             startup.job = job
+            startup.mark("start_rpc_returned")
         if ARM_SPECS[arm]["capture"]:
             clients = [base.MeasuredSession(address, job) for _ in range(2)]
+            if startup is not None:
+                startup.mark("clients_constructed")
             if hubProbe is None:
                 hub = DisplayHub(clients[0])
             else:
@@ -465,6 +498,8 @@ def normalTrial(root, arm, count, warmup, app, startup=None, hubProbe=None):
                 window.move(screen.x()+index*(width+10), screen.y()+20)
                 window.show()
             windows[1].navigate("detail")
+            if startup is not None:
+                startup.mark("windows_shown")
         lastData, lastUi = [None]*len(clients), [None]*len(windows)
         nextSample = 0
         nextNative = 0
@@ -623,7 +658,7 @@ def executeTrial(args):
         filePhases = FileSubphases(limit=2048)
     creditTrace = None
     creditTraceSummary = None
-    startup = StartupReadiness() if getattr(args, "startup_barrier", False) else None
+    startup = StartupReadiness(observe=os.environ.get("EMO_CREDIT_STARTUP_DETAIL") == "1") if getattr(args, "startup_barrier", False) else None
     if getattr(args, "asset_split_trace", False):
         from scripts.r3_asset_split_trace import AssetSplitTrace, installed
         assetTrace = AssetSplitTrace(passive_markers=getattr(args, "passive_rpc_markers", False))
@@ -695,6 +730,16 @@ def executeTrial(args):
             (args.output / "owners-closed.json").write_text(json.dumps({
                 "all_original_trial_close_calls_returned": True}), encoding="utf-8")
     finally:
+        if startup is not None:
+            detailRoot = os.environ.get("EMO_CREDIT_STARTUP_DETAIL_DIRECTORY")
+            if detailRoot and startup.diagnostic is not None:
+                target = Path(detailRoot)
+                if target.is_absolute() and target.is_dir():
+                    # Outside work-trial only for the focused probe: the stock
+                    # supervisor deletes successful work-trial directories.
+                    startup.saveDiagnostic(target)
+            else:
+                startup.saveDiagnostic(args.output / "work-trial")
         if retainedBytes is not None:
             retainedBytes.save()
         if creditTrace is not None:

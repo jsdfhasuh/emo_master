@@ -19,6 +19,9 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
+          sparse-checkout: |
+            scripts/ci_cutover
+            openspec
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
         with:
           node-version: '22.22.0'

@@ -630,8 +630,18 @@ def executeTrial(args):
     if getattr(args, "export_credit_trace", False):
         from scripts.r3_export_credit_trace import ExportCreditTrace, installed as creditInstalled
         creditTrace = ExportCreditTrace()
+    retainedBytes = None
+    retainRoot = os.environ.get("EMO_CREDIT_RETAIN_BYTES")
+    if retainRoot:
+        if not (args.child and args.arm == "none_qt" and args.count == 96 and args.warmup == 8):
+            raise ValueError("byte retention requires one original Credit ABBA diagnostic child")
+        from scripts.r3_credit_retain_bytes import RetainBytes
+        from emo_master.apps.runtime.presentation.assets import AssetStore
+        retainedBytes = RetainBytes(Path(retainRoot), args.output.name)
     try:
         with base.patches() as patch:
+            if retainedBytes is not None:
+                patch(AssetStore, "adopt", retainedBytes.wrap(AssetStore.adopt))
             patch(supervisor, "runJobProcess", partial(measuredJob, inputGate=startup.inputGate) if startup else measuredJob)
             if startup is not None:
                 from emo_master.apps.runtime.presentation.rpc import DisplayRpc
@@ -685,6 +695,8 @@ def executeTrial(args):
             (args.output / "owners-closed.json").write_text(json.dumps({
                 "all_original_trial_close_calls_returned": True}), encoding="utf-8")
     finally:
+        if retainedBytes is not None:
+            retainedBytes.save()
         if creditTrace is not None:
             try:
                 creditTraceSummary = creditTrace.save(args.output / "export-credit.json")

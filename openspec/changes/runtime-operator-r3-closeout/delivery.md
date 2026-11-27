@@ -68,3 +68,7 @@ python -m tests.ui.operator_view.native_runtime_r3_closeout_probe --output D:/tm
 常规 GitHub CI 的 PR 触发目标为 `main`。本次 PR 以 R3 分支为目标，未启动全量 CI 矩阵。人工桌面验收、真实硬件、现场工程、冻结包、Web 和发布未执行。
 
 后续交付提交只包含 OpenSpec 状态、记录和截图。核对被测提交与交付提交之间的 `src` 和 `tests` 无差异。
+
+## GitHub 交付
+
+PR 以 `codex/runtime-overall-r3` 为目标。创建时 GitHub 返回 `MERGEABLE` 和 `CLEAN`，未返回远端检查。独立源码复核和定向验证未发现合并阻塞。[PR #27](https://github.com/jsdfhasuh/emo_master/pull/27) · [Codex 验证评论](https://github.com/jsdfhasuh/emo_master/pull/27#issuecomment-7216761871)

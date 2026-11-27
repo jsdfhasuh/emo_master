@@ -24,6 +24,7 @@ class DeviceManagementDialog(QDialog):
         layout.setSpacing(10)
         devices = QGroupBox('设备状态与控制')
         deviceLayout = QVBoxLayout(devices)
+        deviceLayout.setSpacing(7)
         self.status = QLabel('选择设备后查看当前 Runtime 中的状态与日志')
         self.status.setWordWrap(True)
         self.status.setProperty('operatorRole', 'hint')
@@ -50,10 +51,19 @@ class DeviceManagementDialog(QDialog):
         self.business = QPushButton('业务动作')
         self.business.clicked.connect(self.managementAction)
         row.addWidget(self.business)
+        row.addStretch()
+        self.actions['recover'].setProperty('operatorRole', 'caution')
         self.detail = QTextBrowser()
+        self.detail.setAccessibleName('设备状态数据')
+        self.detail.setProperty('operatorRole', 'path')
         from emo_master.ui.communication_panel import TcpChannelStatusTable, DeviceDiagnosticsView
         self.channelStatus = TcpChannelStatusTable()
         self.diagnostics = DeviceDiagnosticsView()
+        self.diagnostics.notice.setProperty('operatorRole', 'hint')
+        self.diagnostics.records.setColumnWidth(0, 96)
+        self.diagnostics.records.setColumnWidth(1, 166)
+        self.diagnostics.records.setColumnWidth(2, 110)
+        self.diagnostics.records.setAlternatingRowColors(True)
         from emo_master.ui.communication_panel import exportDeviceCache
         self.diagnostics.exportRequested.connect(lambda: exportDeviceCache(self.diagnostics))
         self.diagnostics.runtimeLogsRequested.connect(self.openRuntimeLogs)
@@ -169,9 +179,7 @@ class DeviceManagementDialog(QDialog):
     def openRuntimeLogs(self):
         host = self.parent()
         if host is not None and hasattr(host, 'showLogs'):
-            host.showLogs()
-            if hasattr(host, 'logView'):
-                host.logView.setDevice(self.selector.currentData() or '')
+            host.showLogs(deviceId=self.selector.currentData() or '')
             self.hide()
         else:
             self.status.setText('请从 Runtime 本机日志窗口查看所选设备的持久化文件记录。')

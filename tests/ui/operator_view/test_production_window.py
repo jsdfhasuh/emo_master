@@ -264,7 +264,7 @@ try:
     window.showLogs()
     logs = window.logView
     job = window.controller.jobId
-    QTest.mouseClick(logs.sources, Qt.LeftButton, pos=logs.sources.tabRect(0).center())
+    assert logs.sources.currentIndex() == 0
     wait(lambda: any(row.job_id == job for row in logs.jobLogs.recent))
     QTest.mouseClick(logs.sources, Qt.LeftButton, pos=logs.sources.tabRect(1).center())
     wait(lambda: logs.systemLogs.page is not None and logs.systemLogs.page['ok'])

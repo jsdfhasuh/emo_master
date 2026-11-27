@@ -1,6 +1,6 @@
 """Operator source navigation and export against the real Runtime log query."""
 import json
-from threading import Event
+from threading import Event, current_thread
 
 import grpc
 from PySide2.QtCore import Qt
@@ -9,9 +9,11 @@ from PySide2.QtWidgets import QFileDialog, QPushButton, QTreeWidgetItemIterator
 
 from emo_master.apps.operator_runtime.main import OperatorWindow
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
+from emo_master.clients.runtime.global_logs import RuntimeGlobalLogs
 from tests.runtime.current_production_fixture import currentProductionProject
 from tests.ui.operator_view.test_production_window import closeWindow, preferences
 from tests.ui.operator_view.test_run_view_selection import remoteStart
+from tests.ui.operator_view.test_runtime_log_view import waitMs
 from tests.ui.operator_view.test_view import waitFor
 
 
@@ -74,9 +76,11 @@ def testOperatorRuntimeSourcesAndExactExportScopes(qtApp, tmp_path, monkeypatch)
         allFirst = {row.event_id for row in rows(job_id=first)}
         assert ids['r3-owned-204'] in allFirst and ids['r3-system-only'] not in allFirst
 
-        window.showLogs()
         logs = window.logView
-        assert logs.sources.count() == 3 and logs.sources.tabText(2) == '本机 JSONL'
+        assert logs.sources.count() == 3 and logs.sources.currentIndex() == 0
+        window.showSettings()
+        QTest.mouseClick(window.startupPage.allLogsButton, Qt.LeftButton)
+        assert window.contentStack.currentWidget() is logs and logs.sources.currentIndex() == 0
         queryService = service.QueryRuntimeLogs
         systemPages = []
 
@@ -129,6 +133,8 @@ def testOperatorRuntimeSourcesAndExactExportScopes(qtApp, tmp_path, monkeypatch)
         assert {entry['eventId'] for entry in filtered['entries']} == matching
         assert filtered['entryCount'] == len(matching)
         jobs.level.setCurrentIndex(warn)
+        QTest.mouseClick(jobs.clearFilters, Qt.LeftButton)
+        assert jobs.level.currentIndex() == 0 and logs.sources.currentIndex() == 0
 
         query = logs.runtimeLogs.client.queryRuntimeLogs
         pages = []
@@ -155,6 +161,9 @@ def testOperatorRuntimeSourcesAndExactExportScopes(qtApp, tmp_path, monkeypatch)
             QTest.mouseClick(returnToJobs, Qt.LeftButton)
             openCatalogJob(jobs, second)
             assert jobs.exportCancel.isVisible() and not jobs.exportButton.isEnabled()
+            window.showSettings()
+            waitFor(lambda: logs.runtimeLogs.reader is None)
+            assert logs.runtimeLogs.export[1].is_active() and not logs.runtimeLogs.export[2].is_set()
         finally:
             releasePage.set()
         waitFor(lambda: wholePath.is_file() and logs.runtimeLogs.export is None)
@@ -174,6 +183,132 @@ def testOperatorRuntimeSourcesAndExactExportScopes(qtApp, tmp_path, monkeypatch)
         closeWindow(window)
 
 
+def testJobReaderStopsAndResumesFromDeliveredCursor(qtApp, tmp_path, monkeypatch):
+    path, document = currentProductionProject(tmp_path / 'project')
+    window = OperatorWindow(path, dataRoot=tmp_path / 'data', preferences=preferences(tmp_path))
+    window.show()
+    reached, release = Event(), Event()
+    bootstrapReady, releaseBootstrap = Event(), Event()
+    try:
+        waitFor(lambda: window.error or (window.pages is not None and not window.busy), seconds=60)
+        assert not window.error
+        service = window.controller.runtime
+        with grpc.insecure_channel(window.controller.address) as channel:
+            job = remoteStart(window, channel)
+            waitFor(lambda: service.jobRepository.get(job).isTerminal
+                    and not service.jobSupervisor.ownsJobResources(job), seconds=60)
+        assert window.contentStack.currentWidget() is window.businessHost
+        query, publish = service.QueryRuntimeLogs, RuntimeGlobalLogs._publish
+        calls, bootstrapUpper = [], []
+
+        def observeQuery(request, context):
+            reply = query(request, context)
+            if current_thread().name == 'runtime-global-logs':
+                calls.append((request.runtime_instance_id, request.after_event_id))
+                if len(calls) == 1:
+                    bootstrapUpper.append(reply.upper_event_id)
+                    bootstrapReady.set()
+                    assert releaseBootstrap.wait(10)
+            return reply
+
+        def append(label):
+            service.eventStore.append(job, 'node.log', label, projectId=document.project.projectId, workflowId='main')
+
+        monkeypatch.setattr(service, 'QueryRuntimeLogs', observeQuery)
+        logs = window.logView
+        host, jobs = logs.runtimeLogs, logs.jobLogs
+        window.showCommunication()
+        dialog = window.communicationDialog
+        dialog.selector.addItem('模拟验收设备', 'software-device')
+        dialog.selector.setCurrentIndex(dialog.selector.findData('software-device'))
+        dialog.diagnostics.setPage({'deviceId': 'software-device'})
+        QTest.mouseClick(dialog.diagnostics.runtimeLogsButton, Qt.LeftButton)
+        assert logs.sources.currentIndex() == 2 and logs.deviceId == 'software-device' and not dialog.isVisible()
+        assert host.reader is None and not calls
+
+        jobs.search.setText('过期的 Job 筛选')
+        logs.levelCombo.setCurrentIndex(1)
+        window.showSettings()
+        QTest.mouseClick(window.startupPage.allLogsButton, Qt.LeftButton)
+        assert logs.sources.currentIndex() == 0 and not jobs.search.text()
+        assert logs.levelCombo.currentIndex() == 0 and not logs.deviceId
+        waitFor(bootstrapReady.is_set)
+        clickTab(logs, 2)
+        append('closeout-created-during-bootstrap-pause')
+        releaseBootstrap.set()
+        waitFor(lambda: host.reader is None)
+        assert host._delivery == (service.runtimeInstanceId, bootstrapUpper[0])
+        clickTab(logs, 0)
+        waitFor(lambda: host._delivery[1] > bootstrapUpper[0] and any(row.job_id == job for row in jobs.recent))
+        assert calls[1] == (service.runtimeInstanceId, bootstrapUpper[0])
+        openCatalogJob(jobs, job)
+        before = jobs.window
+        jobs.mode.setCurrentIndex(1)
+        confirmed = host._delivery
+
+        def holdProgress(reader, kind, value):
+            if kind == 'progress' and value[1] > confirmed[1] and not reached.is_set():
+                reached.set()
+                assert release.wait(10)
+            return publish(reader, kind, value)
+
+        monkeypatch.setattr(RuntimeGlobalLogs, '_publish', holdProgress)
+        append('closeout-delivered-before-pause')
+        waitFor(reached.is_set)
+        waitFor(lambda: any(row.message == 'closeout-delivered-before-pause' for row in before.entries))
+        entry = next(row for row in before.entries if row.message == 'closeout-delivered-before-pause')
+        key = ('event', entry.eventId)
+        waitFor(lambda: key in jobs._items)
+        jobs.events.setCurrentItem(jobs._items[key])
+        assert jobs._detailEntry.eventId == entry.eventId
+
+        first = host.reader
+        clickTab(logs, 1)
+        assert first.stop.is_set() and not first.context.is_active()
+        clickTab(logs, 0)
+        waitMs(100)
+        assert host.reader is first and first.thread.is_alive()
+        assert host._delivery == confirmed
+        append('closeout-created-during-retirement')
+        nextCall = len(calls)
+        release.set()
+        waitFor(lambda: host.reader is not first and len(calls) > nextCall and before.newCount == 1)
+        assert not first.thread.is_alive() and calls[nextCall] == confirmed
+        assert jobs.window is before and jobs._detailEntry.eventId == entry.eventId
+        assert sum(row.eventId == entry.eventId for row in before.entries) == 1
+
+        clickTab(logs, 2)
+        waitFor(lambda: host.reader is None and not host.timer.isActive())
+        stoppedCalls = len(calls)
+        append('closeout-created-in-jsonl')
+        waitMs(550)
+        assert len(calls) == stoppedCalls
+        clickTab(logs, 0)
+        waitFor(lambda: before.newCount == 2)
+
+        QTest.mouseClick(window.backButton, Qt.LeftButton)
+        assert window.contentStack.currentWidget() is window.businessHost
+        waitFor(lambda: host.reader is None and not host.timer.isActive())
+        stoppedCalls = len(calls)
+        append('closeout-created-in-production')
+        waitMs(550)
+        assert len(calls) == stoppedCalls
+        QTest.mouseClick(window.logsButton, Qt.LeftButton)
+        waitFor(lambda: before.newCount == 3)
+        assert logs.sources.currentIndex() == 0 and jobs.window is before and jobs._detailEntry.eventId == entry.eventId
+        latest = next(button for button in jobs.jobPage.findChildren(QPushButton) if button.text() == '返回最新')
+        QTest.mouseClick(latest, Qt.LeftButton)
+        waitFor(lambda: not jobs._opening)
+        assert [row.message for row in jobs.window.entries if row.message.startswith('closeout-')] == [
+            'closeout-created-during-bootstrap-pause', 'closeout-delivered-before-pause', 'closeout-created-during-retirement',
+            'closeout-created-in-jsonl', 'closeout-created-in-production',
+        ]
+    finally:
+        releaseBootstrap.set()
+        release.set()
+        closeWindow(window)
+
+
 def testCloseCancelsInFlightSystemQueryAndWaitsForItsRetirement(qtApp, tmp_path, monkeypatch):
     window = OperatorWindow(dataRoot=tmp_path / 'data', preferences=preferences(tmp_path))
     window.show()
@@ -187,9 +322,10 @@ def testCloseCancelsInFlightSystemQueryAndWaitsForItsRetirement(qtApp, tmp_path,
 
         def inFlight(request, context):
             reply = query(request, context)
-            calls.append(context)
-            entered.set()
-            assert release.wait(10)
+            if current_thread().name != 'runtime-global-logs':
+                calls.append(context)
+                entered.set()
+                assert release.wait(10)
             return reply
 
         monkeypatch.setattr(service, 'QueryRuntimeLogs', inFlight)

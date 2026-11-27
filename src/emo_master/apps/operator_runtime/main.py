@@ -45,8 +45,10 @@ class OperatorWindow(QWidget):
         self.setStyleSheet(f"""
             #operatorWindow {{ background: {LIGHT_THEME['page']}; }}
             #operatorBack {{ color: {LIGHT_THEME['text']}; background: {LIGHT_THEME['surface']};
-                border: 1px solid {LIGHT_THEME['border']}; border-radius: 6px; padding: 5px 10px; }}
-            #operatorBack:hover, #operatorBack:focus {{ border-color: {LIGHT_THEME['primary']}; }}
+                border: 1px solid {LIGHT_THEME['border']}; border-radius: 5px; padding: 4px 10px; min-height: 20px; }}
+            #operatorBack:hover, #operatorBack:focus {{ color: {LIGHT_THEME['primary']};
+                border-color: {LIGHT_THEME['primary']}; }}
+            #operatorBack:pressed {{ background: {LIGHT_THEME['soft']['blue']}; }}
         """)
         self.resize(1060, 800)
         self.preferences = preferences or QSettings("EmoMaster", "Runtime")
@@ -89,6 +91,7 @@ class OperatorWindow(QWidget):
         layout.addWidget(self.technicalHost)
         self.hostLayout = layout
         header = QHBoxLayout()
+        header.setSpacing(8)
         title = QLabel("EmoMaster Runtime")
         title.setProperty("operatorRole", "title")
         header.addWidget(title)
@@ -101,17 +104,22 @@ class OperatorWindow(QWidget):
         header.addWidget(self.projectLabel, 1)
         self.settingsButton = self._button("Runtime 设置", QStyle.SP_FileDialogDetailedView, self.showSettings)
         self.logsButton = self._button("查看日志", QStyle.SP_FileDialogContentsView, self.showLogs)
+        self.settingsButton.setProperty("operatorRole", "quiet")
+        self.logsButton.setProperty("operatorRole", "quiet")
         header.addWidget(self.settingsButton)
         header.addWidget(self.logsButton)
         technical.addLayout(header)
         toolbar = QHBoxLayout()
+        toolbar.setSpacing(7)
         self.openButton = self._button("选择工程", QStyle.SP_DirOpenIcon, self.chooseProject)
+        self.openButton.setProperty("operatorRole", "primary")
         self.reloadButton = self._button("重新加载", QStyle.SP_BrowserReload, self.reloadProject)
         self.updateButton = self._button("更新工程", QStyle.SP_DialogSaveButton, self.choosePackage)
         self.targetsButton = self._button("运行目标…", QStyle.SP_FileDialogListView, self.chooseTargets)
         self.startButton = self._button("开始", QStyle.SP_MediaPlay, self.startDetection)
         self.stopButton = self._button("停止", QStyle.SP_MediaStop, self.stopDetection)
         self.communicationButton = self._button("设备状态与控制…", QStyle.SP_ComputerIcon, self.showCommunication)
+        self.communicationButton.setProperty("operatorRole", "quiet")
         self.viewRunsButton = self._button("查看已有运行…", QStyle.SP_FileDialogContentsView, self.viewRun)
         self.returnRunButton = self._button('返回运行页面', QStyle.SP_ArrowBack, self.returnToCurrentRun)
         self.viewingLabel = QLabel()
@@ -122,6 +130,7 @@ class OperatorWindow(QWidget):
         self.viewingLabel.hide()
         for button in (self.openButton, self.reloadButton, self.updateButton, self.targetsButton):
             toolbar.addWidget(button)
+        toolbar.addStretch()
         technical.addLayout(toolbar)
         self.hostRunActions = QWidget()
         self.hostControls = QHBoxLayout(self.hostRunActions)
@@ -146,6 +155,7 @@ class OperatorWindow(QWidget):
         applyOperatorTheme(self.technicalHost, "operatorTechnical", surface='surface', shell=True)
         self.backButton = self._button("返回", QStyle.SP_ArrowBack, self.backFromTool)
         self.backButton.setObjectName("operatorBack")
+        self.backButton.setFont(self.technicalHost.font())
         self.backButton.hide()
         layout.addWidget(self.backButton, 0, Qt.AlignLeft)
         self.contentStack = QStackedWidget()
@@ -178,7 +188,7 @@ class OperatorWindow(QWidget):
         self.logFeed.applicationWriter = self.applicationLogWriter
         self.initializationFailed = False
         self.startupPage.retryButton.hide()
-        self.startupPage.failureLabel.clear()
+        self.startupPage.failureLabel.setText("")
         self.error = ""
         self.message.setText("正在准备 Runtime")
         self._diagnostic("operator.storage.resolved", "本次启动目标目录：" + str(self.resolution.path),
@@ -287,9 +297,13 @@ class OperatorWindow(QWidget):
     def showSettings(self):
         self._showTool(self.startupPage)
 
-    def showLogs(self, checked=False, *, resetFilter=False):
-        if resetFilter:
+    def showLogs(self, checked=False, *, resetFilter=False, deviceId=None):
+        if deviceId is not None:
+            self.logView.setDevice(deviceId)
+        elif resetFilter:
             self.logView.resetFilter()
+        else:
+            self.logView.sources.setCurrentIndex(0)
         self._showTool(self.logView)
 
     def backFromTool(self):

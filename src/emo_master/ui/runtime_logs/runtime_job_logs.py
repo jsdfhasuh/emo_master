@@ -332,7 +332,7 @@ class RuntimeJobLogs(QWidget):
         self.rangeStatus = _label()
         filterStatus = QHBoxLayout()
         filterStatus.addWidget(self.rangeStatus, 1)
-        self.clearFilters = _button(filterStatus, "清除筛选", self._resetFilters)
+        self.clearFilters = _button(filterStatus, "清除筛选", self.resetFilters)
         self.clearFilters.hide()
         panel.addLayout(filterStatus)
 
@@ -871,7 +871,7 @@ class RuntimeJobLogs(QWidget):
             self.exportFeedback("", False)
         self.filters.hide()
         self.technicalToggle.setChecked(False)
-        self._resetFilters()
+        self.resetFilters()
         self.mode.setCurrentIndex(0)
         if restore is not None:
             self._restoreFilters(restore["filters"])
@@ -1192,7 +1192,7 @@ class RuntimeJobLogs(QWidget):
         self._toggleTechnicalFilters(state["technical"])
         self._scheduleRender()
 
-    def _resetFilters(self):
+    def resetFilters(self):
         self._restoreFilters(dict(values={}, search="", warning=False, level=0, draft=(None, None), dates=(None, None),
                                   advanced=not self.filters.isHidden(), technical=self.technicalToggle.isChecked()))
 

@@ -232,6 +232,8 @@ class RuntimeLogView(QWidget):
         self.deviceId = ""
         localFiles = QWidget()
         layout = QVBoxLayout(localFiles)
+        layout.setContentsMargins(9, 6, 9, 6)
+        layout.setSpacing(4)
         row = QHBoxLayout()
         self.fileCombo = QComboBox()
         self.fileCombo.setMinimumContentsLength(16)
@@ -349,10 +351,11 @@ class RuntimeLogView(QWidget):
         self.runtimeLogs.finishClose()
 
     def resetFilter(self):
-        self.sources.setCurrentIndex(2)
+        self.jobLogs.resetFilters()
         self.deviceId = ""
         self.levelCombo.setCurrentIndex(0)
         self.render()
+        self.sources.setCurrentIndex(0)
 
     def setDevice(self, deviceId):
         self.sources.setCurrentIndex(2)

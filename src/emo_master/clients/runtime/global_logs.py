@@ -35,7 +35,7 @@ class RuntimeGlobalLogs:
 
     def _notice(self, level, code, message, **payload):
         self._publish("local", dict(level=level, code=code, message=message,
-            eventType="designer.runtime_logs.connection", component="runtime_client", payload=payload))
+            eventType="runtime.logs.connection", component="runtime_client", payload=payload))
 
     def _query(self, request):
         method = getattr(self.service, "QueryRuntimeLogs", None)
@@ -67,7 +67,8 @@ class RuntimeGlobalLogs:
                     if upper is not None and not initial:
                         request.upper_event_id = upper
                     reply = self._query(request)
-                    if self.stop.is_set():
+                    # Retain a successful first snapshot if a pause raced its reply.
+                    if self.stop.is_set() and (not initial or not reply.ok):
                         return
                     if not reply.ok:
                         if reply.code == "RESET_REQUIRED":
@@ -138,13 +139,18 @@ class RuntimeGlobalLogs:
     def unsupported(self):
         return self.supported is False
 
-    def close(self):
+    def requestStop(self):
+        if self.stop.is_set():
+            return
         self.stop.set()
         self.context.cancel()
         with self.lock:
             cancel = getattr(self.stream, "cancel", None)
             if callable(cancel):
                 cancel()
+
+    def close(self):
+        self.requestStop()
         self.thread.join(6)
         if self.thread.is_alive():
             raise TimeoutError("Runtime 日志查询尚未结束")

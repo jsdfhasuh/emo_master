@@ -161,7 +161,7 @@ class GitHub:
                      p.get("required_status_checks") is None and
                      (p.get("lock_branch") or {}).get("enabled") is not True,"ledger not appendable")
         need(type(contexts) is tuple and 0<len(contexts)<=8 and len(set(contexts))==len(contexts) and
-             all(type(c) is str and re.fullmatch(r"emo-ci-shadow/[a-z0-9][a-z0-9/_-]{0,80}",c) for c in contexts),
+             all(type(c) is str and not c.startswith("emo-ci-shadow/dispatch/") and re.fullmatch(r"emo-ci-shadow/[a-z0-9][a-z0-9/_-]{0,80}",c) for c in contexts),
              "only optional allowlisted staging contexts are supported")
         self._contexts=frozenset(contexts)
         self._writer_id=actor_id

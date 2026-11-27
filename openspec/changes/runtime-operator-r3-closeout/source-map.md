@@ -44,3 +44,7 @@
     1060×800](https://github.com/jsdfhasuh/emo_master/blob/1f35861a22f4e5bd553fe210db989e28c3c4a0d1/openspec/changes/archive/2026-11-27-runtime-platform-overall-v1/verification/native-qt/04-job-log-workbench.png)
 -   [设备管理
     920×620](https://github.com/jsdfhasuh/emo_master/blob/1f35861a22f4e5bd553fe210db989e28c3c4a0d1/openspec/changes/archive/2026-11-27-runtime-platform-overall-v1/verification/native-qt/05-device-controls.png)
+
+## 收尾复验入口
+
+`tests/ui/operator_view/native_runtime_r3_closeout_probe.py` 复用 R3 软件工程和操作辅助函数，记录真实入口、游标、设备和生产控制的原生 Qt 走查。命令和截图见 [交付记录](delivery.md)。

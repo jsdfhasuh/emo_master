@@ -4,7 +4,7 @@
 **目标基线：**
 `codex/runtime-overall-r3@1f35861a22f4e5bd553fe210db989e28c3c4a0d1`\
 **性质：** R3 已归档 Change 的小范围后续补充；不重开、不覆盖原 R3。\
-**状态：** 实施中。任务进度见 [tasks.md](tasks.md)，验收结果见 [acceptance.md](acceptance.md)。
+**状态：** 源码与 Windows 原生 Qt 已验收。见 [任务](tasks.md)、[验收](acceptance.md)和[交付记录](delivery.md)。
 
 ## 本补充只处理四件事
 

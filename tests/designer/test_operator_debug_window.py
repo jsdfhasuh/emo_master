@@ -16,7 +16,7 @@ from emo_master.apps.designer.operator_editors import EditorContext, EditorKey
 from emo_master.apps.designer.operator_editors.workspace_window import OperatorWorkspaceWindow
 from emo_master.apps.designer.services.operator_debug import DebugConnection
 from emo_master.apps.designer.services.runtime_client import RuntimeClient
-from emo_master.apps.designer.ui import log_json_tree
+from emo_master.ui.runtime_logs import log_json_tree
 from emo_master.apps.designer.ui.log_record_detail import LogRecordDetail
 from emo_master.apps.designer.ui.operator_debug_window import OperatorDebugWindow
 from emo_master.apps.designer.ui.debug_values import InputRow, ValueTree

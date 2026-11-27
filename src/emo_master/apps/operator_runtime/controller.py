@@ -13,7 +13,7 @@ from emo_master.apps.runtime.grpc_server.aio_entry import AioRuntimeServer
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
 from emo_master.apps.runtime.grpc_server.service import RuntimeService
 from emo_master.apps.runtime.presentation.service import PresentationService
-from emo_master.apps.runtime.jobs.read_model import currentRuns, runState
+from emo_master.apps.runtime.jobs.read_model import currentRuns, runState, startAvailability
 from emo_master.core.project.models import ProductionSettings
 from emo_master.core.project.delivery_store import DirectoryOwner
 from emo_master.core.presentation.workflow_view import presentationForWorkflow
@@ -267,7 +267,7 @@ class ProductionRuntime:
             if any(key not in self.workflows for key in keys):
                 raise ValueError("workflow not found")
             states = {key: self.status(key) for key in keys}
-            additional = sum(1 for state in states.values() if state["canStart"])
+            additional = sum(1 for state in states.values() if state["hostCanStart"])
             limit = self.runtime.jobSupervisor.maxConcurrentJobs
             if limit is not None and self.runtime.jobSupervisor.activeCount() + additional > limit:
                 raise ValueError(f"E_MAX_CONCURRENT_JOBS: selected batch exceeds limit {limit}")
@@ -288,7 +288,13 @@ class ProductionRuntime:
             revision = (self.runtime.projectConfiguration.current or {}).get('documentRevision')
             if self.document is None:
                 return dict(state="EMPTY", jobId="", message="", canStart=False, canLoad=True, workflows={},
-                            runtimeConnected=not self.closed, runCatalog=[])
+                            workflowStart={}, runtimeConnected=not self.closed, runCatalog=[])
+            if workflowId is not None:
+                workflowId = self._workflowId(workflowId)
+            with self.runtime._projectStateLock:
+                availability = {key: startAvailability(self.runtime, key)
+                                if self.runtime.loadedDocument is self.document else (False, 'E_CONFIG_NOT_READY')
+                                for key in self.workflows}
             runs = currentRuns(self.runtime, self.document.project.projectId, includeTerminal=True)
             for run in runs:
                 if run.active and not run.target_slot_id and run.workflow_id in self.workflows:
@@ -296,20 +302,28 @@ class ProductionRuntime:
             catalog = [dict(workflowId=run.workflow_id, jobId=run.job_id, state=run.status, active=run.active,
                 runGroupId=run.run_group_id, sourceJobId=run.source_job_id, targetSlotId=run.target_slot_id,
                 resourcesReleased=not run.owns_resources, message=run.message) for run in runs]
+            workflowStart = {key: dict(canStart=allowed, startBlockReason=reason)
+                             for key, (allowed, reason) in availability.items()}
+            sessionKeys = [workflowId] if workflowId is not None else self.sessions
+            rows = {key: self._workflowStatus(key) for key in sessionKeys}
+            for key, row in rows.items():
+                runtimeCanStart, startBlockReason = availability[key]
+                row.update(hostCanStart=row['canStart'], startBlockReason=startBlockReason)
+                row['canStart'] = workflowStart[key]['canStart'] = row['canStart'] and runtimeCanStart
             if workflowId is not None or len(self.sessions) == 1:
-                key = self._workflowId(workflowId if workflowId is not None else next(iter(self.sessions)))
-                state = self._workflowStatus(key)
+                key = workflowId if workflowId is not None else next(iter(self.sessions))
+                state = dict(rows[key])
                 if workflowId is None:
-                    state["workflows"] = {key: dict(state)}
+                    state["workflows"] = rows
+                state["workflowStart"] = workflowStart
                 state["pagePublicationRevision"] = self._pagePublicationRevision()
                 state['documentRevision'] = revision
                 state["runtimeConnected"] = not self.closed
                 state['runCatalog'] = catalog
                 return state
-            rows = {key: self._workflowStatus(key) for key in self.sessions}
             states = {row["state"] for row in rows.values()}
             state = next((s for s in ("FAULT", "STOPPING", "RUNNING", "READY") if s in states), "READY")
-            return dict(state=state, jobId="", workflows=rows, runCatalog=catalog,
+            return dict(state=state, jobId="", workflows=rows, workflowStart=workflowStart, runCatalog=catalog,
                 documentRevision=revision,
                 runtimeConnected=not self.closed,
                 pagePublicationRevision=self._pagePublicationRevision(),

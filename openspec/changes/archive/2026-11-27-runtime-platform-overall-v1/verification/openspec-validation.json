@@ -1,0 +1,112 @@
+{
+  "description": "R2 OpenSpec plan validation; not product tests",
+  "attempts": [
+    {
+      "cli_version": "2.2.0",
+      "node_version": "v24.22.3",
+      "command": "openspec validate runtime-platform-overall-v1 --strict --no-interactive --json",
+      "exit_code": 1,
+      "stderr": "",
+      "validation_workspace": "/workspace/scratch/7cd190e61da4/r2-validation-workspace",
+      "change_directory": "/workspace/scratch/7cd190e61da4/r2-plan/runtime-platform-overall-v1",
+      "product_test_run": false,
+      "parsed_stdout": {
+        "status": [
+          {
+            "severity": "error",
+            "code": "unknown_item",
+            "message": "Unknown item 'runtime-platform-overall-v1'. Did you mean: runtime-log-workbench?"
+          }
+        ]
+      }
+    },
+    {
+      "cli_version": "2.2.0",
+      "command": "openspec validate runtime-platform-overall-v1 --strict --no-interactive --json",
+      "exit_code": 1,
+      "stderr": "",
+      "validation_workspace": "/workspace/scratch/7cd190e61da4/r2-validation-workspace",
+      "change_directory": "/workspace/scratch/7cd190e61da4/r2-validation-workspace/openspec/changes/runtime-platform-overall-v1",
+      "product_test_run": false,
+      "parsed_stdout": {
+        "items": [
+          {
+            "id": "runtime-platform-overall-v1",
+            "type": "change",
+            "valid": false,
+            "issues": [
+              {
+                "level": "WARNING",
+                "path": "runtime-log-workbench/spec.md",
+                "message": "ADDED \"Shared workbench modules do not depend on the Designer application\": Requirement text is very long (>500 characters). Move examples and edge cases into scenarios, or split it into separate requirements that each state one behavior."
+              },
+              {
+                "level": "WARNING",
+                "path": "runtime-log-workbench/spec.md",
+                "message": "ADDED \"Runtime log reading uses one source and preserves live cursor behavior\": Requirement text is very long (>500 characters). Move examples and edge cases into scenarios, or split it into separate requirements that each state one behavior."
+              }
+            ],
+            "durationMs": 58
+          }
+        ],
+        "summary": {
+          "totals": {
+            "items": 1,
+            "passed": 0,
+            "failed": 1
+          },
+          "byType": {
+            "change": {
+              "items": 1,
+              "passed": 0,
+              "failed": 1
+            }
+          }
+        },
+        "version": "1.0",
+        "root": {
+          "path": "/workspace/scratch/7cd190e61da4/r2-validation-workspace",
+          "source": "nearest"
+        }
+      }
+    },
+    {
+      "cli_version": "2.2.0",
+      "command": "openspec validate runtime-platform-overall-v1 --strict --no-interactive --json",
+      "exit_code": 0,
+      "stderr": "",
+      "validation_workspace": "/workspace/scratch/7cd190e61da4/r2-validation-workspace",
+      "product_test_run": false,
+      "parsed_stdout": {
+        "items": [
+          {
+            "id": "runtime-platform-overall-v1",
+            "type": "change",
+            "valid": true,
+            "issues": [],
+            "durationMs": 51
+          }
+        ],
+        "summary": {
+          "totals": {
+            "items": 1,
+            "passed": 1,
+            "failed": 0
+          },
+          "byType": {
+            "change": {
+              "items": 1,
+              "passed": 1,
+              "failed": 0
+            }
+          }
+        },
+        "version": "1.0",
+        "root": {
+          "path": "/workspace/scratch/7cd190e61da4/r2-validation-workspace",
+          "source": "nearest"
+        }
+      }
+    }
+  ]
+}

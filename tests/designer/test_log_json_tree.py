@@ -7,7 +7,7 @@ from PySide2.QtCore import Qt
 from PySide2.QtTest import QTest
 from PySide2.QtWidgets import QDialog, QPushButton, QTableWidget
 
-from emo_master.apps.designer.ui import log_json_tree, log_record_detail
+from emo_master.ui.runtime_logs import log_json_tree, log_record_detail
 from emo_master.apps.designer.ui.log_dialog import StructuredLogEntry
 from emo_master.apps.designer.ui.log_json_tree import LogJsonTree
 from emo_master.apps.designer.ui.log_record_detail import LogRecordDetail

@@ -739,7 +739,7 @@ def executeTrial(args):
                     # supervisor deletes successful work-trial directories.
                     startup.saveDiagnostic(target)
             else:
-                startup.saveDiagnostic(args.output / "work-trial")
+                startup.saveDiagnostic(args.output)
         if retainedBytes is not None:
             retainedBytes.save()
         if creditTrace is not None:

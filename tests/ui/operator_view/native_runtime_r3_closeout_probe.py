@@ -18,7 +18,7 @@ import PySide2
 from PySide2.QtCore import Qt
 from PySide2.QtGui import QFont, QFontDatabase, QFontInfo
 from PySide2.QtTest import QTest
-from PySide2.QtWidgets import QApplication, QInputDialog, QWidget
+from PySide2.QtWidgets import QAbstractSlider, QApplication, QInputDialog, QWidget
 import win32gui
 import win32ui
 
@@ -119,6 +119,20 @@ def startJobs(window, projectPath):
     return first, second, readPage(window, "main", second)
 
 
+def checkRunningCatalog(workbench, jobIds):
+    assert workbench.pages.currentWidget() is workbench.catalog and workbench.directory.isVisible()
+    directory = workbench.directory
+    assert [directory.topLevelItem(i).text(0) for i in range(directory.topLevelItemCount())] == [
+        "运行中", "最近已结束",
+    ]
+
+    def runningJobs():
+        running = directory.topLevelItem(0)
+        return {running.child(i).toolTip(0) for i in range(running.childCount())}
+
+    waitFor(lambda: set(jobIds) <= runningJobs())
+
+
 def settingsEntry(window, jobs, evidence, shot):
     showControls(window)
     click(window.settingsButton)
@@ -139,13 +153,32 @@ def settingsEntry(window, jobs, evidence, shot):
     click(settings.allLogsButton)
     logs = window.logView
     assert window.contentStack.currentWidget() is logs and logs.sources.currentIndex() == 0
-    waitFor(lambda: all(job in logs.jobLogs.runs for job in jobs))
+    workbench = logs.jobLogs
+    checkRunningCatalog(workbench, jobs)
+    click(workbench.catalogHistory)
+    project = "closeout-history-filter"
+    QTest.keyClicks(workbench.catalogProject, project)
+    workbench.catalogStatus.setCurrentIndex(workbench.catalogStatus.findData("FAILED"))
+    click(workbench.catalogDateRange.startControl)
+    click(button(workbench.catalog, "刷新"))
+    waitFor(lambda: workbench.historyScope.get("projectId") == project)
+    assert workbench.historyScope["statuses"] == ("FAILED",) and "startEndedAtMs" in workbench.historyScope
+    assert workbench.directory.topLevelItem(0).text(0) == "终态任务"
+    click(window.backButton)
+    assert window.contentStack.currentWidget() is settings
+    settings.ensureWidgetVisible(settings.allLogsButton)
+    click(settings.allLogsButton)
+    assert window.contentStack.currentWidget() is logs and logs.sources.currentIndex() == 0
+    checkRunningCatalog(workbench, jobs)
+    assert not workbench.catalogProject.text() and not workbench.catalogStatus.currentData()
+    assert workbench.catalogDateRange.bounds() == (None, None)
     sources = logs.sources
     assert tuple(sources.tabText(i) for i in range(sources.count())) == ("运行任务", "Runtime 系统事件", "本机 JSONL")
     right = sources.tabRect(sources.count() - 1).right()
     assert not sources.expanding() and right < sources.width() * .6
     assert sources.tabRect(1).width() > sources.tabRect(0).width()
     evidence["settingsEntry"] = dict(checkedAndFocused=True, disabledFields=True, source=sources.tabText(0),
+                                     historyFiltersCleared=True, runningJobsVisible=list(jobs),
                                      sourceTabWidth=right + 1, sourceBarWidth=sources.width())
     shot(window, "03-log-default")
 
@@ -292,6 +325,13 @@ def verifyDevice(window, jobEvent, evidence, shot):
     assert logs.sources.currentIndex() == 0 and logs.deviceId == "" and logs.levelCombo.currentIndex() == 0
     jobs = logs.jobLogs
     assert not jobs.search.text()
+    checkRunningCatalog(jobs, [jobEvent.effectiveJobId])
+    openLogJob(jobs, jobEvent.effectiveJobId)
+    jobs.mode.setCurrentIndex(1)
+    while jobs.window.firstEventId > jobEvent.eventId:
+        previous = jobs.window.firstEventId
+        jobs.events.verticalScrollBar().triggerAction(QAbstractSlider.SliderToMinimum)
+        waitFor(lambda: jobs.window.firstEventId < previous)
     assert currentEvent(jobs, jobEvent.message).eventId == jobEvent.eventId
     click(jobs.deviceButton)
     assert jobs.pages.currentWidget() is jobs.devicePage
@@ -303,6 +343,7 @@ def verifyDevice(window, jobEvent, evidence, shot):
     click(window.backButton)
     evidence["device"] = dict(connected=True, diagnosticRecords=diagnostics.records.topLevelItemCount(),
                               explicitLocalSource=True, startupClearsPriorFilters=True,
+                              jobReopenedFromCatalog=jobEvent.effectiveJobId,
                               logDiagnosticDevice=jobs.devices.page["deviceId"])
 
 

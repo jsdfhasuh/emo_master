@@ -104,6 +104,21 @@ def testOperatorRuntimeSourcesAndExactExportScopes(qtApp, tmp_path, monkeypatch)
         jobs = logs.jobLogs
         waitFor(lambda: any(row.job_id == first for row in jobs.recent))
         assert jobs.stopButton is None
+        QTest.mouseClick(jobs.catalogHistory, Qt.LeftButton)
+        jobs.catalogProject.setText(projectId)
+        jobs.catalogStatus.setCurrentIndex(jobs.catalogStatus.findData('FAILED'))
+        jobs.catalogDateRange.startControl.setChecked(True)
+        refresh = next(button for button in jobs.catalog.findChildren(QPushButton) if button.text() == '刷新')
+        QTest.mouseClick(refresh, Qt.LeftButton)
+        waitFor(lambda: jobs.historyScope.get('statuses') == ('FAILED',))
+        assert jobs.directory.topLevelItem(0).child(0).text(0) == '暂无任务'
+
+        window.showSettings()
+        QTest.mouseClick(window.startupPage.allLogsButton, Qt.LeftButton)
+        assert jobs.catalog.isVisible() and jobs.catalogTitle.text() == '运行任务'
+        assert not jobs.catalogProject.text() and not jobs.catalogStatus.currentData()
+        assert jobs.catalogDateRange.bounds() == (None, None)
+        assert jobs.directory.topLevelItem(1).text(0) == '最近已结束'
         registered = next(row for row in service.ListOperators(pb.ListOperatorsRequest(), None).operators
                           if row.operator_id == 'vision.io.image_loader')
         description = jobs.detail.operatorLookup(registered.operator_id, registered.version)

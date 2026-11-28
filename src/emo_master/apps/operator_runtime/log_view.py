@@ -352,6 +352,7 @@ class RuntimeLogView(QWidget):
 
     def resetFilter(self):
         self.jobLogs.resetFilters()
+        self.jobLogs.home(resetCatalog=True)
         self.deviceId = ""
         self.levelCombo.setCurrentIndex(0)
         self.render()

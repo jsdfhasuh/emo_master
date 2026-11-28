@@ -598,8 +598,6 @@ class RuntimeJobLogs(QWidget):
 
     def _toggleHistory(self):
         self._historyMode = not self._historyMode
-        self.catalogFilters.setVisible(self._historyMode)
-        self.catalogHistory.setText("返回任务首页" if self._historyMode else "更早历史")
         self._renderCatalog()
         self._refreshCatalog()
 
@@ -632,6 +630,8 @@ class RuntimeJobLogs(QWidget):
                    accept, self.catalogHint)
 
     def _renderCatalog(self):
+        self.catalogFilters.setVisible(self._historyMode)
+        self.catalogHistory.setText("返回任务首页" if self._historyMode else "更早历史")
         selected = self._selectedJob()
         selectedKey = _jobKey(selected)
         scroll = self.directory.verticalScrollBar().value()
@@ -824,7 +824,7 @@ class RuntimeJobLogs(QWidget):
 
         self._read(request, accept, self.catalogHint)
 
-    def home(self):
+    def home(self, *, resetCatalog=False):
         self._cancel()
         self.redraw.stop()
         self._opening = False
@@ -836,8 +836,18 @@ class RuntimeJobLogs(QWidget):
         self.returnSourceButton.hide()
         self._upper = self._before = None
         self._closeDrawer()
+        if resetCatalog:
+            self._historyMode = False
+            self.catalogProject.clear()
+            self.catalogStatus.setCurrentIndex(0)
+            self.catalogDateRange.setBounds(None, None)
+            self.history = []
+            self.historyCursor = ""
+            self.historyScope.clear()
+            self._renderCatalog()
         self.pages.setCurrentWidget(self.catalog)
-        self._refreshCatalog()
+        if self.isVisible():
+            self._refreshCatalog()
 
     def _openSelectedJob(self):
         job = self._selectedJob()

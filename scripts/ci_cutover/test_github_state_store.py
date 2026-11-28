@@ -58,3 +58,52 @@ class Tests(unittest.TestCase):
         self.assertEqual(decode(self.key,data),State(self.g))
         with self.assertRaises(ValueError):decode(self.key,data.replace(b'"version":1',b'"version":1,"version":1'))
         with self.assertRaises(ValueError):canonical(self.key,replace(State(self.g),phase="inflight"))
+
+    def test_confirm_only_untouched_slot_across_ref_advance(self):
+        for aba in (False,True):
+            with self.subTest(aba=aba):
+                git=Git(); original=git._request
+                first,last="6"*40,"7"*40
+                def request(method,path,payload=None,expected=200):
+                    if method=="GET" and path.startswith(P+"/git/commits/"):
+                        target=path.rsplit("/",1)[1]
+                        if target in (first,last):
+                            return dict(sha=target,parents=[dict(sha=first if target==last else C)])
+                    if method=="GET" and path.startswith(P+"/contents/ci-ledger/"):
+                        target=path.split("?ref=")[-1]
+                        saved=git.tip
+                        try:
+                            git.tip=target
+                            return original(method,path,payload,expected)
+                        finally: git.tip=saved
+                    result=original(method,path,payload,expected)
+                    if method=="PATCH":
+                        git.known[first]=(canonical(self.key,replace(State(self.g),tries=1)) if aba else git.known[C])
+                        git.known[last]=git.known[C];git.tip=last
+                    return result
+                git._request=request
+                store=StateStore(git,A)
+                if aba:
+                    with self.assertRaisesRegex(ValueError,"unconfirmed ledger CAS"):
+                        store.cas(self.key,A,State(self.g),"a"*48)
+                else:
+                    self.assertTrue(store.cas(self.key,A,State(self.g),"a"*48))
+
+    def test_lost_patch_response_requires_actual_adoption_and_never_repatches(self):
+        for landed in (False,True):
+            with self.subTest(landed=landed):
+                git=Git(); original=git._request
+                def request(method,path,payload=None,expected=200):
+                    if method=="PATCH":
+                        original(method,path,payload,expected)
+                        if not landed: git.tip=A
+                        raise UnknownWrite("response lost")
+                    return original(method,path,payload,expected)
+                git._request=request
+                store=StateStore(git,A)
+                if landed:
+                    self.assertTrue(store.cas(self.key,A,State(self.g),"a"*48))
+                else:
+                    with self.assertRaisesRegex(ValueError,"unconfirmed ledger CAS"):
+                        store.cas(self.key,A,State(self.g),"a"*48)
+                self.assertEqual(sum(method=="PATCH" for method,*_ in git.writes),1)

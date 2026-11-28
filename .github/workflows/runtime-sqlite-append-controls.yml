@@ -79,3 +79,15 @@ jobs:
               raise RuntimeError("APPEND_CONTROL_INVALID: original control process failed")
           print("CONTROL_EXECUTION_VALID: fixed input/settings/ownership checks only; not latency acceptance or a hosted root cause")
           print("Raw and counted calibration differences are not observer-cost corrections. Background overlap, natural finalization and storage-path limits remain explicit in the evidence.")
+
+  # Optional credential-free observer; never suppress or substitute for the original jobs.
+  shadow-native-receipt:
+    if: >-
+      vars.EMO_CI_NATIVE_RECEIPTS == 'shadow' &&
+      github.repository_id == '1343796337' &&
+      (github.event_name != 'pull_request' ||
+       (github.event.pull_request.head.repo.id == '1343796337' &&
+        github.event.pull_request.base.repo.id == '1343796337'))
+    permissions:
+      contents: read
+    uses: ./.github/workflows/emit-ci-cutover-request.yml

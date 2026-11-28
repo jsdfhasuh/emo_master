@@ -19,11 +19,11 @@ class TestRoute(unittest.TestCase):
         self.blob=E
         self.worker=W
         self.parents=(B,H)
-    def route(self, age=3):
+    def route(self, age=3, receipt_job=None):
         return bind(self.lane,self.request,self.run,now=10000,emitted=10000-age,read_ref=self.ref.get,
                     read_pr=lambda n:self.pr,read_parents=lambda h:self.parents,read_blob=lambda h,p:self.blob,
                     read_worker_ref=lambda ref:self.worker,resolve_runtime_source=lambda ref:B,
-                    resolve_runtime_packager=lambda ref:W)
+                    resolve_runtime_packager=lambda ref:W,receipt_job=receipt_job)
     def make_pr(self):
         self.request.update(event="pull_request",ref="refs/pull/31/merge",base=B,merge=M,pr=31)
         self.run.update(event="pull_request",head_branch="trusted/topic",
@@ -93,3 +93,17 @@ class TestRoute(unittest.TestCase):
         self.assertEqual((self.route().check,self.route().execute,self.route().packager_sha),(H,B,W))
         self.lane=replace(self.lane,helper_blobs=(("scripts/receipt.py",W),))
         with self.assertRaises(ValueError):self.route()
+
+    def test_dedicated_receipt_does_not_wait_for_unrelated_legacy_jobs(self):
+        name="request"
+        self.lane=replace(self.lane,receipt_job_name=name)
+        receipt=dict(id=333,run_id=100,run_attempt=1,head_sha=H,name=name,
+                     status="completed",conclusion="success")
+        for status,conclusion in (("in_progress",None),("completed","failure")):
+            self.run.update(status=status,conclusion=conclusion)
+            self.assertEqual(self.route(receipt_job=receipt).execute,H)
+        for field,value in (("run_id",101),("run_attempt",2),("head_sha",B),("name","source"),
+                            ("conclusion","skipped"),("status","queued")):
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                self.route(receipt_job=receipt|{field:value})
+        with self.assertRaises(ValueError): self.route()

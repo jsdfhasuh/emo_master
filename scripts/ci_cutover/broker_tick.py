@@ -40,7 +40,12 @@ def tick(ledger, statuses, key, expected, observation, *, now, deadline):
         if plan != 'claim_then_post':
             guard.block()
             return 'blocked'
-        guard.claim()
+        try:
+            guard.claim()
+        except Exception as exc:
+            # Evidence for this invocation only. Do not unlock or retry an
+            # already-inflight slot, including one left by a previous invocation.
+            raise RuntimeError("terminal claim not confirmed; status POST not started in this invocation") from exc
         try:
             statuses.post(expected, decision)
         except DefiniteRejection:

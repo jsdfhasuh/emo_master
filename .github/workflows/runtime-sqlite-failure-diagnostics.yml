@@ -139,3 +139,15 @@ jobs:
           print(text)
           print("SQLITE_CONTROLS_JSON_END")
           print("Standalone controls ran after pytest on the same VM; they do not describe failure-time conditions or prove a hosted fsync cause. Original pytest outcome is unchanged.")
+
+  # Optional credential-free observer; never suppress or substitute for the original jobs.
+  shadow-native-receipt:
+    if: >-
+      vars.EMO_CI_NATIVE_RECEIPTS == 'shadow' &&
+      github.repository_id == '1343796337' &&
+      (github.event_name != 'pull_request' ||
+       (github.event.pull_request.head.repo.id == '1343796337' &&
+        github.event.pull_request.base.repo.id == '1343796337'))
+    permissions:
+      contents: read
+    uses: ./.github/workflows/emit-ci-cutover-request.yml

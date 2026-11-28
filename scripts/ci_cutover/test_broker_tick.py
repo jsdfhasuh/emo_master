@@ -104,3 +104,13 @@ class Check(unittest.TestCase):
         self.assertEqual(self.f.posts, 0)
         self.assertEqual(self.go(3, older, generation), 'sealed')
         self.assertEqual(self.f.state.decision, ('error', 'matching_receipt_missing'))
+
+    def test_claim_readback_error_never_enters_status_transport(self):
+        def failed_claim():
+            self.f.state.phase='inflight'
+            raise ValueError('unconfirmed ledger CAS')
+        self.f.claim=failed_claim
+        with self.assertRaisesRegex(RuntimeError,'POST not started'):
+            self.go()
+        self.assertEqual(self.go(),'uncertain')
+        self.assertEqual(self.f.posts,0)

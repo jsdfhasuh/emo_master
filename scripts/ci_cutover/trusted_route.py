@@ -57,6 +57,8 @@ class Lane:
     # Optional manually requested input values are a private allowlist.
     manual_options: tuple = ()
     packager_sha: str | None = None
+    # Nonempty only for lanes whose dedicated receipt job is reviewed.
+    receipt_job_name: str | None = None
 
 
 @dataclass(frozen=True)
@@ -87,10 +89,12 @@ class Bound:
         return asdict(self)
 
 
-def bind(lane, record, run, *, now, emitted, read_ref, read_pr, read_parents, read_blob, read_worker_ref, resolve_runtime_source=None, resolve_runtime_packager=None):
+def bind(lane, record, run, *, now, emitted, read_ref, read_pr, read_parents, read_blob, read_worker_ref, resolve_runtime_source=None, resolve_runtime_packager=None, receipt_job=None):
     """Inputs run/ref/PR/parents/blob are authenticated observations, never artifact fields.
 
     Route policy is loaded from reviewed private deployment, never from a request.
+    If configured, receipt_job must come from a fresh authenticated GET under
+    /actions/runs/<run>/attempts/<attempt>/jobs, not from the artifact.
     'emitted' is the API artifact creation timestamp translated to seconds; 'now'
     is the broker time. The caller must also verify outer artifact identity and ZIP digest.
     """
@@ -105,9 +109,18 @@ def bind(lane, record, run, *, now, emitted, read_ref, read_pr, read_parents, re
     event=record["event"]
     need(event in ("push","pull_request","workflow_dispatch"), "wrong event")
     need(exact(run,{"id":rid,"run_attempt":attempt,"workflow_id":lane.origin_workflow_id,
-                    "path":lane.origin_path,"event":event,"status":"completed","conclusion":"success"})
+                    "path":lane.origin_path,"event":event})
          and exact(run.get("repository"),{"id":PRODUCT}) and exact(run.get("head_repository"),{"id":PRODUCT}),
          "wrong origin run")
+    if lane.receipt_job_name is None:
+        need(exact(run,{"status":"completed","conclusion":"success"}), "origin receipt run did not succeed")
+    else:
+        need(type(lane.receipt_job_name) is str and 1<=len(lane.receipt_job_name)<=128
+             and run.get("status") in {"in_progress","completed"}
+             and exact(receipt_job,{"run_id":rid,"run_attempt":attempt,"name":lane.receipt_job_name,
+                                    "head_sha":run.get("head_sha"),"status":"completed","conclusion":"success"}),
+             "exact receipt job did not succeed")
+        ident(receipt_job.get("id"))
     options=record["inputs"]
     need(type(options) is dict and len(options)<=8 and
          all(type(k) is str and re.fullmatch(r"[a-z][a-z0-9_]{0,63}",k)

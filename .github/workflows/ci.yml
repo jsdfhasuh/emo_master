@@ -207,3 +207,15 @@ jobs:
           python scripts/ci_shard_summary.py
           build/windows-shards/test-results-windows-latest-py3.10-runtime/ci-shard.json
           build/windows-shards/test-results-windows-latest-py3.10-other/ci-shard.json
+
+  # Optional credential-free observer; never suppress or substitute for the original jobs.
+  shadow-native-receipt:
+    if: >-
+      vars.EMO_CI_NATIVE_RECEIPTS == 'shadow' &&
+      github.repository_id == '1343796337' &&
+      (github.event_name != 'pull_request' ||
+       (github.event.pull_request.head.repo.id == '1343796337' &&
+        github.event.pull_request.base.repo.id == '1343796337'))
+    permissions:
+      contents: read
+    uses: ./.github/workflows/emit-ci-cutover-request.yml

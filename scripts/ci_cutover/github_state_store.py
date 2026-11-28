@@ -10,7 +10,7 @@ import json
 import re
 from durable_claims import State, bind_key
 from terminal_policy import Generation
-from github_broker_transport import PRIVATE, LEDGER, sha, need, Rejected
+from github_broker_transport import PRIVATE, LEDGER, sha, need, Rejected, UnknownWrite
 
 P=f"/repos/{PRIVATE}"
 REF=f"refs/heads/{LEDGER}"
@@ -76,9 +76,11 @@ class StateStore:
             type(row.get("ahead_by")) is int and 0<row["ahead_by"]<=MAX_TAIL and row.get("behind_by")==0,
             "unapproved ledger ancestry or checkpoint")
     def read(self,key):
-        path=member(key)
         tip=self.tip()
         self.check_anchor(tip)
+        return self._read_at(key,tip)
+    def _read_at(self,key,tip):
+        path=member(key)
         try:
             row=self._data("GET",f"/contents/{path}?ref={tip}")
         except Rejected as e:
@@ -117,14 +119,31 @@ class StateStore:
         if self.tip()!=expected:
             return False
         try:
-            adopted=self._data("PATCH","/git/refs/heads/"+LEDGER,{"sha":commit,"force":False})
+            self._data("PATCH","/git/refs/heads/"+LEDGER,{"sha":commit,"force":False})
         except Rejected as e:
             # 409 or 422 can be a competing fast-forward. No ownership.
             if str(e) in ("write rejected HTTP 409","write rejected HTTP 422"):
                 return False
             raise
-        need(adopted.get("ref")==REF and adopted.get("object",{}).get("sha")==commit,
-             "ambiguous adopt; no ownership")
+        except UnknownWrite:
+            # A lost response never resends PATCH. Exact readback can still prove
+            # this unique candidate landed before the caller enters another stage.
+            pass
+        # Treat even a malformed success response as unconfirmed until the same
+        # independently fetched commit and bound slot prove actual adoption.
         tip,observed=self.read(key)
-        need(tip==commit and observed==new,"unconfirmed adoption; reconcile before proceeding")
+        # Other slots share this ref. Follow only exact single-parent Git objects,
+        # reading the bound slot at each immutable SHA (including ABA intermediates).
+        # Bounded work; ambiguity never authorizes ownership or another POST.
+        diagnostic=f"unconfirmed ledger CAS parent={expected} candidate={commit} observed={tip}"
+        cursor=tip
+        for _ in range(8):
+            if cursor==commit or observed!=new:
+                break
+            obj=self._data("GET","/git/commits/"+cursor)
+            parents=obj.get("parents",[])
+            need(obj.get("sha")==cursor and len(parents)==1,diagnostic)
+            cursor=sha(parents[0]["sha"])
+            _,observed=self._read_at(key,cursor)
+        need(cursor==commit and observed==new,diagnostic)
         return True

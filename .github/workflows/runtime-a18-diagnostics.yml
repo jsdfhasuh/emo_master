@@ -97,3 +97,15 @@ jobs:
           # the existing bounded result dictionary without pytest truncation.
           python -m pytest -q --assert=plain --tb=long tests/test_r3_sqlite_wal_metadata.py::testNativeWalChangesAreDetected
           exit $LASTEXITCODE
+
+  # Optional credential-free observer; never suppress or substitute for the original jobs.
+  shadow-native-receipt:
+    if: >-
+      vars.EMO_CI_NATIVE_RECEIPTS == 'shadow' &&
+      github.repository_id == '1343796337' &&
+      (github.event_name != 'pull_request' ||
+       (github.event.pull_request.head.repo.id == '1343796337' &&
+        github.event.pull_request.base.repo.id == '1343796337'))
+    permissions:
+      contents: read
+    uses: ./.github/workflows/emit-ci-cutover-request.yml

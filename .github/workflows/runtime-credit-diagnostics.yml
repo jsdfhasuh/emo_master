@@ -95,3 +95,15 @@ jobs:
           path: ${{ runner.temp }}/export-credit-public.json
           if-no-files-found: warn
           retention-days: 7
+
+  # Optional credential-free observer; never suppress or substitute for the original jobs.
+  shadow-native-receipt:
+    if: >-
+      vars.EMO_CI_NATIVE_RECEIPTS == 'shadow' &&
+      github.repository_id == '1343796337' &&
+      (github.event_name != 'pull_request' ||
+       (github.event.pull_request.head.repo.id == '1343796337' &&
+        github.event.pull_request.base.repo.id == '1343796337'))
+    permissions:
+      contents: read
+    uses: ./.github/workflows/emit-ci-cutover-request.yml

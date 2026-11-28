@@ -35,6 +35,16 @@ test('only matching Runtime defaults are translated',()=>{
  assert.equal(runtimeLogMessage({...event,eventType:'sqlite.write.finished',message:'UNKNOWN',payload:receipt}),'UNKNOWN');
  assert.equal(runtimeLogMessage({...event,eventType:'artifact.created',message:'artifact created: D:/output.png',
   payload:{artifact:{path:'D:/job/stored.png',artifactId:'id'}}}),'已生成产物 · D:/output.png');
+ const reason='database locked: event 42\nretry count: 0';
+ const bridgeFailure={eventType:'job.failed',code:'E_EVENT_PERSISTENCE',
+  message:`event bridge failed: ${reason}`,payload:{reason,retriable:false}};
+ const original=structuredClone(bridgeFailure);
+ assert.equal(runtimeLogMessage(bridgeFailure),`事件转发失败 · ${reason}`);
+ assert.deepEqual(bridgeFailure,original);
+ assert.equal(runtimeLogMessage({...bridgeFailure,eventType:'node.log'}),bridgeFailure.message);
+ assert.equal(runtimeLogMessage({...bridgeFailure,code:'E_CUSTOM'}),bridgeFailure.message);
+ const custom='test service: event bridge failed: database locked';
+ assert.equal(runtimeLogMessage({...bridgeFailure,message:custom}),custom);
 });
 test('global event IDs stay lossless, historical pages retain more than 100 and Job sequence is independent',()=>{
  const events=Array.from({length:220},(_,i)=>({eventId:(9007199254740993n+BigInt(i)).toString(),sequence:'1'}));

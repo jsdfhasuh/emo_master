@@ -3379,12 +3379,16 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             return "无法确认此日志来自当前工程会话，未定位节点。请重新运行后查看日志。"
         if entry.projectInstanceToken != self._runtimeLogProjectToken:
             return "此日志来自工程切换、重开或另存为前的历史会话，未定位节点。请重新运行后查看日志。"
-        workflow = self.workflowStore.workflows.get(entry.workflowId)
+        if entry.isWorkflowCaller and entry.caller is None:
+            return "当前已加载记录无法确认父调用，未定位节点。"
+        caller = entry.caller if entry.isWorkflowCaller else None
+        workflowId = caller.workflowId if caller else entry.workflowId
+        workflow = self.workflowStore.workflows.get(workflowId)
         if workflow is None:
             return "日志未关联有效工作流，或该工作流已删除，无法定位节点。"
         nodeExists = (
             entry.nodeId in self.flowModel.nodes
-            if entry.workflowId == self.activeWorkflowId
+            if workflowId == self.activeWorkflowId
             else any(node.get("nodeId") == entry.nodeId for node in workflow.nodes)
         )
         if not nodeExists:
@@ -3393,14 +3397,15 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             # Read-only navigation must not apply pending page-editor inputs.
             self.pageCoordinator.stack.setCurrentIndex(0)
             self.pageCoordinator.chrome.update()
-        self.navigateToWorkflow(entry.workflowId, entry.nodeId)
+        self.navigateToWorkflow(workflowId, entry.nodeId)
         if self.logDialog is not None:
             self.logDialog.hide()
         if _nativeQt:
             self.raise_()
             self.activateWindow()
             self.flowView.setFocus(Qt.OtherFocusReason)
-        return f"已定位到工作流“{workflow.name}”的节点 {entry.displayNode()}。"
+        label = f"调用节点 {caller.node}" if caller else f"节点 {entry.displayNode()}"
+        return f"已定位到工作流“{workflow.name}”的{label}。"
 
     def _buildProjectPayload(self, projectName: str) -> dict[str, object]:
         if hasattr(self, "workflowController"):
@@ -4568,6 +4573,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                         and type(recordedRevision) is int and recordedRevision == currentRevision):
                     workflow = self.workflowStore.workflows.get(entry.workflowId)
                     if workflow is not None:
+                        if entry.isWorkflowCaller:
+                            return replace(entry, workflowName=entry.workflowName or workflow.name)
                         nodeName = ""
                         kind = ""
                         if entry.workflowId == self.activeWorkflowId:

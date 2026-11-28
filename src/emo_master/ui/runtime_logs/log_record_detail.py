@@ -15,6 +15,7 @@ from emo_master.core.runtime_log_messages import (
     describePort, executionStatusTitle, frameworkSkipReason, prestartFailureSummary, runtimeEventMessage,
     runtimeLogComponentTitle,
 )
+from emo_master.core.runtime_log_records import WORKFLOW_LIFECYCLE_EVENTS
 from emo_master.core.contracts.run_inspection import normalizeInspection
 from emo_master.core.contracts.sqlite_writer import OPERATOR_ID as SQLITE_WRITER_ID, receiptSummary
 from emo_master.core.plugin.result_schema import parameterSchemaAtPath
@@ -293,6 +294,7 @@ class LogRecordDetail(QWidget):
 
     def clear(self, title="选择记录查看详情"):
         self._copyData = _MISSING
+        self._nodeTimingItem = None
         self.title.setText(title)
         self.message.setText("")
         self.notice.setText("")
@@ -317,12 +319,12 @@ class LogRecordDetail(QWidget):
             self.readable.setCurrentItem(self.readable.topLevelItem(0))
         self._updateActions()
 
-    def setEvent(self, record, *, displayMessage=None, context=None, nodeElapsedMs=None, nodeTitle=""):
+    def setEvent(self, record, *, displayMessage=None, context=None, nodeTiming=None, nodeTitle=""):
         self._showEvent(record, record, displayMessage=displayMessage, context=context,
-                        includeTime=True, nodeElapsedMs=nodeElapsedMs, nodeTitle=nodeTitle)
+                        includeTime=True, nodeTiming=nodeTiming, nodeTitle=nodeTitle)
 
     def _showEvent(self, raw, event, *, displayMessage=None, context=None, includeTime=False,
-                   nodeElapsedMs=None, nodeTitle=""):
+                   nodeTiming=None, nodeTitle=""):
         kind = event.get("eventType", "")
         title = _NODE_TITLES.get(kind) or _FRAMEWORK_TITLES.get(kind) or kind or "日志记录"
         finalReceipt = _backgroundSqliteReceipt(event)
@@ -343,9 +345,13 @@ class LogRecordDetail(QWidget):
             self.readable.field("日志代码", event["code"])
         if event.get("component"):
             self.readable.field("模块", event["component"], description=runtimeLogComponentTitle(event["component"]))
+        if nodeTiming is not None:
+            self.updateNodeTiming(nodeTiming)
         rawPayload = event.get("payload")
         payload = dict(rawPayload) if isinstance(rawPayload, dict) else rawPayload
-        info = {label: event[key] for key, label in _RECORD_IDENTITY.items()
+        callerRecord = kind in WORKFLOW_LIFECYCLE_EVENTS and bool(event.get("nodeId"))
+        info = {("调用节点 ID" if callerRecord and key == "nodeId" else label): event[key]
+                for key, label in _RECORD_IDENTITY.items()
                 if _recorded(event.get(key)) and (key != "sequence" or event[key] != 0)}
         if isinstance(payload, dict):
             categories = _PAYLOAD_IDENTITY | (_DEVICE_ENVELOPE if kind.startswith("device.") else {})
@@ -358,7 +364,7 @@ class LogRecordDetail(QWidget):
                                ("targetWorkflowName", "目标工作流")):
                 payloadName = payload.pop(key, None)
                 value = payloadName or event.get(key)
-                if _recorded(value):
+                if _recorded(value) and not (callerRecord and key == "nodeName"):
                     self.readable.field(label, value)
             capacityOrResource = prestartFailureSummary(payload)
             if capacityOrResource:
@@ -373,7 +379,7 @@ class LogRecordDetail(QWidget):
             })
             payload = {key: value for key, value in payload.items() if key not in ("receipt", "background")}
         if isinstance(payload, dict):
-            self._eventPayload(kind, payload, definition, nodeElapsedMs)
+            self._eventPayload(kind, payload, definition)
         elif "payload" in event:
             self.readable.field("数据", payload, expand=True)
         info.update(self._identity(payload))
@@ -382,6 +388,27 @@ class LogRecordDetail(QWidget):
         if info:
             self.readable.field("记录身份", info)
         self._finishRecord()
+
+    def updateNodeTiming(self, timing):
+        # Update the selected execution's timing in place so its raw record and reading position stay selected.
+        value = timing.elapsedMs
+        if (value is not None and not timing.estimated
+                and timing.startedAtMs is not None and timing.endedAtMs is not None):
+            label = "节点总耗时"
+            description = f"{value} ms · 节点起止事件"
+        else:
+            label = "节点执行时间"
+            description = timing.display()
+            if value is None:
+                value = description
+        item = self._nodeTimingItem
+        if item is None:
+            item = self._nodeTimingItem = self.readable.field(label, value, description=description)
+        else:
+            item.setText(0, label)
+            item.setText(1, description)
+            item.setData(0, _VALUE_ROLE, (value,))
+        item.setToolTip(1, timing.display(showRange=True))
 
     def _devicePayload(self, event, payload, rawPayload):
         selectors = _mapping(rawPayload.get("selectors"))
@@ -445,7 +472,7 @@ class LogRecordDetail(QWidget):
         return {label: record[key] for key, label in (("operatorId", "算子 ID"), ("operatorVersion", "算子版本"))
                 if key in record}
 
-    def _eventPayload(self, kind, payload, definition, nodeElapsedMs):
+    def _eventPayload(self, kind, payload, definition):
         remaining = dict(payload)
         if payload.get("truncated") is True and not self.notice.text():
             self.notice.setText("该记录标记为已截断。详情与复制使用当前收到的数据。")
@@ -457,8 +484,6 @@ class LogRecordDetail(QWidget):
             resultSchema = _mapping(definition.get("resultSchema"))
             for key in ("operatorId", "operatorVersion"):
                 remaining.pop(key, None)
-            if nodeElapsedMs is not None:
-                self.readable.field("节点总耗时", nodeElapsedMs, description=f"{nodeElapsedMs} ms · 节点起止事件")
             metrics = remaining.pop("metrics", _MISSING)
             metricFields = _mapping(resultSchema.get("metrics"))
             source = remaining.pop("ioSummary", None)

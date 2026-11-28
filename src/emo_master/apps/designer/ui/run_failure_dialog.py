@@ -1,4 +1,5 @@
 """Failure popup backed by the same verified identity as runtime log navigation."""
+from dataclasses import replace
 import json
 from typing import cast
 
@@ -7,6 +8,7 @@ from PySide2.QtWidgets import QMessageBox, QTextEdit
 
 from emo_master.apps.designer.ui.log_dialog import StructuredLogEntry
 from emo_master.core.runtime_log_messages import prestartFailureSummary
+from emo_master.core.runtime_log_records import resolveWorkflowCaller
 
 
 def showRunFailure(window, entry: StructuredLogEntry, failure: dict[str, object]) -> QMessageBox:
@@ -14,17 +16,22 @@ def showRunFailure(window, entry: StructuredLogEntry, failure: dict[str, object]
                and bool(entry.projectInstanceToken)
                and entry.projectInstanceToken == window._runtimeLogProjectToken)
     workflow = window.workflowStore.workflows.get(entry.workflowId) if current else None
+    caller = resolveWorkflowCaller(entry, window.logEntries) if entry.isWorkflowCaller else None
+    nodeWorkflowId = caller.workflowId if caller else entry.workflowId
+    nodeWorkflow = window.workflowStore.workflows.get(nodeWorkflowId) if current else None
     node = None
-    if workflow is not None and entry.nodeId:
-        if entry.workflowId == window.activeWorkflowId:
+    if nodeWorkflow is not None and entry.nodeId and (not entry.isWorkflowCaller or caller):
+        if nodeWorkflowId == window.activeWorkflowId:
             model = window.flowModel.nodes.get(entry.nodeId)
             node = dict(displayName=model.displayName) if model is not None else None
         else:
-            node = next((item for item in workflow.nodes if item.get('nodeId') == entry.nodeId), None)
+            node = next((item for item in nodeWorkflow.nodes if item.get('nodeId') == entry.nodeId), None)
 
     workflowName = f'{workflow.name}（{entry.workflowId}）' if workflow is not None else entry.workflowId
     lines = [f'工作流：{workflowName or "未提供"}']
-    if entry.nodeId:
+    if entry.isWorkflowCaller:
+        lines.append(caller.label() if caller else '当前已加载记录无法确认父调用，未启用节点定位。')
+    elif entry.nodeId:
         title = str(node.get('displayName') or entry.nodeId) if node is not None else entry.nodeId
         lines.append(f'失败节点：{title}（{entry.nodeId}）' if title != entry.nodeId else f'失败节点：{title}')
     elif failure.get('status') == 'REJECTED':
@@ -45,7 +52,7 @@ def showRunFailure(window, entry: StructuredLogEntry, failure: dict[str, object]
     box.setIcon(QMessageBox.Critical)
     box.setWindowTitle('运行失败')
     box.setTextFormat(Qt.PlainText)
-    box.setText('作业执行失败' if entry.nodeId else
+    box.setText('作业执行失败' if entry.nodeId and not entry.isWorkflowCaller else
                 '作业未能启动' if failure.get('status') == 'REJECTED' else '作业未能完成')
     box.setInformativeText('\n\n'.join(lines))
     details = entry.detailPayload()
@@ -57,10 +64,10 @@ def showRunFailure(window, entry: StructuredLogEntry, failure: dict[str, object]
     detailButton.clicked.connect(lambda: detailButton.setText(
         '收起详情' if detailView.isVisible() else '详细信息'), Qt.QueuedConnection)
     if node is not None:
-        locate = box.addButton('定位失败节点', QMessageBox.ActionRole)
+        locate = box.addButton('定位调用节点' if caller else '定位失败节点', QMessageBox.ActionRole)
 
         def navigate():
-            result = window.navigateToRuntimeLogEntry(entry)
+            result = window.navigateToRuntimeLogEntry(replace(entry, caller=caller) if caller else entry)
             window.appendFlowLog('INFO' if result.startswith('已定位') else 'WARN', result)
 
         locate.clicked.connect(navigate)

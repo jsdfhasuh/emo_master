@@ -2,6 +2,7 @@
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
+from dataclasses import replace
 from datetime import datetime
 from itertools import chain
 import json
@@ -36,6 +37,7 @@ _STATUS = {
     "COMPLETED": "已完成", "FAILED": "失败", "ABORTED": "已停止",
 }
 _ROLE = Qt.UserRole
+_NODE_TIMING_EVENTS = {"node.started", "node.completed", "node.failed", "node.skipped"}
 _COMMON_FIELDS = (("workflowId", "工作流 ID"), ("nodeId", "节点 ID"), ("deviceId", "设备 ID"))
 _TECHNICAL_FIELDS = (("projectId", "工程 ID"), ("component", "模块"), ("eventType", "事件类型"),
                      ("workflowRunId", "调用 ID"), ("iterationPath", "轮次路径（原始索引，如 0/1）"))
@@ -131,6 +133,7 @@ class RuntimeJobLogs(QWidget):
         self.historyScope = {}
         self.job = self.window = self.structure = None
         self._selection = None
+        self._detailEntry = None
         self._focus = None
         self._before = self._upper = self._earlierUpper = None
         self._staged = None
@@ -1305,7 +1308,7 @@ class RuntimeJobLogs(QWidget):
             if not includesTimestamp(entry.rawTimestampMs, bounds):
                 return False
             for key in ("projectId", "workflowId", "nodeId", "eventType", "component", "workflowRunId"):
-                if key in filters and getattr(entry, key) != filters[key]:
+                if key in filters and (getattr(entry, key) != filters[key] or (key == "nodeId" and entry.isWorkflowCaller)):
                     return False
             if "iterationPath" in filters and (
                     not entry.iterationPathRecorded or "/".join(map(str, entry.iterationPath)) != filters["iterationPath"]):
@@ -1338,6 +1341,8 @@ class RuntimeJobLogs(QWidget):
         anchorOffset = self._rememberAnchor() if captureAnchor else 0
         follow = not self.window.paused
         self._dirty = False
+        detail = self._detailEntry
+        previousCaller = self.structure.eventCaller(detail) if self.structure and detail and detail.isWorkflowCaller else None
         previousDefaults = self.structure.defaultExpandedKeys if self.structure is not None else set()
         self.structure = ExecutionTree(self.window.entries)
         if restore is not None:
@@ -1385,6 +1390,9 @@ class RuntimeJobLogs(QWidget):
                 self._revealEvent(target)
             elif not self._opening:
                 self.jobHint.setText("该次节点执行未在已加载范围内。可以加载更早的记录。")
+        if (detail is not None and self._detailEntry is detail and detail.isWorkflowCaller
+                and self.window.entry(detail.eventId) is detail and self.structure.eventCaller(detail) != previousCaller):
+            self._showEntry(detail)
         self._updateRange()
         self._updateTimes()
         self._updateFailureHint()
@@ -1564,6 +1572,10 @@ class RuntimeJobLogs(QWidget):
                           + " ".join(value for value in (time.note, self.job.error_code, _jobMessage(self.job)) if value))
         if self.structure is None or self.window is None:
             return
+        if not self.drawer.isHidden() and self._detailEntry is not None and self._detailEntry.eventType in _NODE_TIMING_EVENTS:
+            detailBranch = self.structure.branchForEvent(self._detailEntry.eventId)
+            if detailBranch is not None and detailBranch.kind == "node":
+                self.detail.updateNodeTiming(self._branchTiming(detailBranch, active))
         for key, branch in self._branches.items():
             if branch.kind not in {"workflow", "iteration", "node", "loop"}:
                 continue
@@ -1705,7 +1717,7 @@ class RuntimeJobLogs(QWidget):
         self._detailEntry = entry
         raw = entry.rawRecord()
         context = {}
-        nodeElapsedMs = None
+        nodeTiming = None
         branch = self.structure.branchForEvent(entry.eventId) if self.structure else None
         if branch is not None and branch.kind in {"workflow", "iteration", "node", "loop"}:
             timing = self._branchTiming(branch, self._activeBranches())
@@ -1713,18 +1725,23 @@ class RuntimeJobLogs(QWidget):
                 context["实际开始"] = _stamp(timing.startedAtMs)
             if timing.endedAtMs is not None:
                 context["实际结束"] = _stamp(timing.endedAtMs)
-            if branch.kind == "node" and entry.eventType in {"node.started", "node.completed", "node.failed", "node.skipped"}:
-                nodeElapsedMs = timing.elapsedMs
+            if branch.kind == "node" and entry.eventType in _NODE_TIMING_EVENTS:
+                nodeTiming = timing
             elif timing.elapsedMs is not None:
                 context["执行时间"] = timing.display()
-            if timing.note:
+            if timing.note and nodeTiming is None:
                 context["时间说明"] = timing.note
         if entry.effectiveJobId != entry.jobId:
             context["所属任务"] = entry.effectiveJobId
-        self.detail.setEvent(raw, displayMessage=entry.displayMessage(), context=context, nodeElapsedMs=nodeElapsedMs,
-                             nodeTitle=self.structure.eventNames(entry)[1] if self.structure else entry.displayNode())
+        workflowTitle, nodeTitle = (self.structure.eventNames(entry) if self.structure
+                                    else (entry.displayWorkflow(), entry.displayNode()))
+        if entry.isWorkflowCaller:
+            nodeTitle = " · ".join(filter(None, (workflowTitle, nodeTitle)))
+        self.detail.setEvent(raw, displayMessage=entry.displayMessage(), context=context, nodeTiming=nodeTiming,
+                             nodeTitle=nodeTitle)
         self.readContext.setEnabled(bool(self.structure and self.structure.contextMatches(entry.eventId)))
-        self.navigate.setEnabled(bool(self._onNavigate and entry.nodeId))
+        caller = self.structure.eventCaller(entry) if self.structure else None
+        self.navigate.setEnabled(bool(self._onNavigate and entry.nodeId and (not entry.isWorkflowCaller or caller)))
         self.deviceChoice.clear()
         for label, device, scope in _deviceChoices(entry):
             self.deviceChoice.addItem(f"{label} · {device}" if label != device else device, (device, scope))
@@ -1740,8 +1757,15 @@ class RuntimeJobLogs(QWidget):
         self.detail.clear()
 
     def _navigate(self):
-        if self._detailEntry is not None and self._onNavigate:
-            self.jobHint.setText(self._onNavigate(self._detailEntry))
+        entry = self._detailEntry
+        if entry is None or not self._onNavigate or not self.navigate.isEnabled():
+            return
+        if entry.isWorkflowCaller:
+            caller = self.structure.eventCaller(entry) if self.structure else None
+            if caller is None:
+                return
+            entry = replace(entry, caller=caller)
+        self.jobHint.setText(self._onNavigate(entry))
 
     def _select(self, key, *, followEntry=None):
         item = self._items.get(key)

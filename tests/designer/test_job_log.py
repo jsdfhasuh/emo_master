@@ -11,6 +11,7 @@ from emo_master.apps.designer.state.job_log import ExecutionTree, JobEventWindow
 from emo_master.apps.designer.ui.log_dialog import StructuredLogEntry
 from emo_master.apps.designer.ui.runtime_job_logs import RuntimeJobLogs
 from emo_master.apps.runtime.grpc_server.generated.runtime_pb2 import JobEvent, JobHistorySummary, RunState
+from emo_master.ui.runtime_logs import job_log
 from tests.designer.qt_wait import waitUntil
 
 
@@ -300,6 +301,52 @@ def testRuntimeAttributionAndRawRecordKeepRecordedIdentityAndMissingFields():
     nonLoopDevice = _event(5, "device.action.failed", payload={"cursor": 23, "iterationPath": []})
     assert oldDevice.rawRecord()["iterationPath"] == [] and not oldDevice.iterationPathRecorded
     assert nonLoopDevice.iterationPathRecorded and nonLoopDevice.iterationPath == ()
+
+
+def testOpenNodeDetailsFreezeTheEstimateAndShowOnlyAPairedActualTime(designerApplication, monkeypatch):
+    now = [1000]
+    monkeypatch.setattr(job_log, "_now", lambda explicit: now[0] if explicit is None else explicit)
+    call = _event(1, "workflow.started", timestampMs=100)
+    start = _event(2, "node.started", caller="capture", nodeRun="first-capture", timestampMs=200)
+    unrelated = _event(3, "node.completed", caller="capture", nodeRun="second-capture", timestampMs=1400)
+    end = _event(4, "node.completed", caller="capture", nodeRun=start.nodeRunId, timestampMs=1500)
+    view = RuntimeJobLogs(10, StructuredLogEntry.fromRuntimeEvent)
+    try:
+        view.instance = start.runtimeInstanceId
+        view.job = RunState(job_id=start.jobId, workflow_id="main", status="RUNNING", started_at_ms=200)
+        view.window = JobEventWindow(start.jobId)
+        view._continuous = True
+        view._upper = start.eventId
+        view.window.mergeRecent([call, start])
+        view.pages.setCurrentWidget(view.jobPage)
+        view.show()
+        view.mode.setCurrentText("时间顺序")
+        view._select(("event", start.eventId))
+        readable = view.detail.readable
+        timing, = readable.findItems("节点执行时间", Qt.MatchExactly)
+        raw = view.detail.rawTree.toPlainText()
+        readable.setCurrentItem(timing)
+        assert timing.text(1) == "估算 800 ms" and not view.window.paused
+        assert not readable.findItems("节点总耗时", Qt.MatchExactly)
+
+        view._pauseReading()
+        view.appendEntry(end)
+        now[0] = 1700
+        view._updateTimes()
+        assert view.window.newCount == 1 and timing.text(1) == "估算 800 ms · 结束状态待刷新"
+        assert "估算 1.50 s" in view.jobTitle.text()
+
+        view.window.mergeRecent([call, start, unrelated])
+        view._render()
+        assert timing.text(1) == "估算 1.50 s" and not readable.findItems("节点总耗时", Qt.MatchExactly)
+        view.appendEntry(end)
+        waitUntil(lambda: timing.text(0) == "节点总耗时")
+        assert timing.text(1) == "1300 ms · 节点起止事件"
+        assert readable.currentItem() is timing and view.detail.rawTree.toPlainText() == raw
+        assert view._detailEntry.eventId == start.eventId
+    finally:
+        view.close()
+        view.shutdown()
 
 
 def testWorkbenchClosesGapBeforeConfirmingContinuityAndReloadsLiveTrimmedRange(designerApplication):

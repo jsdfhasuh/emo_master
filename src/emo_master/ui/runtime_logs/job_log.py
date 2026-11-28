@@ -8,8 +8,10 @@ from datetime import datetime
 import time
 from typing import TYPE_CHECKING
 
+from emo_master.core.runtime_log_records import resolveWorkflowCaller
+
 if TYPE_CHECKING:
-    from emo_master.core.runtime_log_records import StructuredLogEntry
+    from emo_master.core.runtime_log_records import RuntimeLogCaller, StructuredLogEntry
 
 
 BranchKey = tuple[str | int, ...]
@@ -300,8 +302,11 @@ class ExecutionTree:
             if not entry.workflowRunId:
                 continue
             byRun[entry.workflowRunId].append(entry)
-            if entry.nodeRunId and entry.nodeId and entry.iterationPathRecorded and not entry.eventType.startswith("loop.iteration."):
+            if (entry.nodeRunId and entry.nodeId and entry.iterationPathRecorded and not entry.isWorkflowCaller
+                    and not entry.eventType.startswith("loop.iteration.")):
                 nodesByCaller[entry.workflowRunId, entry.nodeId, entry.iterationPath].add(self._nodeKey(entry))
+        self._workflowRows = byRun
+        self._callers: dict[tuple[str, ...], RuntimeLogCaller | None] = {}
 
         for runId, runEntries in byRun.items():
             workflow = self._workflow(runId)
@@ -562,8 +567,20 @@ class ExecutionTree:
 
     def eventNames(self, entry: StructuredLogEntry) -> tuple[str, str]:
         workflow = entry.workflowName or self._workflowNames.get(entry.workflowRunId) or entry.workflowId
+        if entry.isWorkflowCaller:
+            caller = self.eventCaller(entry)
+            return workflow, caller.label() if caller else ""
         node = entry.nodeName or self._nodeNames.get(self._nodeKey(entry)) or entry.nodeId
         return workflow, node
+
+    def eventCaller(self, entry: StructuredLogEntry) -> RuntimeLogCaller | None:
+        parent = entry.parentWorkflowRunId
+        if not entry.isWorkflowCaller or not parent or parent == entry.workflowRunId:
+            return None
+        key = (entry.effectiveJobId, entry.projectId, entry.runtimeInstanceId, parent, entry.nodeId)
+        if key not in self._callers:
+            self._callers[key] = resolveWorkflowCaller(entry, self._workflowRows.get(parent, ()))
+        return self._callers[key]
 
     def representativeEventId(self, key: BranchKey) -> int | None:
         if key[0] == "event" and isinstance(key[1], int):

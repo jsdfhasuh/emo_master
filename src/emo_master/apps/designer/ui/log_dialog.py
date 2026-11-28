@@ -13,7 +13,7 @@ from typing import Any
 
 from emo_master.clients.runtime.log_records import querySystemLogPage
 from emo_master.core.runtime_log_messages import runtimeLogComponentTitle
-from emo_master.core.runtime_log_records import StructuredLogEntry
+from emo_master.core.runtime_log_records import StructuredLogEntry, resolveWorkflowCaller
 
 
 DEFAULT_MAX_LOG_ENTRIES = 10000
@@ -846,7 +846,7 @@ try:
             self._errorCount += delta * _isError(entry)
             for name, key in (("jobId", entry.jobId), ("eventType", entry.eventType),
                               ("workflow", entry.workflowKey() if entry.workflowId else None),
-                              ("node", entry.nodeKey() if entry.nodeId else None)):
+                              ("node", entry.nodeKey() if entry.nodeId and not entry.isWorkflowCaller else None)):
                 if not key:
                     continue
                 counts = self._filterCounts[name]
@@ -1167,9 +1167,11 @@ try:
             for column, value in enumerate(values):
                 item = QTableWidgetItem(value)
                 if column in (4, 5):
+                    nodeTip = (f"调用节点 ID：{entry.nodeId}" if entry.isWorkflowCaller
+                               else f"节点：{entry.displayNode()}\n节点 ID：{entry.nodeId}")
                     item.setToolTip(
                         f"工作流：{entry.displayWorkflow()}\n工作流 ID：{entry.workflowId}\n"
-                        f"节点：{entry.displayNode()}\n节点 ID：{entry.nodeId}"
+                        f"{nodeTip}"
                     )
                 else:
                     item.setToolTip(entry.message if column == 9 else value)
@@ -1202,7 +1204,7 @@ try:
             if nodeKey is not None:
                 # Old preferences held only a node ID, across all workflows.
                 actual = entry.nodeId if isinstance(nodeKey, str) else entry.nodeKey()
-                if nodeKey != actual:
+                if entry.isWorkflowCaller or nodeKey != actual:
                     return False
             query = self.searchInput.text().strip().casefold()
             if not query:
@@ -1225,18 +1227,25 @@ try:
                 self.navigationHint.setText("选择一条日志，可查看详情或定位节点")
                 return
             entry = self._visibleEntries[row]
-            if entry is self._detailEntry:
+            if entry is self._detailEntry and not entry.isWorkflowCaller:
                 self.detailPanel.show()
                 return
             self._detailEntry = entry
-            self.recordDetail.setEvent(entry.rawRecord(), displayMessage=entry.displayMessage())
+            caller = resolveWorkflowCaller(entry, self._entries)
+            nodeTitle = (" · ".join(filter(None, (entry.displayWorkflow(), caller.label() if caller else "")))
+                         if entry.isWorkflowCaller else "")
+            self.recordDetail.setEvent(entry.rawRecord(), displayMessage=entry.displayMessage(), nodeTitle=nodeTitle)
             self.detailPanel.show()
             self.copyDetailsButton.setEnabled(True)
-            self.locateButton.setEnabled(bool(entry.nodeId) and self._onNavigate is not None)
+            self.locateButton.setEnabled(bool(entry.nodeId and (not entry.isWorkflowCaller or caller))
+                                         and self._onNavigate is not None)
             if not entry.nodeId:
                 self.navigationHint.setText("此日志未提供节点关联，无法定位。请查看错误详情与相关节点日志。")
             elif self._onNavigate is None:
                 self.navigationHint.setText("当前日志窗口未连接流程画布，无法定位节点。")
+            elif entry.isWorkflowCaller:
+                self.navigationHint.setText("点击“定位节点”查看父流程的调用节点。" if caller
+                                            else "当前已加载记录无法确认父调用，未启用节点定位。")
             else:
                 self.navigationHint.setText("点击“定位节点”或双击日志，可在所属工作流中查看节点。")
 
@@ -1250,7 +1259,12 @@ try:
             if not 0 <= row < len(self._visibleEntries):
                 return
             entry = self._visibleEntries[row]
-            if entry.nodeId and self._onNavigate is not None:
+            if self.locateButton.isEnabled() and self._onNavigate is not None:
+                if entry.isWorkflowCaller:
+                    caller = resolveWorkflowCaller(entry, self._entries)
+                    if caller is None:
+                        return
+                    entry = dataclassReplace(entry, caller=caller)
                 self.navigationHint.setText(self._onNavigate(entry))
 
         def _onAutoScrollChanged(self, enabled: bool) -> None:

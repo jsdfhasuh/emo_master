@@ -144,5 +144,9 @@ export function runtimeLogMessage(event: RuntimeLogEvent): string {
             && message === 'operator logs were dropped by runtime limits') {
         return '算子日志因 Runtime 限额被丢弃';
     }
+    const bridgeFailurePrefix = 'event bridge failed: ';
+    if (eventType === 'job.failed' && event.code === 'E_EVENT_PERSISTENCE' && message.startsWith(bridgeFailurePrefix)) {
+        return `事件转发失败 · ${message.slice(bridgeFailurePrefix.length)}`;
+    }
     return frameworkMessages.get(eventType)?.find(([text]) => text === message)?.[1] ?? message;
 }

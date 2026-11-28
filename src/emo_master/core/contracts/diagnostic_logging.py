@@ -5,7 +5,7 @@ from __future__ import annotations
 def componentForEvent(eventType: str) -> str:
     if eventType == "node.log":
         return "operator"
-    if eventType.startswith(("job.", "node.", "workflow.", "scheduler.", "dispatch.", "loop.")):
+    if eventType.startswith(("job.", "node.", "workflow.", "scheduler.", "dispatch.", "loop.", "subflow.")):
         return "execution"
     if eventType.startswith("device."):
         return "device"

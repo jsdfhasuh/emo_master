@@ -329,6 +329,8 @@ message ReadProjectResourceReply {
 
 message StreamJobEventsRequest {
   string job_id = 1;
+  // Resume after the last handled sequence. New periodic worker heartbeats do
+  // not receive sequences. Replay preserves already stored legacy heartbeats.
   int64 after_sequence = 2;
   bool follow = 3;
 }

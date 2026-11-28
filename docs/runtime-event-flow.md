@@ -54,10 +54,11 @@ Subflow；`iterationPath` 表示嵌套 Loop 的索引路径。Designer 使用
 
 ## 重放和实时订阅
 
-`StreamJobEvents(after_sequence=N)` 返回 `sequence > N` 的历史事件。
-`follow=true` 会先重放 SQLite，再等待新事件直到 Job 进入终态或客户端取消。
-内存 retention 截断不会隐藏 SQLite 中的早期事件；Runtime 重启后仍可读取
-完整历史。
+`StreamJobEvents(after_sequence=N)` 返回 `sequence > N` 的已保留事件。
+`follow=true` 会先重放，再等待新事件直到 Job 终态收尾结束或客户端取消。
+客户端用最后一条已处理事件的序号继续读取。内存截断不影响 SQLite 中仍保留的
+记录，Runtime 重启后仍可重放这些记录。SQLite 沿用原有裁剪规则。
+旧 Job 重放保留实际已存心跳及其原序号，全局历史查询继续过滤这些心跳。
 
 跨进程只传 JSON-safe 事件和 `ArtifactRef`，不传 Qt 对象、gRPC channel、
 算子实例或 NumPy 图像。
@@ -67,8 +68,9 @@ Subflow；`iterationPath` 表示嵌套 Loop 的索引路径。Designer 使用
 Supervisor 为每个新 Job 创建固定大小的共享心跳时间戳；现有心跳线程在
 发送 `process.heartbeat` 前更新它。看门狗使用同机跨进程的 monotonic 时钟，
 从进程启动起保持原 `heartbeatTimeoutMs`，不把 SQLite 持久化、Supervisor
-锁等待或旧事件排队时间当作 worker 停止发心跳。正式心跳事件仍按原队列顺序
-持久化，不跳过事件，也不提前公布尚未持久化的终态。
+锁等待或旧事件排队时间当作 worker 停止发心跳。Supervisor 收到周期心跳后
+更新既有判活状态，不为它分配业务序号，也不占用 SQLite 或内存的业务保留配额。
+逐 Job 订阅只接收后续业务事件，单条、批量和终态事件沿用原有发布顺序。
 
 共享时间戳的读写只尝试非阻塞锁；锁不可读时使用最后一次有效时间戳或启动
 基线，不重新计时。过期、负值和未来时间戳不能延长存活期限；即使事件队列

@@ -233,7 +233,8 @@ class OperatorExecutor:
                 payload = {"receipt": deepcopy(receipt)}
                 if background:
                     payload["background"] = True
-                self.publish(event, context, str(receipt.get("status", "")), payload=payload)
+                message = "SQLite write started" if event == "sqlite.write.started" else str(receipt.get("status", ""))
+                self.publish(event, context, message, payload=payload)
 
             runtimeContext["publishSqliteWrite"] = publishSqliteWrite
             if "backgroundTasks" in runtimeContext:

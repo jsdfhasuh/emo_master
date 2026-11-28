@@ -329,6 +329,7 @@ class JobSupervisor:
                 if eventType == "process.heartbeat":
                     self._heartbeat[jobId] = nowMs()
                     self._heartbeatSeen.add(jobId)
+                    return
 
                 stored = self.eventStore.append(**self._workerEventFields(jobId, record, event))
                 if eventType == "job.started":

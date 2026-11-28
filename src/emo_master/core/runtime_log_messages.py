@@ -17,6 +17,12 @@ def executionStatusTitle(value: object) -> str | None:
 def frameworkLogMessage(eventType: str, message: str, *, nodeId="", workflowId="",
                         iterationPath=(), payload=None) -> str:
     """Recognize a producer's default message; business messages remain verbatim."""
+    if eventType == "sqlite.write.started":
+        receipt = payload.get("receipt") if isinstance(payload, dict) else None
+        if message == "SQLite write started" or (
+                message == "UNKNOWN" and isinstance(receipt, dict) and receipt.get("status") == "UNKNOWN"):
+            return "开始写入"
+        return message
     if eventType in {"loop.iteration.started", "loop.iteration.completed"}:
         data = payload if isinstance(payload, dict) else {}
         iteration = data.get("iteration")

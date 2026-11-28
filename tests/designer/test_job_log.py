@@ -83,6 +83,13 @@ def testTreeAssociatesChildCallsAndNestedLoopsBeforeProjectingWarnings():
         _event(23, "workflow.started", "child", parent="unloaded-parent", caller="not-loaded"),
         _event(24, "node.log", "detached", parentWorkflowRunId=None, iterationPath=None),
         _event(25, "device.action.retry", caller="loop", nodeRun="outer", path=(0,)),
+        _event(26, "job.started", run=""),
+        _event(27, "job.failed", run=""),
+        _event(28, "process.terminated", run=""),
+        _event(29, "dispatch.group.retired", run=""),
+        _event(30, "node.failed", run="", caller="operator"),
+        _event(31, "dispatch.invocation.failed", run=""),
+        _event(32, "job.failed", run="first"),
     ]
     tree = ExecutionTree(reversed(rows))
     assert tree.rootCount == 2
@@ -94,6 +101,8 @@ def testTreeAssociatesChildCallsAndNestedLoopsBeforeProjectingWarnings():
     assert branches["node", "body", "inner"].totalIterations == 1
     assert branches["node", "nested", "same"].executionTime().elapsedMs == 200
     assert tree.branchForEvent(10) is branches["node", "nested", "same"]
+    assert tree.nodeRecord(("node", "nested", "same")) is rows[10]
+    assert tree.nodeRecord(("node", "second", "same")) is rows[21]
     assert tree.representativeEventId(("iteration", "body", "repeat", 0, 0)) == 7
     assert branches["node", "second", "same"].end is None
     assert branches["workflow", "unloaded-parent"].children == [branches["workflow", "child"]]
@@ -114,6 +123,10 @@ def testTreeAssociatesChildCallsAndNestedLoopsBeforeProjectingWarnings():
     assert context is not None
     assert [row.eventId for row in rows if context(row)] == [7, 8, 9, 10, 11, 12, 13]
     assert tree.branchForEvent(25) is branches["iteration", "first", "loop", 0]
+    assert [child.entry.eventId for child in branches["job",].children] == [26, 27, 28, 29]
+    assert ("job",) not in tree.defaultExpandedKeys
+    assert tree.branchForEvent(30) is tree.branchForEvent(31) is branches["unlinked",]
+    assert tree.branchForEvent(32) is branches["workflow", "first"]
 
 
 def testLoopPageReportsEndedIterationsWhenBodyExecutionIsUnknown():
@@ -123,7 +136,8 @@ def testLoopPageReportsEndedIterationsWhenBodyExecutionIsUnknown():
     tree = ExecutionTree(rows)
     loop = next(branch for branch in _walk(tree.roots) if branch.kind == "loop")
     assert loop.completedIterations == 0
-    assert loop.title == "loop · 循环类型未记录 · 已加载 50 次迭代结束记录（循环体执行情况未记录） · 总数未记录"
+    assert loop.title == "loop · 当前范围未见循环头 · 已加载 50 次迭代结束记录（循环体执行情况未记录） · 总数未记录"
+    assert next(branch for branch in loop.children if branch.start).title == "第 51 次迭代"
 
 
 def testOnlyOuterRoundsAreNewestFirstWithinTheirOwningLoop():
@@ -210,6 +224,7 @@ def testTimeAndCurrentPositionUseOnlyMatchedLifecycleAndCurrentObservation():
     assert jobExecutionTime({"status": "ACCEPTED", "startAtMs": 300}, 800).acceptedAtMs == 300
     stopping = jobExecutionTime({"status": "STOPPING", "startedAtMs": 400, "acceptedAtMs": 300}, 800)
     assert stopping.estimated and stopping.elapsedMs == 400
+    assert jobExecutionTime({"status": "STOPPING", "startedAtMs": 400}, 900).elapsedMs == 500
     completed = jobExecutionTime({"status": "FAILED", "active": True, "startedAtMs": 400, "endedAtMs": 700}, 900)
     assert not completed.estimated and completed.elapsedMs == 300
     restarted = jobExecutionTime({"status": "FAILED", "startedAtMs": 400, "endedAtMs": 700,
@@ -234,6 +249,25 @@ def testTimeAndCurrentPositionUseOnlyMatchedLifecycleAndCurrentObservation():
     assert missing.elapsedMs is None and "原始时间" in missing.note
     assert branches["node", "first", "skip"].executionTime().elapsedMs is None
     assert branches["node", "first", "unfinished"].executionTime().endedAtMs is None
+    window = JobEventWindow("job")
+    window.mergeRecent(rows)
+    window.pause(1000)
+    window.pause(1500)
+    for key in (("workflow", "next"), ("node", "next", "active")):
+        branch = branches[key]
+        live = branch.executionTime(active=True, nowMs=1000)
+        frozen = branch.executionTime(active=True, nowMs=1500, pausedAtMs=window.pausedAtMs)
+        assert live.estimated and frozen.elapsedMs == live.elapsedMs
+        assert frozen.note == "结束状态待刷新" and "进行中" not in frozen.display(showRange=True)
+        historical = branch.executionTime(pausedAtMs=window.pausedAtMs, terminal=True)
+        assert historical.elapsedMs is None and historical.note == "当前范围未见结束记录"
+    assert branches["node", "next", "later"].executionTime(pausedAtMs=window.pausedAtMs).elapsedMs is None
+    iteration = ExecutionTree([
+        _event(1, "loop.started", caller="loop", nodeRun="loop-run", payload={"mode": "while"}),
+        _event(2, "loop.iteration.started", caller="loop", nodeRun="loop-run", path=(0,)),
+    ]).roots[0].children[0].children[-1]
+    assert iteration.title == "第 1 次迭代"
+    assert iteration.executionTime(active=True, pausedAtMs=window.pausedAtMs).elapsedMs == 800
     options = dict(jobStatus="STOPPING", runtimeInstanceId="runtime", continuous=True)
     assert tree.currentNode(**options) == rows[-2]
     assert tree.currentNode(**dict(options, continuous=False)) is None

@@ -299,11 +299,12 @@ class LogRecordDetail(QWidget):
             self.readable.setCurrentItem(self.readable.topLevelItem(0))
         self._updateActions()
 
-    def setEvent(self, record, *, displayMessage=None, context=None, nodeElapsedMs=None):
+    def setEvent(self, record, *, displayMessage=None, context=None, nodeElapsedMs=None, nodeTitle=""):
         self._showEvent(record, record, displayMessage=displayMessage, context=context,
-                        includeTime=True, nodeElapsedMs=nodeElapsedMs)
+                        includeTime=True, nodeElapsedMs=nodeElapsedMs, nodeTitle=nodeTitle)
 
-    def _showEvent(self, raw, event, *, displayMessage=None, context=None, includeTime=False, nodeElapsedMs=None):
+    def _showEvent(self, raw, event, *, displayMessage=None, context=None, includeTime=False,
+                   nodeElapsedMs=None, nodeTitle=""):
         kind = event.get("eventType", "")
         title = _NODE_TITLES.get(kind) or _FRAMEWORK_TITLES.get(kind) or kind or "日志记录"
         finalReceipt = _backgroundSqliteReceipt(event)
@@ -315,6 +316,8 @@ class LogRecordDetail(QWidget):
             readable = ""
         if event.get("level"):
             title = f"{event['level']} · {title}"
+        if nodeTitle:
+            title = f"{nodeTitle} · {title}"
         self._startRecord(raw, title, readable, originalMessage=message)
         if includeTime:
             self.readable.field("发生时间", event.get("timestampMs", _MISSING), description=_timeText(event.get("timestampMs")))

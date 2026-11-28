@@ -20,6 +20,7 @@ from .log_reader import (
     snapshotLogFiles, iterLogFileRecords,
     deviceRecordMatches,
 )
+from .log_sources import RuntimeLogSources
 
 
 class LogFeed(QObject):
@@ -229,7 +230,10 @@ class RuntimeLogView(QWidget):
         self._shownRecords: list[LogRecord] = []
         self._filePaths = None
         self.deviceId = ""
-        layout = QVBoxLayout(self)
+        localFiles = QWidget()
+        layout = QVBoxLayout(localFiles)
+        layout.setContentsMargins(9, 6, 9, 6)
+        layout.setSpacing(4)
         row = QHBoxLayout()
         self.fileCombo = QComboBox()
         self.fileCombo.setMinimumContentsLength(16)
@@ -321,14 +325,41 @@ class RuntimeLogView(QWidget):
         self.folderButton.clicked.connect(self.openFolder)
         self.table.itemSelectionChanged.connect(self.showDetails)
         feed.updated.connect(self.render)
+        self.runtimeLogs = RuntimeLogSources(localFiles, feed.directory)
+        self.sources = self.runtimeLogs.sources
+        self.jobLogs = self.runtimeLogs.jobLogs
+        self.systemLogs = self.runtimeLogs.systemLogs
+        viewLayout = QVBoxLayout(self)
+        viewLayout.setContentsMargins(0, 0, 0, 0)
+        viewLayout.addWidget(self.runtimeLogs)
         self.render()
 
+    def setRuntime(self, controller):
+        self.runtimeLogs.setRuntime(controller)
+
+    def setToolVisible(self, visible):
+        self.runtimeLogs.setToolVisible(visible)
+
+    def beginClose(self):
+        self.runtimeLogs.beginClose()
+
+    @property
+    def idle(self):
+        return self.runtimeLogs.idle
+
+    def finishClose(self):
+        self.runtimeLogs.finishClose()
+
     def resetFilter(self):
+        self.jobLogs.resetFilters()
+        self.jobLogs.home(resetCatalog=True)
         self.deviceId = ""
         self.levelCombo.setCurrentIndex(0)
         self.render()
+        self.sources.setCurrentIndex(0)
 
     def setDevice(self, deviceId):
+        self.sources.setCurrentIndex(2)
         self.deviceId = deviceId
         self.render()
 

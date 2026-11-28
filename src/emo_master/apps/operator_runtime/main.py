@@ -29,8 +29,10 @@ from emo_master.apps.operator_runtime.settings import (
 from emo_master.apps.operator_runtime.startup_page import StartupPage
 from emo_master.apps.operator_runtime.log_reader import safeRecord, safeText
 from emo_master.apps.operator_runtime.log_view import LogFeed, RuntimeLogView
+from emo_master.apps.operator_runtime.theme import applyOperatorTheme, setStatusTone
 from emo_master.apps.runtime.events.models import RuntimeEvent
 from emo_master.apps.runtime.events.app_log import RuntimeApplicationLogWriter
+from emo_panel_protocol.theme import LIGHT_THEME
 
 
 class OperatorWindow(QWidget):
@@ -38,6 +40,16 @@ class OperatorWindow(QWidget):
                  listenerSettings=None, applicationLogWriter=None, dataRootResolution=None):
         super().__init__()
         self.setWindowTitle("EmoMaster Runtime")
+        self.setObjectName("operatorWindow")
+        self.setAttribute(Qt.WA_StyledBackground, True)
+        self.setStyleSheet(f"""
+            #operatorWindow {{ background: {LIGHT_THEME['page']}; }}
+            #operatorBack {{ color: {LIGHT_THEME['text']}; background: {LIGHT_THEME['surface']};
+                border: 1px solid {LIGHT_THEME['border']}; border-radius: 5px; padding: 4px 10px; min-height: 20px; }}
+            #operatorBack:hover, #operatorBack:focus {{ color: {LIGHT_THEME['primary']};
+                border-color: {LIGHT_THEME['primary']}; }}
+            #operatorBack:pressed {{ background: {LIGHT_THEME['soft']['blue']}; }}
+        """)
         self.resize(1060, 800)
         self.preferences = preferences or QSettings("EmoMaster", "Runtime")
         self.listenerSettings = listenerSettings or readListenerSettings(self.preferences)
@@ -70,51 +82,68 @@ class OperatorWindow(QWidget):
         self.pageFocus = {}
         self.initializationFailed = False
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(14, 12, 14, 12)
+        layout.setSpacing(10)
         self.technicalHost = QWidget()
         technical = QVBoxLayout(self.technicalHost)
-        technical.setContentsMargins(0, 0, 0, 0)
+        technical.setContentsMargins(12, 8, 12, 8)
+        technical.setSpacing(7)
         layout.addWidget(self.technicalHost)
         self.hostLayout = layout
         header = QHBoxLayout()
-        header.addWidget(QLabel("EmoMaster Runtime"))
+        header.setSpacing(8)
+        title = QLabel("EmoMaster Runtime")
+        title.setProperty("operatorRole", "title")
+        header.addWidget(title)
         self.projectLabel = QLabel("未加载工程")
         self.projectLabel.setTextFormat(Qt.PlainText)
         self.projectLabel.setWordWrap(True)
+        self.projectLabel.setProperty("operatorRole", "hint")
         from PySide2.QtWidgets import QSizePolicy
         self.projectLabel.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
         header.addWidget(self.projectLabel, 1)
         self.settingsButton = self._button("Runtime 设置", QStyle.SP_FileDialogDetailedView, self.showSettings)
         self.logsButton = self._button("查看日志", QStyle.SP_FileDialogContentsView, self.showLogs)
+        self.settingsButton.setProperty("operatorRole", "quiet")
+        self.logsButton.setProperty("operatorRole", "quiet")
         header.addWidget(self.settingsButton)
         header.addWidget(self.logsButton)
         technical.addLayout(header)
         toolbar = QHBoxLayout()
+        toolbar.setSpacing(7)
         self.openButton = self._button("选择工程", QStyle.SP_DirOpenIcon, self.chooseProject)
+        self.openButton.setProperty("operatorRole", "primary")
         self.reloadButton = self._button("重新加载", QStyle.SP_BrowserReload, self.reloadProject)
         self.updateButton = self._button("更新工程", QStyle.SP_DialogSaveButton, self.choosePackage)
         self.targetsButton = self._button("运行目标…", QStyle.SP_FileDialogListView, self.chooseTargets)
         self.startButton = self._button("开始", QStyle.SP_MediaPlay, self.startDetection)
         self.stopButton = self._button("停止", QStyle.SP_MediaStop, self.stopDetection)
         self.communicationButton = self._button("设备状态与控制…", QStyle.SP_ComputerIcon, self.showCommunication)
+        self.communicationButton.setProperty("operatorRole", "quiet")
         self.viewRunsButton = self._button("查看已有运行…", QStyle.SP_FileDialogContentsView, self.viewRun)
         self.returnRunButton = self._button('返回运行页面', QStyle.SP_ArrowBack, self.returnToCurrentRun)
         self.viewingLabel = QLabel()
         self.viewingLabel.setTextFormat(Qt.PlainText)
         self.viewingLabel.setWordWrap(True)
+        self.viewingLabel.setProperty("operatorRole", "hint")
         self.returnRunButton.hide()
         self.viewingLabel.hide()
         for button in (self.openButton, self.reloadButton, self.updateButton, self.targetsButton):
             toolbar.addWidget(button)
+        toolbar.addStretch()
         technical.addLayout(toolbar)
-        self.hostControls = QHBoxLayout()
-        technical.addLayout(self.hostControls)
+        self.hostRunActions = QWidget()
+        self.hostControls = QHBoxLayout(self.hostRunActions)
+        self.hostControls.setContentsMargins(0, 0, 0, 0)
+        technical.addWidget(self.hostRunActions)
         self.hostControls.addWidget(self.startButton)
         self.hostControls.addWidget(self.stopButton)
+        self.hostControls.addStretch()
         communicationRow = QHBoxLayout()
         communicationRow.addWidget(self.viewRunsButton)
         communicationRow.addWidget(self.returnRunButton)
         communicationRow.addWidget(self.viewingLabel, 1)
-        communicationRow.addStretch()
+        communicationRow.addStretch(1)
         communicationRow.addWidget(self.communicationButton)
         technical.addLayout(communicationRow)
         self.message = QLabel("正在准备 Runtime")
@@ -123,7 +152,10 @@ class OperatorWindow(QWidget):
         self.message.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
         self.message.setMaximumHeight(100)
         technical.addWidget(self.message)
+        applyOperatorTheme(self.technicalHost, "operatorTechnical", surface='surface', shell=True)
         self.backButton = self._button("返回", QStyle.SP_ArrowBack, self.backFromTool)
+        self.backButton.setObjectName("operatorBack")
+        self.backButton.setFont(self.technicalHost.font())
         self.backButton.hide()
         layout.addWidget(self.backButton, 0, Qt.AlignLeft)
         self.contentStack = QStackedWidget()
@@ -136,6 +168,7 @@ class OperatorWindow(QWidget):
         self.startupPage.retryRequested.connect(self.retryInitialization)
         self.logFeed = LogFeed(self.resolution.path / "logs", self)
         self.logView = RuntimeLogView(self.logFeed)
+        applyOperatorTheme(self.logView, "operatorLog")
         self.logFeed.updated.connect(self._recentLogs)
         for page in (self.businessHost, self.startupPage, self.logView):
             self.contentStack.addWidget(page)
@@ -155,7 +188,7 @@ class OperatorWindow(QWidget):
         self.logFeed.applicationWriter = self.applicationLogWriter
         self.initializationFailed = False
         self.startupPage.retryButton.hide()
-        self.startupPage.failureLabel.clear()
+        self.startupPage.failureLabel.setText("")
         self.error = ""
         self.message.setText("正在准备 Runtime")
         self._diagnostic("operator.storage.resolved", "本次启动目标目录：" + str(self.resolution.path),
@@ -206,6 +239,7 @@ class OperatorWindow(QWidget):
 
     def _runtimeReady(self):
         self.logFeed.setSource(self.controller)
+        self.logView.setRuntime(self.controller)
         self.startupPage.setCurrent(self.controller)
         if not getattr(self, "_readyRecorded", False):
             self._readyRecorded = True
@@ -225,10 +259,12 @@ class OperatorWindow(QWidget):
 
     def _syncTool(self):
         widget = self.contentStack.currentWidget()
+        self.hostRunActions.setVisible(widget is self.businessHost and self.technicalHost.parentWidget() is self)
         self.backButton.setVisible(bool(self.toolHistory))
         self.backButton.setText("返回运行页面" if self.toolHistory and self.toolHistory[-1] is self.businessHost else
                                 "返回设置 / 起始页" if self.toolHistory and self.toolHistory[-1] is self.startupPage else "返回日志")
         self.logFeed.setVisible(self.isVisible() and widget in (self.startupPage, self.logView))
+        self.logView.setToolVisible(self.isVisible() and widget is self.logView)
 
     def _showTool(self, widget):
         current = self.contentStack.currentWidget()
@@ -246,6 +282,10 @@ class OperatorWindow(QWidget):
                 for page in (self.businessHost, self.startupPage, self.logView):
                     if page.isAncestorOf(focused):
                         self.pageFocus[page] = focused
+                        break
+                else:
+                    if self.contentStack.currentWidget() is self.businessHost and self.technicalHost.isAncestorOf(focused):
+                        self.pageFocus[self.businessHost] = focused
 
     def _switchContent(self, widget):
         import shiboken2
@@ -257,9 +297,13 @@ class OperatorWindow(QWidget):
     def showSettings(self):
         self._showTool(self.startupPage)
 
-    def showLogs(self, checked=False, *, resetFilter=False):
-        if resetFilter:
+    def showLogs(self, checked=False, *, resetFilter=False, deviceId=None):
+        if deviceId is not None:
+            self.logView.setDevice(deviceId)
+        elif resetFilter:
             self.logView.resetFilter()
+        else:
+            self.logView.sources.setCurrentIndex(0)
         self._showTool(self.logView)
 
     def backFromTool(self):
@@ -273,10 +317,13 @@ class OperatorWindow(QWidget):
 
     def hideEvent(self, event):
         self.logFeed.setVisible(False)
+        self.logView.setToolVisible(False)
         super().hideEvent(event)
 
     def _button(self, text, icon, action):
         button = (AppearanceButton if icon in (QStyle.SP_MediaPlay, QStyle.SP_MediaStop) else QPushButton)(text)
+        if not isinstance(button, AppearanceButton):
+            button.setProperty("operatorShellAction", True)
         button.setIcon(self.style().standardIcon(icon))
         button.setToolTip(text)
         button.clicked.connect(action)
@@ -289,6 +336,7 @@ class OperatorWindow(QWidget):
         from emo_master.ui.device_management import DeviceManagementDialog
         self.communicationDialog = DeviceManagementDialog(DeviceManagementClient(self.controller.runtime),
             lambda: self.controller.document.project.projectId if self.controller.document else '', self)
+        applyOperatorTheme(self.communicationDialog, "operatorDevices")
         self.communication = self.communicationDialog
         self.communicationButton.setText('设备状态与控制…')
 
@@ -363,7 +411,8 @@ class OperatorWindow(QWidget):
         self.launch("loaded", load)
 
     def startDetection(self):
-        if self.closing or self._deferCommand(self.startDetection) or not self.controller.document:
+        if (self.closing or self._deferCommand(self.startDetection) or self.controller is None
+                or not self.controller.document or not self._startableWorkflows(self.selectedWorkflowIds)):
             return
         if (len(self.controller.sessions) > 1 or len(self.selectedWorkflowIds) > 1
                 or self.selectedWorkflowIds != [self.controller.document.entryWorkflowId]):
@@ -487,9 +536,7 @@ class OperatorWindow(QWidget):
     def startWorkflows(self, workflowId=None):
         if self.closing or self._deferCommand(lambda: self.startWorkflows(workflowId)):
             return
-        rows = self.state.get("workflows", {})
-        keys = [key for key in ([workflowId] if workflowId else self.selectedWorkflowIds)
-                if rows.get(key, {}).get("canStart", True)]
+        keys = self._startableWorkflows([workflowId] if workflowId else self.selectedWorkflowIds)
         if not keys:
             return
         for key in keys:
@@ -576,11 +623,18 @@ class OperatorWindow(QWidget):
             self._historyViewState.clear()
         return self._historyViewState
 
+    def _historyStateKey(self, pages, workflowId):
+        if pages.hub is not None:
+            if pages.hub.session is self.viewSession:
+                return ('job', self.viewRunInfo['jobId'])
+            return ('job', pages.hub.session.jobId)
+        return ('workflow', workflowId or self.controller.document.entryWorkflowId)
+
     def _saveHistoryState(self, pages, workflowId=None):
-        self._historyStateFor(pages)[workflowId] = pages.historyReviewState()
+        self._historyStateFor(pages)[self._historyStateKey(pages, workflowId)] = pages.historyReviewState()
 
     def _restoreHistoryState(self, pages, workflowId=None):
-        state = self._historyStateFor(pages).get(workflowId)
+        state = self._historyStateFor(pages).get(self._historyStateKey(pages, workflowId))
         if state is not None:
             pages.restoreHistoryReviewState(state)
 
@@ -588,8 +642,8 @@ class OperatorWindow(QWidget):
         if self.technicalHost.parentWidget() is self:
             return
         self.hostLayout.insertWidget(0, self.technicalHost)
-        self.hostControls.addWidget(self.startButton)
-        self.hostControls.addWidget(self.stopButton)
+        self.hostControls.insertWidget(0, self.startButton)
+        self.hostControls.insertWidget(1, self.stopButton)
         self.technicalHost.show()
 
     def _attachHostTools(self):
@@ -777,14 +831,25 @@ class OperatorWindow(QWidget):
             del self.workflowSessions[key]
         self.workflowCoverages.pop(key, None)
 
+    def _startableWorkflows(self, workflowIds):
+        availability = self.state.get('workflowStart', {})
+        return [key for key in workflowIds if availability.get(key, {}).get('canStart')]
+
+    def _startBlockText(self, workflowIds):
+        availability = self.state.get('workflowStart', {})
+        reasons = dict.fromkeys(availability.get(key, {}).get('startBlockReason', '') for key in workflowIds)
+        labels = {'E_MAX_CONCURRENT_JOBS': '并发运行名额不足', 'E_CONFIG_NOT_READY': 'Runtime 工程配置尚未就绪',
+                  'E_PROJECT_NOT_LOADED': 'Runtime 尚未加载工程', 'E_RUNTIME_CLOSING': 'Runtime 正在关闭'}
+        return '；'.join(f'{labels.get(reason, "Runtime 暂不可开始")}（{reason}）' for reason in reasons if reason)
+
     def _controls(self):
         enabled = not self.busy and not self.closing and self.controller is not None
         self.openButton.setEnabled(enabled and self.state["canLoad"])
         self.reloadButton.setEnabled(enabled and self.state["canLoad"] and bool(self.projectPath))
         self.updateButton.setEnabled(enabled and self.state["canLoad"] and self.controller.document is not None)
         self.targetsButton.setEnabled(enabled and self.controller.document is not None)
-        self.startButton.setEnabled(enabled and self.controller.document is not None and bool(self.selectedWorkflowIds) and any(
-            self.state.get("workflows", {}).get(key, {}).get("canStart", True) for key in self.selectedWorkflowIds))
+        startable = self._startableWorkflows(self.selectedWorkflowIds)
+        self.startButton.setEnabled(enabled and self.controller.document is not None and bool(startable))
         rows = self.state.get("workflows", {})
         multi = len(rows) > 1
         document = self.controller.document if self.controller is not None else None
@@ -796,7 +861,8 @@ class OperatorWindow(QWidget):
                           if self.controller is not None and key in self.controller.workflows)
         configureHostButton(self.startButton, shell.startControl if shell else None, kind='start',
             fallbackLabel=f"开始（{len(self.selectedWorkflowIds)} 个流程）" if len(self.selectedWorkflowIds) > 1 else "开始",
-            tooltip=f'启动已选流程：{targets}' if targets else '尚未选择启动流程')
+            tooltip=(self._startBlockText(self.selectedWorkflowIds) if not startable else '')
+                or (f'启动已选流程：{targets}' if targets else '尚未选择启动流程'))
         configureHostButton(self.stopButton, shell.stopControl if shell else None, kind='stop',
             fallbackLabel="全部停止" if multi else "停止",
             tooltip='停止全部活动运行' if multi else '停止当前控制运行；存在多个运行时选择停止对象')
@@ -845,13 +911,14 @@ class OperatorWindow(QWidget):
             controls["start"].setEnabled(enabled and row.get("canStart", False))
             controls["stop"].setEnabled(enabled and bool(row.get('activeJobIds') or row.get("jobId")) and not row.get("canLoad", True))
             workflowName = self.controller.workflows[key].name if key in self.controller.workflows else key
+            blocked = self._startBlockText([key])
             configureHostButton(controls['start'], shell.startControl if shell else None, kind='start',
-                fallbackLabel='开始流程', tooltip=f'启动流程：{workflowName}')
+                fallbackLabel='开始流程', tooltip=blocked or f'启动流程：{workflowName}')
             configureHostButton(controls['stop'], shell.stopControl if shell else None, kind='stop',
                 fallbackLabel='停止流程', tooltip=f'停止流程的活动运行：{workflowName}')
             controls["label"].setText(names.get(row.get("state"), "未加载") +
                 (f"\nJob: {row['jobId']}" if row.get("jobId") else "") +
-                (f"\n{row['message']}" if row.get("message") else ""))
+                (f"\n{row['message']}" if row.get("message") else "") + (f'\n{blocked}' if blocked else ''))
             controls["label"].setToolTip(f"流程 ID: {key}\n启动请求: {row.get('startRequestId', '')}")
 
     def _updateBasicPages(self, *, connected=None, connectionDetail="", operation="", workflowIds=None):
@@ -872,17 +939,22 @@ class OperatorWindow(QWidget):
                     connectionDetail=connectionDetail, operation=operation)
 
     def _displayState(self):
-        names = dict(EMPTY="未加载工程", READY="就绪", RUNNING="检测中", STOPPING="停止中", FAULT="故障")
+        names = dict(EMPTY="Runtime 已就绪 · 未加载工程", READY="就绪", RUNNING="检测中", STOPPING="停止中", FAULT="故障")
         if not self.error:
+            blocked = (self._startBlockText(self.selectedWorkflowIds)
+                       if not self._startableWorkflows(self.selectedWorkflowIds) else '')
             self.message.setText(names[self.state["state"]] +
                                  (f" · 配置版本 {self.state['documentRevision']}" if self.state.get('documentRevision') else '') +
-                                 ("\n" + self.state["message"] if self.state["state"] == "FAULT" else ""))
+                                 ("\n" + self.state["message"] if self.state["state"] == "FAULT" else "") +
+                                 (f'\n暂不可开始：{blocked}' if blocked else ''))
         self._updateBasicPages()
+        setStatusTone(self.message, 'red' if self.error or self.state['state'] == 'FAULT' else
+                      {'READY': 'green', 'RUNNING': 'blue', 'STOPPING': 'amber'}.get(self.state['state'], 'neutral'))
         self._controls()
 
     def poll(self):
         if getattr(self, "_closeOperationDone", False):
-            if self.logFeed.idle:
+            if self.logFeed.idle and self.logView.idle:
                 self.done = True
                 self.close()
             return
@@ -903,6 +975,7 @@ class OperatorWindow(QWidget):
             self.pendingCommand = None
             self.error = safeText(error)
             self.message.setText("操作失败：" + self.error)
+            setStatusTone(self.message, 'red')
             self.message.setToolTip(self.error)
             if kind == "loaded":
                 if self.controller:
@@ -923,6 +996,7 @@ class OperatorWindow(QWidget):
             self.closing = False
             if kind == "closed":
                 self.logFeed.closed = False
+                self.logView.setRuntime(self.controller)
                 self._syncTool()
             if kind == 'loaded' and self.controller and self.controller.document:
                 self.projectPath = self.controller.runtime.loadedProjectFile
@@ -983,12 +1057,13 @@ class OperatorWindow(QWidget):
         command, self.pendingCommand = self.pendingCommand, None
         if command:
             command()
-        elif (kind == "loaded" and self.controller.settings.autoStart and self.state["canStart"]):
+        elif kind == "loaded" and self.controller.settings.autoStart:
             self.startDetection()
 
     def shutdown(self):
         if self.busy:
             return
+        self.logView.beginClose()
         self.logFeed.beginClose()
         if self.communication is not None:
             self.communication.dispose()
@@ -1005,6 +1080,7 @@ class OperatorWindow(QWidget):
     def closeEvent(self, event):
         if self.done:
             self.timer.stop()
+            self.logView.finishClose()
             if self._ownsApplicationLogWriter:
                 self.closeApplicationLog()
             event.accept()

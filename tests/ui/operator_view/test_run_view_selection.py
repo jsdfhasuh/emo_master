@@ -35,7 +35,7 @@ def remoteStart(window, channel, workflow='main'):
 
 
 def testViewingConcurrentRemoteRunKeepsExplicitStopSelection(qtApp, tmp_path, monkeypatch):
-    path, _ = currentProductionProject(tmp_path / 'project', mode='continuous')
+    path, _ = currentProductionProject(tmp_path / 'project', mode='continuous', secondPage=True)
     window = OperatorWindow(path, dataRoot=tmp_path / 'data', preferences=preferences(tmp_path))
     window.show()
     try:
@@ -44,6 +44,10 @@ def testViewingConcurrentRemoteRunKeepsExplicitStopSelection(qtApp, tmp_path, mo
         waitFor(lambda: window.state.get('jobStatus') == 'RUNNING' and not window.busy)
         first = window.controller.jobId
         originalSession = window.session
+        window.pages.navigate('review')
+        waitFor(lambda: not window.pages.widgets['review']['review-image'][1].image.isNull())
+        assert window.pages.currentPageId == 'review'
+        assert {scope.result.identity.jobId for scope in window.pages.displayed.values()} == {first}
         with grpc.insecure_channel(window.controller.address) as channel:
             second = remoteStart(window, channel)
             waitFor(lambda: len(window.state.get('activeJobIds', [])) == 2 and not window.busy)
@@ -53,13 +57,28 @@ def testViewingConcurrentRemoteRunKeepsExplicitStopSelection(qtApp, tmp_path, mo
             QTest.mouseClick(window.viewRunsButton, Qt.LeftButton)
             waitFor(lambda: window.viewSession is not None and not window.busy or window.error)
             assert not window.error
-            waitFor(lambda: bool(window.pages.displayed))
+            window.pages.navigate('main')
+            waitFor(lambda: not window.pages.widgets['main']['image'][1].image.isNull())
+            assert window.pages.currentPageId == 'main'
             assert {scope.result.identity.jobId for scope in window.pages.displayed.values()} == {second}
             assert window.viewSession.jobId == second and window.session is originalSession
             assert window.controller.sessions['main'].jobId == first and window.state['jobId'] == first
             assert not window.pages.diagnostics.isVisible() and window.pages.hostMessage.isVisible()
             summary = window.pages.hostMessage.text()
             assert f'查看：Main · {second[:8]}' in summary and f'默认 {first[:8]}' in summary
+            QTest.mouseClick(window.pages.diagnosticToggle, Qt.LeftButton)
+            QTest.mouseClick(window.returnRunButton, Qt.LeftButton)
+            waitFor(lambda: not window.busy and window.viewSession is None)
+            assert window.pages.currentPageId == 'review' and window.pages.hub.session is originalSession
+            waitFor(lambda: not window.pages.widgets['review']['review-image'][1].image.isNull())
+            assert {scope.result.identity.jobId for scope in window.pages.displayed.values()} == {first}
+            assert window.controller.runtime.jobRepository.get(second).status == 'RUNNING'
+
+            QTest.mouseClick(window.pages.diagnosticToggle, Qt.LeftButton)
+            QTest.mouseClick(window.viewRunsButton, Qt.LeftButton)
+            waitFor(lambda: window.viewSession is not None and not window.busy or window.error)
+            assert not window.error and window.pages.currentPageId == 'main'
+            assert window.viewSession.jobId == second
             defaults = []
             def stopSelected(_parent, title, _label, items, current, _editable):
                 assert title == '停止运行'
@@ -70,6 +89,7 @@ def testViewingConcurrentRemoteRunKeepsExplicitStopSelection(qtApp, tmp_path, mo
             waitFor(lambda: not window.busy and window.state.get('jobId') == second)
             assert defaults and first in defaults[0]
             assert window.controller.runtime.jobRepository.get(first).isTerminal
+            assert not window.controller.runtime.jobSupervisor.ownsJobResources(first)
             assert window.controller.runtime.jobRepository.get(second).status == 'RUNNING'
             assert window.viewSession.jobId == second
             assert f'停止对象：{second[:8]}' in window.pages.hostMessage.text()

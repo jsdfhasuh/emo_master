@@ -1,0 +1,37 @@
+{
+  "cli_version": "2.0.0",
+  "command": "openspec validate runtime-platform-overall-v1 --strict --no-interactive --json",
+  "source_revision": "48b30191884ad5ef5d96e8d26591104d16d54a58",
+  "exit_code": 0,
+  "stderr": "",
+  "parsed_stdout": {
+    "items": [
+      {
+        "id": "runtime-platform-overall-v1",
+        "type": "change",
+        "valid": true,
+        "issues": [],
+        "durationMs": 42
+      }
+    ],
+    "summary": {
+      "totals": {
+        "items": 1,
+        "passed": 1,
+        "failed": 0
+      },
+      "byType": {
+        "change": {
+          "items": 1,
+          "passed": 1,
+          "failed": 0
+        }
+      }
+    },
+    "version": "1.0",
+    "root": {
+      "path": "C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\emo-runtime-r3-verify-xoxyvixj",
+      "source": "nearest"
+    }
+  }
+}

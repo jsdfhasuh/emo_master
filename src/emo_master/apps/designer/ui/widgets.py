@@ -7,6 +7,7 @@ from PySide2.QtWidgets import (
 )
 
 from emo_master.apps.designer.ui.workflow_navigation import WorkflowTabs as WorkflowTabs
+from emo_master.ui.wrap_label import OptionalWrapLabel as OptionalWrapLabel, WrapLabel as WrapLabel
 
 
 class ElidedLabel(QLabel):
@@ -43,31 +44,6 @@ class ElidedLabel(QLabel):
 
     def minimumSizeHint(self):
         return QSize(0, self.fontMetrics().height() + 8)
-
-
-class WrapLabel(QLabel):
-    def __init__(self, text="", parent=None):
-        super().__init__(text, parent)
-        self.setTextFormat(Qt.PlainText)
-        self.setWordWrap(True)
-        self.setTextInteractionFlags(Qt.TextSelectableByMouse)
-        policy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
-        policy.setHeightForWidth(True)
-        self.setSizePolicy(policy)
-
-    def minimumSizeHint(self):
-        return QSize(0, self.fontMetrics().height())
-
-
-class OptionalWrapLabel(WrapLabel):
-    """An empty diagnostic should not reserve a platform-font-sized row."""
-    def __init__(self, text='', parent=None):
-        super().__init__(text, parent)
-        self.setVisible(bool(text))
-
-    def setText(self, text):
-        super().setText(text)
-        self.setVisible(bool(text))
 
 
 class PreviewLabel(QLabel):

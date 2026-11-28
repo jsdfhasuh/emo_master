@@ -1,5 +1,4 @@
 """Read-only presentation logs for Jobs not owned by the Designer Run command."""
-import json
 import queue
 import threading
 
@@ -10,18 +9,7 @@ from emo_master.apps.runtime.grpc_server.generated import runtime_pb2_grpc as rp
 from emo_master.clients.runtime.connection import connectionProfile, createChannel
 
 
-def eventPayload(event):
-    fields = {'jobId': 'job_id', 'eventType': 'event_type', 'message': 'message',
-              'level': 'level', 'code': 'code', 'projectId': 'project_id',
-              'workflowId': 'workflow_id', 'workflowRunId': 'workflow_run_id',
-              'parentWorkflowRunId': 'parent_workflow_run_id', 'nodeId': 'node_id',
-              'nodeRunId': 'node_run_id', 'sequence': 'sequence', 'timestampMs': 'timestamp_ms',
-              'originApp': 'origin_app', 'component': 'component', 'runtimeInstanceId': 'runtime_instance_id'}
-    result = {name: getattr(event, wire, '') for name, wire in fields.items()}
-    result['payload'] = json.loads(event.payload_json or '{}')
-    if event.iteration_path_json:
-        result['iterationPath'] = json.loads(event.iteration_path_json)
-    return result
+from emo_master.clients.runtime.log_records import eventPayload as eventPayload
 
 
 class PreviewRuntimeLogs:

@@ -4,13 +4,39 @@ from types import SimpleNamespace
 import pytest
 from PySide2.QtCore import QSettings, Qt
 from PySide2.QtTest import QTest
+from PySide2.QtWidgets import QLabel, QWidget
 
+from emo_master.apps.operator_runtime import theme
 from emo_master.apps.operator_runtime.main import OperatorWindow
 from emo_master.apps.operator_runtime.settings import DEFAULT_ROOT_KEY, resolveDataRoot
 from emo_master.apps.operator_runtime.startup_page import StorageSettings
 from emo_master.apps.operator_runtime.startup_page import ListenerSettingsPanel
 from tests.ui.operator_view.test_production_window import closeWindow, preferences
 from tests.ui.operator_view.test_view import waitFor
+
+
+@pytest.mark.parametrize(("families", "expected"), [
+    (("Microsoft YaHei", "Microsoft YaHei UI"), "Microsoft YaHei UI"),
+    (("Noto Sans CJK SC", "Microsoft YaHei"), "Microsoft YaHei"),
+    (("Noto Sans CJK SC",), "Noto Sans CJK SC"),
+    ((), None),
+])
+def testOperatorToolFontUsesInstalledPreferenceOrder(qtApp, monkeypatch, families, expected):
+    window = QWidget()
+    window.setObjectName("operatorToolFontHost")
+    window.setStyleSheet("#operatorToolFontHost { background: white; }")
+    tool = QWidget(window)
+    toolLabel = QLabel("Runtime 设置", tool)
+    outsideLabel = QLabel("生产页面", window)
+    inherited = outsideLabel.font()
+    monkeypatch.setattr(theme, "QFontDatabase", lambda: SimpleNamespace(families=lambda: families))
+
+    theme.applyOperatorTheme(tool, "operatorToolFontTest")
+    toolLabel.ensurePolished()
+    outsideLabel.ensurePolished()
+
+    assert toolLabel.font().family() == (expected or inherited.family())
+    assert outsideLabel.font() == inherited
 
 
 def testListenerPanelPersistsNextStartupWithoutChangingCurrent(qtApp, tmp_path):
@@ -215,6 +241,8 @@ def testFailedInitializationDiagnosticsDoNotWaitForLogReader(qtApp, tmp_path):
         window.show()
         window.showLogs()
         assert window.contentStack.currentWidget() is window.logView
+        sources = window.logView.sources
+        QTest.mouseClick(sources, Qt.LeftButton, pos=sources.tabRect(2).center())
         assert window.logView.diagnostics.toPlainText() == text
         assert window.logView.diagnostics.isVisible()
     finally:

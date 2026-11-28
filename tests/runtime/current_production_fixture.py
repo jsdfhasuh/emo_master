@@ -18,7 +18,8 @@ def imageBytes(value):
     return encoded.tobytes()
 
 
-def currentProductionProject(root, *, mode='single', autoStart=False, projectId=None, value=37, declared=False):
+def currentProductionProject(root, *, mode='single', autoStart=False, projectId=None, value=37, declared=False,
+                             secondPage=False):
     root.mkdir(parents=True, exist_ok=True)
     data = imageBytes(value)
     (root / 'input.png').write_bytes(data)
@@ -42,6 +43,10 @@ def currentProductionProject(root, *, mode='single', autoStart=False, projectId=
                                   nodeId='load', port='image', expectedType='image')},
         pages={'main': dict(name='Image', components=[
             dict(componentId='image', type='image', bindings={'image': 'image'})])})
+    if secondPage:
+        payload['presentation']['pageOrder'].append('review')
+        payload['presentation']['pages']['review'] = dict(name='Image review', components=[
+            dict(componentId='review-image', type='image', bindings={'image': 'image'})])
     if declared:
         payload['resources']['items']['input'] = dict(path='input.png', sha256=hashlib.sha256(data).hexdigest(),
                                                      size=len(data), purpose='input_image')

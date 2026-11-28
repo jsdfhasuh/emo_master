@@ -10,7 +10,7 @@ import json
 import re
 from durable_claims import State, bind_key
 from terminal_policy import Generation
-from github_broker_transport import PRIVATE, LEDGER, sha, need, Rejected, UnknownWrite
+from github_broker_transport import PRIVATE, LEDGER, sha, need, Rejected, UnknownWrite, Refused
 
 P=f"/repos/{PRIVATE}"
 REF=f"refs/heads/{LEDGER}"
@@ -131,6 +131,16 @@ class StateStore:
             pass
         # Treat even a malformed success response as unconfirmed until the same
         # independently fetched commit and bound slot prove actual adoption.
+        try:
+            return self._confirmed(key,expected,new,commit)
+        except Refused as exc:
+            # Retry only transient GET failures. Keep the same candidate SHA;
+            # never re-create a candidate or repeat the ref update.
+            if str(exc) not in ("read not confirmed","read HTTP 502","read HTTP 503","read HTTP 504"):
+                raise
+            return self._confirmed(key,expected,new,commit)
+
+    def _confirmed(self,key,expected,new,commit):
         tip,observed=self.read(key)
         # Other slots share this ref. Follow only exact single-parent Git objects,
         # reading the bound slot at each immutable SHA (including ABA intermediates).

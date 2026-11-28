@@ -11,6 +11,8 @@ from uuid import uuid4
 from emo_master.apps.designer.services.display_calls import DisplayCallContext, DisplayCallError
 from emo_master.clients.runtime.connection import ConnectionProfile, connectionProfile as resolveConnectionProfile, createChannel
 
+from emo_master.clients.runtime.log_records import logQueryPage, logQueryRequest, unsupportedLogQuery
+
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as _runtime_pb2
 from emo_master.apps.runtime.context.global_counters import MAX_GLOBAL_COUNTER_VALUE
 from emo_master.core.contracts.execution import RuntimeEventDTO
@@ -1816,32 +1818,22 @@ class RuntimeClient:
                          component="", levels=(), workflowId="", nodeId="", startTimestampMs=None,
                          endTimestampMs=None, afterEventId=0, upperEventId=None, limit=200, latestFirst=False,
                          beforeEventId=None, cancellation=None):
-        request = runtime_pb2.QueryRuntimeLogsRequest(runtime_instance_id=runtimeInstanceId,
-            project_id=projectId, job_id=jobId, device_id=deviceId, component=component,
-            levels=levels, workflow_id=workflowId, node_id=nodeId, after_event_id=afterEventId,
-            limit=limit, latest_first=latestFirst)
-        for name, value in (("upper_event_id", upperEventId), ("start_timestamp_ms", startTimestampMs),
-                            ("end_timestamp_ms", endTimestampMs), ("before_event_id", beforeEventId)):
-            if value is not None:
-                setattr(request, name, value)
+        request = logQueryRequest(runtimeInstanceId=runtimeInstanceId, projectId=projectId, jobId=jobId,
+            deviceId=deviceId, component=component, levels=levels, workflowId=workflowId, nodeId=nodeId,
+            startTimestampMs=startTimestampMs, endTimestampMs=endTimestampMs, afterEventId=afterEventId,
+            upperEventId=upperEventId, limit=limit, latestFirst=latestFirst, beforeEventId=beforeEventId)
         if (self.runtimeService is getattr(self, "_unsupportedLogQueryTarget", None)
                 or not callable(getattr(self.runtimeService, "QueryRuntimeLogs", None))):
             self._unsupportedLogQueryTarget = self.runtimeService
-            return dict(ok=False, code="UNIMPLEMENTED", message="此 Runtime 不支持历史日志查询",
-                        runtimeInstanceId="", upperEventId=0, nextEventId=afterEventId, hasMore=False, events=[])
+            return unsupportedLogQuery(afterEventId)
         try:
             reply = self._displayCall("QueryRuntimeLogs", request, 5000, cancellation, "runtime-logs")
         except RuntimeClientError as error:
             if "UNIMPLEMENTED" not in error.code:
                 raise
             self._unsupportedLogQueryTarget = self.runtimeService
-            return dict(ok=False, code="UNIMPLEMENTED", message="此 Runtime 不支持历史日志查询",
-                        runtimeInstanceId="", upperEventId=0, nextEventId=afterEventId, hasMore=False, events=[])
-        from emo_master.apps.designer.page_designer.runtime_logs import eventPayload
-        return dict(ok=reply.ok, code=reply.code, message=reply.message,
-            runtimeInstanceId=reply.runtime_instance_id, upperEventId=reply.upper_event_id,
-            nextEventId=reply.next_event_id, hasMore=reply.has_more,
-            events=[dict(eventId=row.event_id, event=eventPayload(row.event)) for row in reply.events])
+            return unsupportedLogQuery(afterEventId)
+        return logQueryPage(reply)
 
     def _toEventDTO(self, event: object) -> RuntimeEventDTO:
         payloadJson = getattr(event, "payload_json", "{}")

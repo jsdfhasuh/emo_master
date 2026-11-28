@@ -107,3 +107,23 @@ class Tests(unittest.TestCase):
                     with self.assertRaisesRegex(ValueError,"unconfirmed ledger CAS"):
                         store.cas(self.key,A,State(self.g),"a"*48)
                 self.assertEqual(sum(method=="PATCH" for method,*_ in git.writes),1)
+
+    def test_lost_confirmation_get_rechecks_same_candidate_without_mutation(self):
+        for persistent in (False,True):
+            with self.subTest(persistent=persistent):
+                git=Git(); original=git._request; reads=[]
+                def request(method,path,payload=None,expected=200):
+                    if method=="GET" and git.tip==C and path.startswith(P+"/git/ref/heads/"):
+                        reads.append(path)
+                        if persistent or len(reads)==1:
+                            raise Refused("read not confirmed")
+                    return original(method,path,payload,expected)
+                git._request=request
+                store=StateStore(git,A)
+                if persistent:
+                    with self.assertRaisesRegex(Refused,"read not confirmed"):
+                        store.cas(self.key,A,State(self.g),"a"*48)
+                else:
+                    self.assertTrue(store.cas(self.key,A,State(self.g),"a"*48))
+                self.assertEqual(len(reads),2)
+                self.assertEqual([method for method,*_ in git.writes],["POST","POST","PATCH"])

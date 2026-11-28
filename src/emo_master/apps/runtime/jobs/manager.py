@@ -8,6 +8,7 @@ from emo_master.apps.runtime.jobs.models import JobProcessSpec, JobRecord
 from emo_master.apps.runtime.jobs.repository import JobRepository
 from emo_master.apps.runtime.jobs.supervisor import JobSupervisor
 from emo_master.core.contracts.legacy_snapshots import normalizeLegacySnapshotPolicy
+from emo_master.core.contracts.log_safety import redactLogText
 
 
 class JobManager:
@@ -30,6 +31,8 @@ class JobManager:
         *,
         legacySnapshotPolicy: str = "ALL",
         previewProjectKey: str = "",
+        projectName: str = "",
+        workflowName: str = "",
     ) -> JobRecord:
         if self.supervisor is not None:
             self.supervisor.assertMutationAllowed()
@@ -46,15 +49,22 @@ class JobManager:
                 workflowId=workflowId,
                 legacySnapshotPolicy=policy,
                 previewProjectKey=previewProjectKey,
+                projectName=projectName,
+                workflowName=workflowName,
             )
             self.jobRepository.create(record)
+            payload: dict[str, object] = {"legacySnapshotPolicy": policy, "previewProjectKey": previewProjectKey}
+            if projectName:
+                payload["projectName"] = redactLogText(projectName)
+            if workflowName:
+                payload["workflowName"] = redactLogText(workflowName)
             self.eventStore.append(
                 record.jobId,
                 "job.accepted",
                 "job accepted",
                 projectId=projectId,
                 workflowId=workflowId,
-                payload={"legacySnapshotPolicy": policy, "previewProjectKey": previewProjectKey},
+                payload=payload,
             )
             return record
 

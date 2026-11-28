@@ -84,6 +84,16 @@ event.sequence 仍为原 Job 分区内的序号。系统设备事件不改写 `j
 限制到该槽位，单条只返回一次。设备筛选不强制 component=device。内部 process.heartbeat
 不在日志查询中出现；存储/落盘故障可查询。读取副本复用 JSONL 紧凑 payload 投影，不改原库或任务流。
 
+`StreamJobEvents` 使用逐 Job 的 `after_sequence` 续订，从上一次处理的业务事件继续。
+新周期心跳只用于判活。重放旧 Job 时，客户端仍可能收到有原序号的已存心跳。
+
+`RunState` 的 `project_name` 和已有 `workflow_name` 优先使用 Job 受理时的名称。
+`JobHistorySummary` 也提供这两个名称，并返回有记录的 `target_slot_id`。
+旧历史名称为空时，只有工程 ID 和修订均匹配可信的 Runtime 文档才可借用名称。
+在线配置另有修订序号，旧记录缺少原任务的在线修订身份时显示 ID。
+关键执行事件通过 payload 保存可取得的 `projectName`、`workflowName` 和 `nodeName`。
+子调用的 `targetWorkflowId`、`targetWorkflowName` 表示目标，调用节点仍归属实际父流程。
+
 首次历史请求固定上界，后续各页和导出复用条件及上界。截断游标停在实际最后返回记录；只有
 确认没有更多匹配项才推进到上界。实时首次无业务筛选 limit=1 获取起点，不插入旧记录；
 逐页消费完本轮再取下一轮上界。同目标断线和隐藏重开保留游标，目标/实例/筛选变化取消旧请求

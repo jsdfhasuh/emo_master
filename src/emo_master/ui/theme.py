@@ -9,6 +9,14 @@ BORDER = "#d8dce3"
 SURFACE = "#ffffff"
 BACKGROUND = "#f5f6f8"
 
+LOG_LEVEL_COLORS = {"ERROR": "#b42318", "WARN": "#854d0e", "INFO": "#1d4ed8", "DEBUG": MUTED}
+RUN_STATUS_COLORS = {
+    "进行中": LOG_LEVEL_COLORS["INFO"], "运行中": LOG_LEVEL_COLORS["INFO"], "已完成": "#166534",
+    "已跳过": MUTED, "已结束": MUTED, "失败": LOG_LEVEL_COLORS["ERROR"],
+    "已超时": LOG_LEVEL_COLORS["ERROR"], "达到次数上限": LOG_LEVEL_COLORS["WARN"],
+    "停止中": LOG_LEVEL_COLORS["WARN"], "已停止": MUTED,
+}
+
 
 def uiFont(*, bold: bool = False, points: float = 10.5) -> QFont:
     app = QApplication.instance()

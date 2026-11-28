@@ -340,6 +340,10 @@ def testLoggingMetadataMigrationFromV5PreservesHistoryAndReopens(tmp_path):
         migrateVariables(connection)
         connection.execute('CREATE TABLE IF NOT EXISTS schemaMigrations(version INTEGER PRIMARY KEY, appliedAt TEXT NOT NULL)')
         connection.executemany("INSERT OR REPLACE INTO schemaMigrations VALUES (?, 'old')", [(i,) for i in range(1, 6)])
+        connection.execute(
+            "INSERT INTO jobs(jobId, projectId, releaseId, status, startAt, workflowId) "
+            "VALUES ('old-job', 'old-project', '', 'COMPLETED', '2023-11-14T22:13:19+00:00', 'old-flow')"
+        )
         for index, eventType in enumerate(('node.log', 'node.completed', 'device.connect.failed',
                                             'presentation.source.unavailable', 'runtime.logfile.failed', 'unknown',
                                             'dispatch.invocation.failed', 'dispatch.invocation.completed')):
@@ -349,6 +353,9 @@ def testLoggingMetadataMigrationFromV5PreservesHistoryAndReopens(tmp_path):
     store = SqliteStore(db)
     store.initialize()
     store.initialize()
+    oldJob = store.getJob('old-job')
+    assert oldJob is not None and oldJob['workflowId'] == 'old-flow'
+    assert (oldJob['projectName'], oldJob['workflowName'], oldJob['targetSlotId']) == ('', '', '')
     rows = SqliteStore(db).listJobEventsAfter('old-job')
     assert [event.component for event in rows] == ['operator', 'execution', 'device', 'presentation', 'storage',
                                                   'application', 'execution', 'execution']
@@ -505,7 +512,9 @@ def testJobHistoryUsesPersistedTerminalRowsAndKeysetAfterRestart(tmp_path):
             ('older', 'project', 'COMPLETED', sameEnd - 1),
             ('other-project', 'elsewhere', 'COMPLETED', sameEnd + 1),
         ):
-            first.sqliteStore.insertJob(jobId, projectId, projectRevision=7, workflowId='flow', acceptedAtMs=sameEnd - 10)
+            first.sqliteStore.insertJob(jobId, projectId, projectRevision=7, workflowId='flow',
+                acceptedAtMs=sameEnd - 10, projectName='工程原名' if jobId == 'z' else '',
+                workflowName='流程原名' if jobId == 'z' else '', targetSlotId='inspection' if jobId == 'z' else '')
             first.sqliteStore.updateJobStatus(jobId, status, startedAtMs=sameEnd - 3, endedAtMs=ended,
                 errorCode='E_SOFTWARE' if status == 'FAILED' else None,
                 errorMessage='failed in software' if status == 'FAILED' else None,
@@ -522,6 +531,9 @@ def testJobHistoryUsesPersistedTerminalRowsAndKeysetAfterRestart(tmp_path):
         first.close()
 
     service = RuntimeService(dbPath=path, runtimeInstanceId='new-runtime')
+    from types import SimpleNamespace
+    service.loadedDocument = SimpleNamespace(project=SimpleNamespace(
+        projectId='project', name='改名后的工程', revision=8), workflows={'flow': SimpleNamespace(name='改名后的流程')})
     service.sqliteStore.insertJob('still-active', 'project', status='RUNNING')
     server, port, _ = createRuntimeServer(port=0, runtimeService=service)
     server.start()
@@ -535,12 +547,15 @@ def testJobHistoryUsesPersistedTerminalRowsAndKeysetAfterRestart(tmp_path):
         assert (row.job_id, row.project_revision, row.workflow_id, row.status) == ('z', 7, 'flow', 'FAILED')
         assert (row.accepted_at_ms, row.started_at_ms, row.ended_at_ms) == (sameEnd - 10, sameEnd - 3, sameEnd)
         assert (row.error_code, row.message) == ('E_SOFTWARE', 'failed in software')
+        assert (row.project_name, row.workflow_name, row.target_slot_id) == ('工程原名', '流程原名', 'inspection')
         following = client.listJobHistory('new-runtime', 'project', limit=3, cursor=page.next_cursor)
         assert [row.job_id for row in following.jobs] == ['a', 'older', 'legacy']
         assert following.jobs[0].stop_mode == 'graceful'
+        assert not following.jobs[0].project_name and not following.jobs[0].workflow_name
         assert not following.has_more and not following.next_cursor
         legacy = following.jobs[-1]
         assert (legacy.accepted_at_ms, legacy.started_at_ms, legacy.ended_at_ms) == (1_699_999_999_000, 0, 0)
+        assert not legacy.project_name and not legacy.workflow_name
         timed = client.listJobHistory('new-runtime', 'project', startEndedAtMs=sameEnd, endEndedAtMs=sameEnd + 1)
         assert [row.job_id for row in timed.jobs] == ['z', 'a']
         archived = client.listJobHistory('new-runtime', 'elsewhere', startEndedAtMs=sameEnd, endEndedAtMs=sameEnd + 1)

@@ -153,6 +153,7 @@ def _project(tmpPath: Path, startedPath: Path, releasePath: Path, outputPath: Pa
                     {
                         "nodeId": "handle",
                         "kind": "subflow",
+                        "displayName": "Handle the result",
                         "targetWorkflowId": "handle_result",
                     },
                     {"nodeId": "output", "kind": "workflow_output"},
@@ -301,6 +302,14 @@ def testRuntimeWorkflowV2StreamsLiveLoopEventsAndArtifacts(
         assert len(handleStarted) == 1
         assert handleStarted[0].parent_workflow_run_id == mainStarted.workflow_run_id
         assert handleStarted[0].workflow_run_id != mainStarted.workflow_run_id
+        handleNames = json.loads(handleStarted[0].payload_json)
+        assert handleNames["workflowName"] == "Handle result" and "nodeName" not in handleNames
+        for eventType in ("subflow.started", "subflow.completed"):
+            call, = (event for event in events if event.event_type == eventType)
+            names = json.loads(call.payload_json)
+            assert (call.workflow_id, call.node_id, names["workflowName"], names["nodeName"]) == (
+                "main", "handle", "Main", "Handle the result")
+            assert (names["targetWorkflowId"], names["targetWorkflowName"]) == ("handle_result", "Handle result")
         branchCompleted = next(
             event
             for event in events

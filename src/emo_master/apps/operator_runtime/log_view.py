@@ -15,8 +15,10 @@ from PySide2.QtWidgets import (
     QMenu, QMessageBox, QPlainTextEdit, QPushButton, QScrollArea, QSizePolicy, QSplitter, QTableView, QVBoxLayout, QWidget,
 )
 
+from emo_master.core.runtime_log_messages import runtimeLogComponentTitle
+
 from .log_reader import (
-    JsonlTailReader, LogFilters, LogRecord, MAX_RECORDS, formatLocalTimestamp, iterLogFileRecords,
+    JsonlTailReader, LogFilters, LogRecord, MAX_RECORDS, displayLogMessage, formatLocalTimestamp, iterLogFileRecords,
     listLogFiles, normalizedLevel, recordDetails, recordSource, safeText, snapshotLogFiles,
 )
 from .log_sources import RuntimeLogSources
@@ -254,10 +256,14 @@ class LogTableModel(QAbstractTableModel):
                 timestamps = [str(data[key]) for key in ("timestamp", "timestampMs") if data.get(key) not in (None, "")]
                 if timestamps:
                     return f"显示时间：{value}\n原始时间：{' / '.join(timestamps)}"[:4096]
+        elif column == 3:
+            value = runtimeLogComponentTitle(str(data.get("component") or ""))
         elif column == 4:
             value = recordSource(data)
+        elif column == 5:
+            value = displayLogMessage(data)
         else:
-            field = ("", "level", "originApp", "component", "", "message")[column]
+            field = "level" if column == 1 else "originApp"
             value = str(data.get(field, ""))
         return value.replace("\n", " ")[:1000] if role == Qt.DisplayRole else value[:4096]
 
@@ -555,7 +561,7 @@ class RuntimeLogView(QWidget):
         self.componentCombo.clear()
         self.componentCombo.addItem("全部模块", "")
         for name in values:
-            self.componentCombo.addItem(name, name)
+            self.componentCombo.addItem(runtimeLogComponentTitle(name), name)
             self.componentCombo.setItemData(self.componentCombo.count() - 1, name, Qt.ToolTipRole)
         self.componentCombo.setCurrentIndex(self.componentCombo.findData(selected))
         del blocker

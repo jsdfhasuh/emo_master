@@ -200,7 +200,7 @@ def testCancelIsQuietAndPreservesExistingFiles(designerApplication, monkeypatch,
     assert notices == []
 
 
-@pytest.mark.parametrize("formatName", ["json", "jsonl", "txt"])
+@pytest.mark.parametrize("formatName", ["json", "jsonl", "txt", "md"])
 def testSaveFailurePreservesPreviousExportAndCleansTemporaryFile(monkeypatch, tmp_path, formatName):
     target = tmp_path / f"原有日志.{formatName}"
     target.write_bytes(b"previous complete export")
@@ -375,7 +375,7 @@ def testFileHistoryExportsAllCapturedCompleteRecordsWithActualCount(tmp_path, fo
         assert '导出条数：2300' in text and '缓存条数' not in text
 
 
-@pytest.mark.parametrize('formatName', ['json', 'jsonl', 'txt'])
+@pytest.mark.parametrize('formatName', ['json', 'jsonl', 'txt', 'md'])
 def testMidExportCancelPreservesDestinationAndCleansTemporary(tmp_path, formatName):
     from threading import Event
     from emo_master.core.log_export import LogExportCancelled

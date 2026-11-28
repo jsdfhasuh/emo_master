@@ -1,6 +1,7 @@
 """Real FastAPI HTTP/WS + explicit mock Runtime + real Chromium. No hardware."""
 import asyncio,json,os,socket,sys,tempfile,threading,time,zipfile,hashlib
 from pathlib import Path
+from urllib.parse import parse_qs, urlsplit
 ROOT=Path(__file__).resolve().parents[1]
 (ROOT/'test-tmp').mkdir(exist_ok=True)
 sys.path.insert(0,str(ROOT.parent/'backend'))
@@ -30,18 +31,72 @@ def logging_check(page,base):
  page.get_by_text('权威计数与任务事件',exact=True).click()
  logs=page.get_by_role('region',name='Runtime 日志')
  logs.get_by_label('范围',exact=True).select_option('history')
- expect(logs.locator('tbody tr')).to_have_count(2)
+ rows=logs.locator('tbody tr')
+ expect(rows).to_have_count(2)
+ framework=rows.nth(0);custom=rows.nth(1)
+ expect(framework).to_contain_text('开始执行节点')
+ expect(framework.locator('td').first).to_contain_text('123')
+ expect(custom).to_contain_text('Synthetic Runtime log')
+ info=framework.get_by_text('INFO',exact=True);warning=custom.get_by_text('WARN',exact=True)
+ assert info.evaluate('element => getComputedStyle(element).color')!=warning.evaluate('element => getComputedStyle(element).color')
+ detail=logs.get_by_role('region',name='日志详情')
+ framework.get_by_role('button',name='详情',exact=True).click()
+ expect(detail).to_contain_text('开始执行节点')
+ expect(detail).to_contain_text('Demo workflow')
+ expect(detail).to_contain_text('Demo node')
+ expect(detail.locator('dl > div').filter(has_text='输入项数').locator('dd')).to_have_text('0')
+ detail.get_by_role('button',name='查看原始记录',exact=True).click()
+ default_record=json.loads(detail.locator('pre').inner_text())
+ assert default_record['eventId']=='1' and default_record['message']=='node started: node-1'
+ assert default_record['payload']['deviceId']=='demo-device'
+ custom.get_by_role('button',name='详情',exact=True).click()
+ expect(detail).to_contain_text('Synthetic Runtime log')
+ expect(detail.locator('pre')).to_have_count(0)
+ detail.get_by_role('button',name='查看原始记录',exact=True).click()
+ custom_record=json.loads(detail.locator('pre').inner_text())
+ assert custom_record['eventId']=='2' and custom_record['message']=='Synthetic Runtime log'
+ detail.get_by_role('button',name='查看易读详情',exact=True).click()
+ expect(detail).to_contain_text('Synthetic Runtime log')
+
+ start=logs.get_by_label('本地开始时间（含）',exact=True)
+ end=logs.get_by_label('本地结束时间（不含）',exact=True)
+ apply=logs.get_by_role('button',name='应用筛选',exact=True)
+ start.fill('2026-11-03T08:00:00.123');end.fill('2026-11-03T08:00:00.124')
+ log_requests=[]
+ def capture_log_query(request):
+  if request.method=='GET' and urlsplit(request.url).path.endswith('/logs'):
+   log_requests.append(parse_qs(urlsplit(request.url).query))
+ page.on('request',capture_log_query)
+ apply.click()
+ expect(rows).to_have_count(1)
+ expect(rows.first).to_contain_text('开始执行节点')
+ assert log_requests[-1]['startTimestampMs']==['1793664000123']
+ assert log_requests[-1]['endTimestampMs']==['1793664000124']
+ framework.get_by_role('button',name='详情',exact=True).click()
+ request_count=len(log_requests)
+ start.fill('2026-11-03T08:00:00.125');apply.click()
+ expect(logs.get_by_role('alert')).to_contain_text('开始时间不能晚于结束时间')
+ expect(rows).to_have_count(1)
+ expect(detail).to_contain_text('开始执行节点')
+ assert len(log_requests)==request_count
+ start.fill('2026-11-03T08:00:00.123');end.fill('');apply.click()
+ expect(rows).to_have_count(2)
+ assert 'endTimestampMs' not in log_requests[-1]
+ expect(logs.get_by_role('alert')).to_have_count(0)
+ start.fill('');end.fill('2026-11-03T08:00:00.124')
  logs.get_by_label('工程',exact=True).fill('previous-project')
- logs.get_by_role('button',name='应用筛选',exact=True).click()
- expect(logs.locator('tbody tr')).to_have_count(1)
+ apply.click()
+ expect(rows).to_have_count(1)
+ assert 'startTimestampMs' not in log_requests[-1]
+ page.remove_listener('request',capture_log_query)
  logs.get_by_role('button',name='详情',exact=True).click()
- expect(logs.locator('pre')).to_contain_text('previous-project')
- expect(logs.locator('pre')).to_contain_text('demo-device')
+ expect(detail).to_contain_text('previous-project')
+ expect(detail).to_contain_text('demo-device')
  with page.expect_download() as pending:
   logs.get_by_role('button',name='导出筛选历史 JSONL',exact=True).click()
- rows=[json.loads(line) for line in Path(pending.value.path()).read_text(encoding='utf-8').splitlines()]
- assert len(rows)==1 and rows[0]['projectId']=='previous-project' and rows[0]['eventId']=='1'
- assert 'entryCount' not in rows[0]
+ exported=[json.loads(line) for line in Path(pending.value.path()).read_text(encoding='utf-8').splitlines()]
+ assert exported==[default_record]
+ assert 'entryCount' not in exported[0]
  page.request.get(base+'/api/admin/gateway-logs?limit=0')
  page.get_by_text('账户与 Runtime 管理',exact=True).click()
  page.get_by_role('button',name='读取最近网关诊断',exact=True).click()
@@ -52,6 +107,7 @@ def logging_check(page,base):
  page.get_by_text('账户与 Runtime 管理',exact=True).click()
  page.get_by_text('权威计数与任务事件',exact=True).click()
  page.get_by_text('运行诊断',exact=True).click()
+ print('PASS: RuntimeLogs local millisecond query, open bounds, inverted range retention, default/custom details, raw JSON and matching export')
 
 
 def target_isolation_check(page,browser,base,data,versions,password,errors):
@@ -268,7 +324,7 @@ def main():
   if not server.started:raise RuntimeError('Backend failed to start')
   try:
    with sync_playwright() as p:
-    browser=p.chromium.launch(**({'executable_path':os.environ['CHROMIUM_PATH']} if os.environ.get('CHROMIUM_PATH') else {}),headless=True,args=['--no-sandbox','--disable-dev-shm-usage']);page=browser.new_page(viewport={'width':1280,'height':900});errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
+    browser=p.chromium.launch(**({'executable_path':os.environ['CHROMIUM_PATH']} if os.environ.get('CHROMIUM_PATH') else {}),headless=True,args=['--no-sandbox','--disable-dev-shm-usage']);page=browser.new_page(viewport={'width':1280,'height':900},timezone_id='Asia/Shanghai');errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
     try:
      page.goto(f'http://127.0.0.1:{port}');page.get_by_label('用户名',exact=True).fill('tester');page.get_by_label('密码',exact=True).fill(password);page.get_by_role('button',name='登录',exact=True).click()
      page.get_by_text('99.50',exact=False).wait_for()

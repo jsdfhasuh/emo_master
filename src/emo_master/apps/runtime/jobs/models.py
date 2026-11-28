@@ -42,6 +42,8 @@ class JobRecord:
     runGroupId: str = ""
     sourceJobId: str = ""
     targetSlotId: str = ""
+    projectName: str = ""
+    workflowName: str = ""
 
     @property
     def isTerminal(self) -> bool:

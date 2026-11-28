@@ -7,6 +7,35 @@ const require=createRequire(import.meta.url);
 for(const ext of ['.ts','.tsx'])require.extensions[ext]=(m,p)=>m._compile(ts.transpileModule(readFileSync(p,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022,jsx:ts.JsxEmit.ReactJSX}}).outputText,p);
 const {mergeRuntimeLogs}=require('../src/components/RuntimeLogs.tsx');
 const {apiBlob,ApiError,setCsrf,onSessionExpired}=require('../src/data/api.ts');
+const {localLogTimestamp,runtimeLogMessage}=require('../src/data/runtimeLogDisplay.ts');
+test('local log boundaries preserve timezone, milliseconds and optional values',()=>{
+ const previous=process.env.TZ;
+ process.env.TZ='Asia/Shanghai';
+ try{
+  assert.equal(localLogTimestamp('2026-11-03T08:00:00.123'),1793664000123);
+  assert.equal(localLogTimestamp('2026-11-03T08:00:00.1'),1793664000100);
+  assert.equal(localLogTimestamp('2026-11-03T08:00'),1793664000000);
+  assert.equal(localLogTimestamp('1970-01-01T08:00'),0);
+  assert.equal(localLogTimestamp(''),undefined);
+  assert.throws(()=>localLogTimestamp('2026-02-30T08:00'),RangeError);
+  assert.throws(()=>localLogTimestamp('2026-11-03T08:00Z'),RangeError);
+ }finally{
+  if(previous===undefined)delete process.env.TZ;
+  else process.env.TZ=previous;
+ }
+});
+test('only matching Runtime defaults are translated',()=>{
+ const event={eventType:'node.started',nodeId:'fixture',message:'node started: fixture',payload:{}};
+ assert.equal(runtimeLogMessage(event),'开始执行节点');
+ assert.equal(runtimeLogMessage({...event,message:'node started: customer text'}),'node started: customer text');
+ assert.equal(runtimeLogMessage({...event,eventType:'node.log'}),event.message);
+ const receipt={receipt:{status:'UNKNOWN'}};
+ assert.equal(runtimeLogMessage({...event,eventType:'sqlite.write.started',message:'UNKNOWN',payload:receipt}),'开始写入');
+ assert.equal(runtimeLogMessage({...event,eventType:'sqlite.write.started',message:'UNKNOWN'}),'UNKNOWN');
+ assert.equal(runtimeLogMessage({...event,eventType:'sqlite.write.finished',message:'UNKNOWN',payload:receipt}),'UNKNOWN');
+ assert.equal(runtimeLogMessage({...event,eventType:'artifact.created',message:'artifact created: D:/output.png',
+  payload:{artifact:{path:'D:/job/stored.png',artifactId:'id'}}}),'已生成产物 · D:/output.png');
+});
 test('global event IDs stay lossless, historical pages retain more than 100 and Job sequence is independent',()=>{
  const events=Array.from({length:220},(_,i)=>({eventId:(9007199254740993n+BigInt(i)).toString(),sequence:'1'}));
  const page={ok:true,events,nextEventId:events.at(-1).eventId,upperEventId:events.at(-1).eventId};
@@ -42,7 +71,8 @@ function componentHarness() {
  };
  const apiMock={ApiError,getSessionGeneration:()=>1,onSessionExpired:()=>()=>{},apiBlob:()=>{throw Error('unexpected download')},api:(path,options)=>new Promise((resolve,reject)=>requests.push({path,query:Object.fromEntries(new URL('http://fixture'+path).searchParams),signal:options.signal,resolve,reject}))};
  const module={exports:{}};
- const context={exports:module.exports,module,require:id=>id==='react'?hooks:id==='../data/api'?apiMock:require(id),AbortController,URLSearchParams,Map,BigInt,Date,Error,setTimeout:fn=>{timers.set(++nextTimer,fn);return nextTimer},clearTimeout:id=>timers.delete(id)};
+ const requireFromComponent=createRequire(new URL('../src/components/RuntimeLogs.tsx',import.meta.url));
+ const context={exports:module.exports,module,require:id=>id==='react'?hooks:id==='../data/api'?apiMock:requireFromComponent(id),AbortController,URLSearchParams,Map,BigInt,Date,Error,setTimeout:fn=>{timers.set(++nextTimer,fn);return nextTimer},clearTimeout:id=>timers.delete(id)};
  require('node:vm').runInNewContext(compiled,context);
  class Runner {
   constructor(props){this.props=props;this.slots=[];this.dirty=true}

@@ -177,12 +177,13 @@ SQLite 是事件查询和重放的权威存储，默认位于
 Runtime 还异步写入面向运维的 UTF-8 JSONL，默认目录为
 `~/.emo_master/runtime/logs`，可通过 `EMO_RUNTIME_LOG_DIR` 覆盖。文件达到 64 MiB 后轮转，
 关闭文件保留 14 天，目录总量上限 2 GiB；当前活动文件不会被清理。JSONL 记录 Job、
-Workflow、Loop、Node、artifact 生命周期及 `node.log`，完成事件不会复制大体积 outputs。
+Workflow、Loop、Subflow、Node、artifact 生命周期、SQLite 写入起止与最终回执及 `node.log`，
+完成事件不会复制大体积 outputs。
 ERROR 和 Job 终态立即 flush/fsync，其余至少每秒刷新。JSONL 故障不影响作业，Runtime 会把
 `runtime.logfile.failed` 仅写入 SQLite，避免递归失败。
 
 记录追加 `originApp/component/runtimeInstanceId`。运行事件归 `runtime`；`node.log` 为 `operator`，
-Job/节点生命周期为 `execution`，设备为 `device`，页面为 `presentation`，存储诊断为 `storage`，
+Job、节点和子工作流生命周期为 `execution`，设备为 `device`，页面为 `presentation`，存储诊断为 `storage`，
 其他为 `application`。`timestampMs` 保留事件产生时间，SQLite 文本 timestamp 仍为入库时间。
 006 迁移给旧记录补应用/模块分类并保留空历史实例 ID，旧 JSONL 只在读取时补显示分类。
 

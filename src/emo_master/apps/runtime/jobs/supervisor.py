@@ -186,7 +186,8 @@ class JobSupervisor:
             # capture. Finish it before taking the process-admission lock.
             for key, slot in slots.items():
                 self.jobRepository.create(JobRecord(slot.jobId, spec.projectId, document.project.revision, slot.workflowId,
-                    runGroupId=group.groupId, sourceJobId=spec.jobId, targetSlotId=key))
+                    runGroupId=group.groupId, sourceJobId=spec.jobId, targetSlotId=key,
+                    projectName=document.project.name, workflowName=document.workflows[slot.workflowId].name))
                 workspace = Path(spec.jobWorkspacePath).parent / slot.jobId
                 workspace.mkdir(parents=True, exist_ok=True)
                 # Only the source Job is attached to the requested inspection
@@ -266,11 +267,22 @@ class JobSupervisor:
     @staticmethod
     def _workerEventFields(jobId, record, event) -> dict[str, Any]:
         contextIteration = event.get("iterationPath", [])
-        return dict(jobId=jobId, eventType=str(event.get("eventType", "process.event")),
+        eventType = str(event.get("eventType", "process.event"))
+        payload = event.get("payload")
+        payload = payload if isinstance(payload, dict) else {}
+        if eventType.startswith("job."):
+            from emo_master.core.contracts.log_safety import redactLogText
+            payload = dict(payload)
+            if record.projectName:
+                payload["projectName"] = redactLogText(record.projectName)
+            if record.workflowName:
+                payload["workflowName"] = redactLogText(record.workflowName)
+            if record.targetSlotId:
+                payload["targetSlotId"] = record.targetSlotId
+        return dict(jobId=jobId, eventType=eventType,
             message=str(event.get("message", event.get("eventType", "process.event"))),
             level=str(event.get("level", "INFO")), nodeId=str(event.get("nodeId", "")),
-            code=str(event.get("code", "")),
-            payload=event.get("payload") if isinstance(event.get("payload"), dict) else {},
+            code=str(event.get("code", "")), payload=payload,
             projectId=str(event.get("projectId", "")) or record.projectId,
             workflowId=str(event.get("workflowId", "")) or record.workflowId,
             workflowRunId=str(event.get("workflowRunId", "")),

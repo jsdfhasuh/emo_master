@@ -4,16 +4,18 @@ from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from datetime import datetime
 from itertools import chain
+import json
 from types import SimpleNamespace
 
 from PySide2.QtCore import QTimer, Qt, Signal
+from PySide2.QtGui import QColor
 from PySide2.QtWidgets import (
     QAbstractItemView, QAbstractSlider, QApplication, QCheckBox, QComboBox, QGridLayout, QHBoxLayout, QHeaderView,
     QLabel, QLineEdit, QMenu, QPushButton, QSizePolicy, QSplitter, QStackedWidget, QTreeWidget,
     QTreeWidgetItem, QVBoxLayout, QWidget,
 )
 
-from emo_master.core.runtime_log_messages import frameworkLogMessage
+from emo_master.core.runtime_log_messages import frameworkLogMessage, runtimeLogBrief
 from emo_master.clients.runtime.calls import DisplayCallContext
 from emo_master.ui.runtime_logs.job_log import (
     ExecutionTree, JobEventWindow, JobIterationPage, jobExecutionTime,
@@ -23,6 +25,7 @@ from emo_master.ui.runtime_logs.log_filters import (
 )
 from emo_master.ui.runtime_logs.log_record_detail import LogRecordDetail
 from emo_master.ui.communication_panel import DeviceDiagnosticsView, exportDeviceCache
+from emo_master.ui.theme import LOG_LEVEL_COLORS, RUN_STATUS_COLORS
 
 
 _TERMINAL = {"COMPLETED", "FAILED", "ABORTED"}
@@ -89,12 +92,14 @@ def _jobKey(job):
 
 
 def _jobName(job):
-    return getattr(job, "workflow_name", "") or job.workflow_id or job.job_id
+    name = getattr(job, "workflow_name", "") or job.workflow_id or job.job_id
+    slot = getattr(job, "target_slot_id", "")
+    return f"{name} · 槽位 {slot}" if slot else name
 
 
 
 def _jobMessage(job):
-    return frameworkLogMessage("job." + job.status.lower(), job.message)
+    return frameworkLogMessage("job." + job.status.lower(), job.message, code=getattr(job, "error_code", ""))
 
 
 class RuntimeJobLogs(QWidget):
@@ -322,6 +327,9 @@ class RuntimeJobLogs(QWidget):
         self.mode = QComboBox()
         self.mode.addItems(("执行结构", "时间顺序"))
         row.addWidget(self.mode)
+        self.showRoutine = QCheckBox("显示普通起止")
+        self.showRoutine.setToolTip("显示执行结构中已用分支表示的普通开始和结束事件")
+        row.addWidget(self.showRoutine)
         self.timeRange = QCheckBox("显示起止时间")
         row.addWidget(self.timeRange)
         row.addStretch(1)
@@ -386,6 +394,7 @@ class RuntimeJobLogs(QWidget):
         panel.addWidget(self.jobHint)
         self.pages.addWidget(self.jobPage)
         self.mode.currentIndexChanged.connect(self._modeChanged)
+        self.showRoutine.toggled.connect(self._scheduleRender)
         self.level.currentIndexChanged.connect(self._scheduleRender)
         self.search.textChanged.connect(self._scheduleRender)
         self.warning.toggled.connect(self._scheduleRender)
@@ -393,7 +402,7 @@ class RuntimeJobLogs(QWidget):
         self.events.itemSelectionChanged.connect(self._eventSelected)
         self.events.itemClicked.connect(self._eventClicked)
         self.events.itemExpanded.connect(self._expandedItem)
-        self.events.itemCollapsed.connect(lambda item: self._expanded.discard(item.data(0, _ROLE)))
+        self.events.itemCollapsed.connect(self._collapsedItem)
         self.events.userScrolled.connect(self._userScrolled)
         self.events.verticalScrollBar().actionTriggered.connect(self._scrollAction)
 
@@ -580,9 +589,10 @@ class RuntimeJobLogs(QWidget):
                 if selected is None and not selectedJob.status:
                     historical = client.getJobStatus(selectedJob.job_id)
                     if historical.ok and historical.project_id == selectedJob.project_id:
-                        selected = SimpleNamespace(job_id=selectedJob.job_id, **{key: getattr(historical, key)
+                        selected = SimpleNamespace(job_id=selectedJob.job_id, **{key: getattr(historical, key, "")
                             for key in ("status", "project_id", "workflow_id", "accepted_at_ms", "started_at_ms",
-                                        "ended_at_ms", "error_code", "message")})
+                                        "ended_at_ms", "error_code", "message", "project_name", "workflow_name",
+                                        "target_slot_id")})
             return features, runs.runs, recent, selected
 
         def accept(value):
@@ -669,10 +679,15 @@ class RuntimeJobLogs(QWidget):
                 timing = jobExecutionTime(job)
                 hint = self._secondaryStatus(job)
                 activity = self.activity.get(job.job_id, _jobMessage(job))
-                item = QTreeWidgetItem([self._jobTitle(job), job.project_id, _STATUS.get(job.status, job.status),
+                status = _STATUS.get(job.status, job.status)
+                project = getattr(job, "project_name", "") or job.project_id
+                item = QTreeWidgetItem([self._jobTitle(job), project, status,
                     _stamp(timing.startedAtMs), timing.display(), " · ".join(filter(None, (hint, activity)))])
                 item.setData(0, _ROLE, job)
                 item.setToolTip(0, job.job_id)
+                item.setToolTip(1, f"{project}\n工程 ID {job.project_id}" if project != job.project_id else job.project_id)
+                if status in RUN_STATUS_COLORS:
+                    item.setForeground(2, QColor(RUN_STATUS_COLORS[status]))
                 tip = "\n".join(filter(None, (_UNFINISHED_PROCESSING, activity))) if hint == "结束处理未完成" else item.text(5)
                 item.setToolTip(5, tip)
                 group.addChild(item)
@@ -1047,8 +1062,12 @@ class RuntimeJobLogs(QWidget):
             self._applyLocation()
         elif restore is not None:
             self._restoreBookmarkedPosition(restore)
-        elif self._targetEvent and self._selection in self._items:
-            self._select(self._selection)
+        elif self._targetEvent:
+            entry = self.window.entry(self._targetEvent)
+            if entry is not None:
+                if self._selection not in self._items:
+                    self._selection = None
+                self._revealEvent(entry)
 
     def _restoreBookmarkedScope(self, bookmark):
         self._selection, self._anchors, self._expanded = bookmark["selection"], bookmark["anchors"], bookmark["expanded"]
@@ -1260,8 +1279,8 @@ class RuntimeJobLogs(QWidget):
 
     def _scopePredicate(self, structure=None, *, export=False):
         contextMatches = None
+        tree = structure if structure is not None else self.structure
         if self._context is not None:
-            tree = structure if structure is not None else self.structure
             contextMatches = tree.contextMatches(self._context) or (lambda _entry: False)
             if not export:
                 return contextMatches
@@ -1277,9 +1296,12 @@ class RuntimeJobLogs(QWidget):
                 return True
             if levels is not None and entry.level not in levels:
                 return False
-            if needle and needle not in " ".join((entry.message, entry.displayMessage(), entry.code,
-                    entry.eventType, entry.displayWorkflow(), entry.displayNode())).casefold():
-                return False
+            if needle:
+                names = tree.eventNames(entry) if tree is not None else (entry.displayWorkflow(), entry.displayNode())
+                visible = " ".join((entry.message, entry.displayMessage(), entry.code, entry.eventType,
+                                    *names, entry.workflowId, entry.nodeId)).casefold()
+                if needle not in visible and needle not in json.dumps(entry.payload, ensure_ascii=False, default=str).casefold():
+                    return False
             if not includesTimestamp(entry.rawTimestampMs, bounds):
                 return False
             for key in ("projectId", "workflowId", "nodeId", "eventType", "component", "workflowRunId"):
@@ -1307,6 +1329,7 @@ class RuntimeJobLogs(QWidget):
     def _modeChanged(self):
         self._rememberAnchor()
         self._shownMode = self.mode.currentIndex()
+        self.showRoutine.setVisible(not self._shownMode)
         self._render(captureAnchor=False)
 
     def _render(self, *, captureAnchor=True, restore=None):
@@ -1334,9 +1357,12 @@ class RuntimeJobLogs(QWidget):
             self._branches.clear()
             if self.mode.currentIndex():
                 for entry in sorted(filter(matches, self.window.entries), key=lambda row: (row.timestampMs, row.eventId)):
-                    self.events.addTopLevelItem(self._entryItem(entry))
+                    self.events.addTopLevelItem(self._entryItem(entry, timeline=True))
             else:
-                for branch in self.structure.project(matches):
+                compact = not (self.showRoutine.isChecked() or self.search.text().strip()
+                               or self.inputs["eventType"].text().strip())
+                for branch in self.structure.project(matches, compact=compact,
+                                                     revealEventId=self._reveal[1] if self._reveal else None):
                     self._addBranch(branch, self.events.invisibleRootItem())
             self._expanded.intersection_update(self.structure.branchKeys())
             selection = self._items.get(self._selection)
@@ -1363,12 +1389,18 @@ class RuntimeJobLogs(QWidget):
         self._updateTimes()
         self._updateFailureHint()
 
-    def _entryItem(self, entry):
+    def _entryItem(self, entry, *, timeline=False):
         key = ("event", entry.eventId)
-        item = QTreeWidgetItem([entry.displayMessage() or entry.eventType, entry.level,
+        message = entry.displayMessage() or entry.eventType
+        if timeline:
+            roundLabel = "第 " + " / ".join(str(index + 1) for index in entry.iterationPath) + " 轮" if entry.iterationPath else ""
+            message = " · ".join(filter(None, (*self.structure.eventNames(entry), roundLabel, entry.code, message)))
+        item = QTreeWidgetItem([message, entry.level,
                                entry.displayTime() if entry.rawTimestampMs else "未记录"])
         item.setData(0, _ROLE, key)
         item.setToolTip(0, "\n".join(part for part in (entry.message, entry.eventType, entry.code) if part))
+        if entry.level in LOG_LEVEL_COLORS:
+            item.setForeground(1, QColor(LOG_LEVEL_COLORS[entry.level]))
         self._items[key] = item
         return item
 
@@ -1399,6 +1431,24 @@ class RuntimeJobLogs(QWidget):
         for child in branch.children:
             self._addBranch(child, item)
         item.setExpanded(branch.key in self._expanded)
+        self._labelBranch(item, branch)
+
+    def _labelBranch(self, item, branch):
+        parts = [branch.title]
+        record = self.structure.nodeRecord(branch.key) if branch.key[0] == "node" else None
+        if record is not None:
+            summary = runtimeLogBrief(record.rawRecord())
+            if record.eventType in {"node.failed", "node.skipped"}:
+                summary = summary or record.payload.get("message") or record.displayMessage()
+            if isinstance(summary, str) and summary:
+                short = " ".join(summary.split())
+                parts.append(short[:110] + ("…" if len(short) > 110 else ""))
+        if not item.isExpanded():
+            if branch.warningCount:
+                parts.append(f"WARN {branch.warningCount}")
+            if branch.errorCount:
+                parts.append(f"ERROR {branch.errorCount}")
+        item.setText(0, " · ".join(parts))
 
     def _roundsFirst(self):
         return self.mode.currentIndex() == 0 and self.structure is not None and self.structure.hasOuterIterations
@@ -1507,7 +1557,8 @@ class RuntimeJobLogs(QWidget):
             self.info.setToolTip("")
         if self.job.job_id in self.activity:
             extra += "\n最近活动 " + self.activity[self.job.job_id]
-        self.info.setText(f"Job {self.job.job_id}   ·   工程 {self.job.project_id or '未记录'}\n"
+        projectName = getattr(self.job, "project_name", "") or self.job.project_id
+        self.info.setText(f"Job {self.job.job_id}   ·   工程 {projectName or '未记录'}\n"
                           f"受理 {_stamp(time.acceptedAtMs)}   ·   实际开始 {_stamp(time.startedAtMs)}"
                           f"   ·   实际结束 {_stamp(time.endedAtMs)}{extra}\n"
                           + " ".join(value for value in (time.note, self.job.error_code, _jobMessage(self.job)) if value))
@@ -1528,6 +1579,9 @@ class RuntimeJobLogs(QWidget):
             else:
                 status = "进行中" if key in active and timing.estimated else ""
             item.setText(1, status)
+            color = RUN_STATUS_COLORS.get(status)
+            if color:
+                item.setForeground(1, QColor(color))
             if timing.startedAtMs is not None and branch.start is not None:
                 item.setText(2, branch.start.displayTime())
                 item.setToolTip(2, _stamp(timing.startedAtMs))
@@ -1548,7 +1602,7 @@ class RuntimeJobLogs(QWidget):
         if entry.iterationPath:
             parts.append("第 " + " / ".join(str(index + 1) for index in entry.iterationPath) + " 轮")
         reason = " ".join((entry.displayMessage() or entry.message).split())
-        parts.extend(value for value in (entry.displayWorkflow(), entry.displayNode(), entry.code,
+        parts.extend(value for value in (*self.structure.eventNames(entry), entry.code,
                                          reason[:120] + ("…" if len(reason) > 120 else "")) if value)
         self.failureSummary.setText(" · ".join(parts))
         self.failureSummary.setToolTip(entry.displayMessage())
@@ -1597,10 +1651,19 @@ class RuntimeJobLogs(QWidget):
             self._readEarlier()
 
     def _expandedItem(self, item):
-        self._expanded.add(item.data(0, _ROLE))
+        key = item.data(0, _ROLE)
+        self._expanded.add(key)
+        if key in self._branches:
+            self._labelBranch(item, self._branches[key])
         if self.window and self.events.itemBelow(item) is not None:
             self._pauseReading()
             self._updateRange()
+
+    def _collapsedItem(self, item):
+        key = item.data(0, _ROLE)
+        self._expanded.discard(key)
+        if key in self._branches:
+            self._labelBranch(item, self._branches[key])
 
     def _eventClicked(self, item, _column):
         if self.drawer.isHidden():
@@ -1658,13 +1721,8 @@ class RuntimeJobLogs(QWidget):
                 context["时间说明"] = timing.note
         if entry.effectiveJobId != entry.jobId:
             context["所属任务"] = entry.effectiveJobId
-        for key, label in (("deviceId", "设备"), ("slot", "设备槽位"), ("channelId", "通道"),
-                           ("requestId", "请求 ID"), ("occurrences", "设备同类问题累计次数（可跨任务）"),
-                           ("durationMs", "聚合经过时间（ms，可跨任务）")):
-            if key in entry.payload and (key not in {"durationMs", "occurrences"} or "occurrences" in entry.payload):
-                context[label] = entry.payload[key]
         self.detail.setEvent(raw, displayMessage=entry.displayMessage(), context=context, nodeElapsedMs=nodeElapsedMs,
-                             nodeTitle=entry.displayNode())
+                             nodeTitle=self.structure.eventNames(entry)[1] if self.structure else entry.displayNode())
         self.readContext.setEnabled(bool(self.structure and self.structure.contextMatches(entry.eventId)))
         self.navigate.setEnabled(bool(self._onNavigate and entry.nodeId))
         self.deviceChoice.clear()
@@ -1695,6 +1753,7 @@ class RuntimeJobLogs(QWidget):
             while parent is not None:
                 parent.setExpanded(True)
                 self._expanded.add(parent.data(0, _ROLE))
+                self._labelBranch(parent, self._branches[parent.data(0, _ROLE)])
                 parent = parent.parent()
             self.events.setCurrentItem(item)
             self.events.scrollToItem(item, QAbstractItemView.PositionAtCenter)

@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 from emo_master.apps.runtime.workflow.cancellation import CancellationToken
 from emo_master.apps.runtime.workflow.context import RunContext
+from emo_master.core.contracts.log_safety import redactLogText
 from emo_master.core.contracts.port_types import isPortRequired, matchesPortSpec
 
 if TYPE_CHECKING:
@@ -57,18 +58,17 @@ class SubflowRunner:
             raise WorkflowExecutionError(
                 "E_CALL_DEPTH", "maximum workflow call depth exceeded", node.nodeId
             )
-        self.workflowRunner.publish(
-            "subflow.started", context, f"subflow started: {target}"
-        )
+        targetIdentity = {"targetWorkflowId": target}
+        if targetWorkflow.name:
+            targetIdentity["targetWorkflowName"] = redactLogText(targetWorkflow.name)
+        self.workflowRunner.publish("subflow.started", context, f"subflow started: {target}", payload=targetIdentity)
         result = self.workflowRunner.run(
             workflowId=target,
             inputs=inputs,
             context=childContext,
             cancellation=cancellation,
         )
-        self.workflowRunner.publish(
-            "subflow.completed", context, f"subflow completed: {target}"
-        )
+        self.workflowRunner.publish("subflow.completed", context, f"subflow completed: {target}", payload=targetIdentity)
         return result
 
 

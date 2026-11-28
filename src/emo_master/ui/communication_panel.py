@@ -8,6 +8,7 @@ import re
 from uuid import uuid4
 
 from PySide2.QtCore import Qt, Signal
+from PySide2.QtGui import QColor
 from PySide2.QtWidgets import (
     QAbstractItemView, QApplication, QCheckBox, QComboBox, QDialog, QDialogButtonBox, QFormLayout,
     QHBoxLayout, QHeaderView, QLabel, QLineEdit, QPlainTextEdit, QPushButton, QScrollArea,
@@ -16,6 +17,7 @@ from PySide2.QtWidgets import (
 )
 
 from emo_master.core.project.communication import CommunicationSettings
+from emo_master.ui.theme import LOG_LEVEL_COLORS
 
 
 def summary(state):
@@ -249,13 +251,31 @@ class TcpChannelStatusTable(QTableWidget):
                 self.setItem(row, column, item)
 
 
-def recordDetails(record, *, utf8=False):
+def deviceBytePreview(record):
     result = record.get('result')
-    data = record.get('dataHex') or (result.get('dataHex', '') if isinstance(result, dict) else '')
-    if utf8 and data:
-        data = repr(bytes.fromhex(data).decode('utf-8', errors='replace'))
-    byteTruncated = record.get('truncated') or (isinstance(result, dict) and result.get('dataTruncated'))
-    return data + ('\n[原始数据已截断]' if byteTruncated else '') + (
+    result = result if isinstance(result, dict) else {}
+    data = record.get('dataHex', result.get('dataHex'))
+    if not isinstance(data, str):
+        return None
+    try:
+        utf8 = bytes.fromhex(data).decode('utf-8', errors='replace')
+    except ValueError:
+        utf8 = None
+    return data, utf8, bool(record.get('truncated') or result.get('dataTruncated'))
+
+
+def recordDetails(record, *, utf8=False):
+    preview = deviceBytePreview(record)
+    data = ''
+    byteTruncated = bool(record.get('truncated'))
+    if preview:
+        data, text, byteTruncated = preview
+        if utf8 and text is not None:
+            data = repr(text)
+    fields = ' · '.join(f'{label} {record[key]}' for key, label in (
+        ('deviceId', '设备'), ('action', '动作'), ('channelId', '通道'), ('slot', '槽位'), ('outcome', '结果')
+    ) if record.get(key) not in (None, ''))
+    return (fields + '\n' if fields else '') + data + ('\n[原始数据已截断]' if byteTruncated else '') + (
         '\n[部分诊断字段已截断]' if record.get('fieldsTruncated') else '') + '\n' + json.dumps(
         {key: value for key, value in record.items() if key != 'dataHex'}, ensure_ascii=False, indent=2)
 
@@ -294,9 +314,11 @@ class DeviceDiagnosticsView(QWidget):
         if compact:
             layout.addWidget(self.notice)
         self.records = QTreeWidget()
-        self.records.setHeaderLabels(['时间', '事件', '通道 / 槽位', '结果'])
+        self.records.setHeaderLabels(['时间', '等级', '事件', '通道 / 槽位', '结果'])
         self.records.setRootIsDecorated(False)
-        self.records.header().setSectionResizeMode(3, QHeaderView.Stretch)
+        for column in (0, 1):
+            self.records.header().setSectionResizeMode(column, QHeaderView.ResizeToContents)
+        self.records.header().setSectionResizeMode(4, QHeaderView.Stretch)
         self.details = QPlainTextEdit()
         self.details.setReadOnly(True)
         split = QSplitter(Qt.Vertical)
@@ -332,8 +354,11 @@ class DeviceDiagnosticsView(QWidget):
             channel = record.get('channelId') or record.get('selectors', {}).get('channelId', '')
             if self.filter.currentData() and channel != self.filter.currentData():
                 continue
-            item = QTreeWidgetItem([datetime.fromtimestamp(record['timestampMs']/1000).strftime('%H:%M:%S'),
-                record['eventType'], channel or record.get('slot', ''), record.get('message', '')])
+            level = str(record.get('level', ''))
+            item = QTreeWidgetItem([datetime.fromtimestamp(record['timestampMs'] / 1000).strftime('%H:%M:%S.%f')[:-3],
+                level, record['eventType'], channel or record.get('slot', ''), record.get('message', '')])
+            if level in LOG_LEVEL_COLORS:
+                item.setForeground(1, QColor(LOG_LEVEL_COLORS[level]))
             item.setData(0, Qt.UserRole, record)
             self.records.addTopLevelItem(item)
             if record.get('cursor') == selected:

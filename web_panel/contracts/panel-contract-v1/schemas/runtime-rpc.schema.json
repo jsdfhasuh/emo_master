@@ -244,6 +244,9 @@
           "items": {
             "type": "string"
           }
+        },
+        "projectName": {
+          "type": "string"
         }
       },
       "additionalProperties": false
@@ -348,6 +351,15 @@
           "type": "string"
         },
         "stopMode": {
+          "type": "string"
+        },
+        "projectName": {
+          "type": "string"
+        },
+        "workflowName": {
+          "type": "string"
+        },
+        "targetSlotId": {
           "type": "string"
         }
       },
@@ -1853,6 +1865,9 @@
           "type": "string"
         },
         "maxCoreVersion": {
+          "type": "string"
+        },
+        "resultSchemaJson": {
           "type": "string"
         }
       },

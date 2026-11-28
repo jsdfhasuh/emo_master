@@ -1,5 +1,6 @@
 """Spawn + loopback RPC acceptance for wait, monitoring and consumer capture."""
 import json
+from copy import deepcopy
 from threading import Event
 
 import cv2
@@ -47,8 +48,12 @@ def gateConsumers(monkeypatch):
     return first, rest
 
 
-def loadDemo(service, tmp_path, **kwargs):
+def loadDemo(service, tmp_path, *, namedLoop="", **kwargs):
     path = saveDemo(tmp_path / "project", **kwargs)
+    if namedLoop:
+        document = loadProjectDocument(path)
+        next(node for node in document.workflows["main"].nodes if node.nodeId == "loop").displayName = namedLoop
+        saveProject(path, document.model_dump(mode="json"))
     loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(path)), None)
     assert loaded.ok, loaded.message
     validated = service.ValidateProject(pb.ValidateProjectRequest(project_id=service.loadedProjectId), None)
@@ -60,8 +65,12 @@ def loadDemo(service, tmp_path, **kwargs):
 def testWaitingCaptureAndCancellationThroughRealProcesses(runtime, tmp_path, monkeypatch, slots, cancel):
     service, client, display = runtime
     first, rest = gateConsumers(monkeypatch)
-    path = loadDemo(service, tmp_path, iterations=None if cancel else 5, slots=slots)
+    path = loadDemo(service, tmp_path, iterations=None if cancel else 5, slots=slots, namedLoop="采集轮次")
     project = service.loadedProjectId
+    document = service.loadedDocument
+    projectName = document.project.name
+    producerName = document.workflows["main"].name
+    consumerName = document.workflows["consumer"].name
     owner = service._presentationOwner
     attach = owner.attachNormal
     def unlockedAttach(jobId, frozen):
@@ -83,6 +92,11 @@ def testWaitingCaptureAndCancellationThroughRealProcesses(runtime, tmp_path, mon
     assert all(spec.inspectionEnabled == (spec.jobId == started.job_id) for spec in specs)
     assert all(spec.legacySnapshotPolicy == "ALL" for spec in specs)
     group = service.deviceManager.dispatchGroups[started.job_id]
+    current = {row.job_id: row for row in client.listRuns(service.runtimeInstanceId, project, includeTerminal=True).runs}
+    assert (current[started.job_id].project_name, current[started.job_id].workflow_name) == (projectName, producerName)
+    for key, slot in group.slots.items():
+        row = current[slot.jobId]
+        assert (row.project_name, row.workflow_name, row.target_slot_id) == (projectName, consumerName, key)
     try:
         waitFor(lambda: bool(group.waiting), timeout=20)
         snapshot = client.dispatchQueueState(project, group.groupId, slots[0], True)
@@ -138,10 +152,49 @@ def testWaitingCaptureAndCancellationThroughRealProcesses(runtime, tmp_path, mon
             events = [e for slot in group.slots.values() for e in service._eventsAfter(slot.jobId, 0)
                       if e.eventType == "dispatch.invocation.completed"]
             assert len(events) == 5 * len(slots)
+            assert all(json.loads(e.payloadJson)["workflowName"] == consumerName for e in events)
+            rootEvents = service._eventsAfter(started.job_id, 0)
+            accepted, = (json.loads(event.payloadJson) for event in rootEvents if event.eventType == "job.accepted")
+            assert (accepted["projectName"], accepted["workflowName"]) == (projectName, producerName)
+            completed, = (json.loads(event.payloadJson) for event in rootEvents if event.eventType == "node.completed"
+                          and event.nodeId == "loop" and event.workflowId == "main")
+            assert (completed["projectName"], completed["workflowName"], completed["nodeName"]) == (
+                projectName, producerName, "采集轮次")
         assert not group.waiting and not group.records and not group.deliveries
         assert not service.deviceManager.frames.frames
         assert not service.projectConfiguration.cycles and not service.projectConfiguration.childCycles
         assert client.dispatchQueueState(project, group.groupId)["state"] == "UNAVAILABLE"
+        if slots == ("detection",) and not cancel:
+            snapshot = service.projectConfiguration.snapshot()
+            candidate = deepcopy(snapshot["payload"])
+            candidate["project"]["name"] = "改名后的工程"
+            candidate["workflows"]["main"]["name"] = "改名后的生产流程"
+            candidate["workflows"]["consumer"]["name"] = "改名后的消费流程"
+            revision = service.WriteProjectConfiguration(pb.ProjectConfigurationWriteRequest(
+                request_id="rename-history-test", expected_runtime_instance_id=service.runtimeInstanceId,
+                expected_revision=snapshot["documentRevision"], local_payload_json=json.dumps(candidate),
+                selected_paths=["/project/name", "/workflows/main/name", "/workflows/consumer/name"]), None)
+            assert revision.ok, revision.message
+            waitFor(lambda: service.projectConfiguration.active is None, timeout=10)
+            assert service.projectConfiguration.status("rename-history-test")["state"] == "COMMITTED"
+            service.close()
+            restarted = RuntimeService(dbPath=service.sqliteStore.dbPath, workspaceRoot=tmp_path / "restarted-jobs")
+            newServer, newPort, _ = createRuntimeServer(port=0, runtimeService=restarted)
+            newServer.start()
+            newChannel = grpc.insecure_channel(f"127.0.0.1:{newPort}")
+            try:
+                assert restarted.loadedDocument.project.name == "改名后的工程"
+                otherClient = RuntimeClient(rpc.RuntimeServiceStub(newChannel))
+                history = otherClient.listJobHistory(restarted.runtimeInstanceId, project)
+                assert history.ok and {row.job_id: (row.project_name, row.workflow_name, row.target_slot_id)
+                    for row in history.jobs} == {
+                        started.job_id: (projectName, producerName, ""),
+                        group.slots["detection"].jobId: (projectName, consumerName, "detection"),
+                    }
+            finally:
+                newChannel.close()
+                newServer.stop(0).wait()
+                restarted.close()
     finally:
         first.set()
         rest.set()

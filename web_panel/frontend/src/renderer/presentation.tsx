@@ -23,6 +23,8 @@ export const themeStyle = {
     '--panel-blue-soft': softTones.blue,
     '--panel-red': tones.red,
     '--panel-red-soft': softTones.red,
+    '--panel-amber': tones.amber,
+    '--panel-amber-soft': softTones.amber,
     '--panel-green': tones.green,
     '--panel-green-soft': softTones.green,
 } as CSSProperties;

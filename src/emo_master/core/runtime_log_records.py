@@ -42,6 +42,9 @@ class StructuredLogEntry:
     parentWorkflowRunIdRecorded: bool = False
     iterationPathRecorded: bool = False
     rawTimestampMs: int | None = None
+    projectName: str = ""
+    targetWorkflowId: str = ""
+    targetWorkflowName: str = ""
     _runtimeRecord: dict[str, object] | None = field(default=None, repr=False, compare=False)
 
     @classmethod
@@ -63,6 +66,14 @@ class StructuredLogEntry:
     def fromRuntimeEvent(cls, event: dict[str, object]) -> "StructuredLogEntry":
         eventType = str(event.get("eventType", ""))
         rawPayload = event.get("payload", {})
+        payload = dict(rawPayload) if isinstance(rawPayload, dict) else {}
+
+        def name(field: str) -> str:
+            for value in (payload.get(field), event.get(field)):
+                if isinstance(value, str) and value:
+                    return value
+            return ""
+
         rawIteration = event.get("iterationPath")
         iteration: tuple[int, ...] = ()
         validIteration = False
@@ -91,10 +102,10 @@ class StructuredLogEntry:
             nodeRunId=str(event.get("nodeRunId", "")),
             iterationPath=iteration,
             code=str(event.get("code", "")),
-            payload=dict(rawPayload) if isinstance(rawPayload, dict) else {},
+            payload=payload,
             projectId=str(event.get("projectId", "")),
-            workflowName=str(event.get("workflowName", "")),
-            nodeName=str(event.get("nodeName", "")),
+            workflowName=name("workflowName"),
+            nodeName=name("nodeName"),
             originApp=str(event.get("originApp", "runtime") or "runtime"),
             component=str(event.get("component") or componentForEvent(eventType)),
             runtimeInstanceId=str(event.get("runtimeInstanceId", "")),
@@ -104,6 +115,9 @@ class StructuredLogEntry:
             parentWorkflowRunIdRecorded=isinstance(parentWorkflowRunId, str),
             iterationPathRecorded=validIteration,
             rawTimestampMs=timestampMs,
+            projectName=name("projectName"),
+            targetWorkflowId=name("targetWorkflowId"),
+            targetWorkflowName=name("targetWorkflowName"),
             _runtimeRecord=dict(event),
         )
 
@@ -154,7 +168,7 @@ class StructuredLogEntry:
 
     def displayMessage(self) -> str:
         return frameworkLogMessage(self.eventType, self.message, nodeId=self.nodeId, workflowId=self.workflowId,
-                                   iterationPath=self.iterationPath, payload=self.payload)
+                                   code=self.code, iterationPath=self.iterationPath, payload=self.payload)
 
     def rawRecord(self) -> dict[str, object]:
         if self._runtimeRecord is not None and self.isRuntime:

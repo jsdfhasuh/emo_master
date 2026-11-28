@@ -164,19 +164,22 @@ class RuntimeLogSources(QWidget):
         def write(path, formatName, context, cancelled):
             return exportWholeJob(path, formatName, client, scope, context, cancelled=cancelled)
 
-        self._startExport("完整 Job（仍可查询）", "完整任务记录", write)
+        self._startExport("完整 Job（仍可查询）", "完整任务记录", write, wholeJob=True)
 
-    def _startExport(self, scopeText, filename, write):
+    def _startExport(self, scopeText, filename, write, *, wholeJob=False):
         if self.export is not None:
             return
+        formats = {"JSON Lines (*.jsonl)": "jsonl", "JSON (*.json)": "json", "文本 (*.txt)": "txt"}
+        if wholeJob:
+            formats["Markdown (*.md)"] = "md"
         selected, selectedFormat = QFileDialog.getSaveFileName(self, "导出" + scopeText,
-            str(self.directory / (filename + ".jsonl")), "JSON Lines (*.jsonl);;JSON (*.json);;文本 (*.txt)")
+            str(self.directory / (filename + ".jsonl")), ";;".join(formats))
         if not selected:
             return
         path = Path(selected)
         formatName = path.suffix.lower().lstrip(".")
-        if formatName not in {"jsonl", "json", "txt"}:
-            formatName = "jsonl" if "jsonl" in selectedFormat else "json" if "json" in selectedFormat else "txt"
+        if formatName not in formats.values():
+            formatName = formats.get(selectedFormat, "txt")
             path = Path(str(path) + "." + formatName)
             if path.exists() and QMessageBox.question(self, "覆盖日志文件", f"文件已存在，是否覆盖？\n{path}",
                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No) != QMessageBox.Yes:

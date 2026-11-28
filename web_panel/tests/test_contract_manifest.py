@@ -32,6 +32,10 @@ class ContractManifestTests(unittest.TestCase):
             self.assertEqual(__version__, sdk)
             self.assertEqual(archive.read('emo_panel_protocol/generated/runtime_pb2.py'),
                              Path(runtime_pb2.__file__).read_bytes())
+            self.assertEqual(runtime_pb2.RunState.DESCRIPTOR.fields_by_name['project_name'].number, 21)
+            fields = runtime_pb2.JobHistorySummary.DESCRIPTOR.fields_by_name
+            self.assertEqual([fields[name].number for name in ('project_name', 'workflow_name', 'target_slot_id')],
+                             [12, 13, 14])
             self.assertFalse(any(name.startswith('emo_master/') for name in archive.namelist()))
 
     def test_embedded_fixtures_are_the_same_sdk_delivery(self):

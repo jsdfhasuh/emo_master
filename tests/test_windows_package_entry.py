@@ -21,10 +21,10 @@ def testPackageSelfTestValidatesBundledResourcesAndOnnxRuntime() -> None:
     assert checks["builtins"]["operatorCount"] >= 49
     assert checks["builtins"]["editorUiCount"] >= 3
     assert checks["onnxruntime"]["provider"] == "CPUExecutionProvider"
-    assert checks["migrations"]["versions"] == [1, 2, 3, 4, 5, 6]
+    assert checks["migrations"]["versions"] == [1, 2, 3, 4, 5, 6, 7]
     assert checks["migrations"]["files"] == [
         "001_init.sql", "002_runtime_workflow.sql", "003_runtime_timestamps.sql",
-        "004_global_counters.sql", "006_logging_metadata.sql",
+        "004_global_counters.sql", "006_logging_metadata.sql", "007_job_display_names.sql",
     ]
     assert checks["migrations"]["journalMode"] == "delete"
     assert len(checks["operatorIcons"]["examples"]) == 3

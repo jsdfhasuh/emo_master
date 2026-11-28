@@ -224,8 +224,17 @@ def testUnacceptedOrWrongProjectEventDoesNotBorrowCurrentNames(ownedDesignerWind
     for job, project in (("unknown", window._currentProjectId()), ("known", "another-project")):
         result = window._runtimeLogEntry({
             "jobId": job, "projectId": project, "workflowId": "main", "nodeId": "shared-node",
+            "projectRevision": window.workflowStore.project["revision"],
         })
         assert result.workflowName == result.nodeName == ""
+    sameJob = {"jobId": "known", "projectId": window._currentProjectId(), "workflowId": "main", "nodeId": "shared-node"}
+    for payload in ({}, {"projectRevision": window.workflowStore.project["revision"] - 1}):
+        result = window._runtimeLogEntry({**sameJob, "payload": payload})
+        assert result.displayWorkflow() == "main" and result.displayNode() == "shared-node"
+    originalNames = {"workflowName": "历史流程", "nodeName": "历史节点",
+                     "projectRevision": window.workflowStore.project["revision"]}
+    result = window._runtimeLogEntry({**sameJob, "payload": originalNames})
+    assert (result.displayWorkflow(), result.displayNode()) == ("历史流程", "历史节点")
 
 
 def testBoundaryNodesUseReadableDefaultNames(ownedDesignerWindow):
@@ -234,6 +243,7 @@ def testBoundaryNodesUseReadableDefaultNames(ownedDesignerWindow):
     for node, name in (("__workflow_input__", "工作流输入"), ("__workflow_output__", "工作流输出")):
         result = window._runtimeLogEntry({
             "jobId": "known", "workflowId": "main", "nodeId": node,
+            "projectRevision": window.workflowStore.project["revision"],
         })
         assert result.nodeName == name
 

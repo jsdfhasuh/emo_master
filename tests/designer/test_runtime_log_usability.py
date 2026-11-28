@@ -166,7 +166,7 @@ def acceptedError(window, workflowId="main", projectId=None, jobId="job-1"):
         "projectId": window._currentProjectId() if projectId is None else projectId,
         "workflowId": workflowId, "workflowRunId": "workflow-run",
         "nodeId": "shared-node", "nodeRunId": "node-run", "iterationPath": [2],
-        "payload": {"path": "missing.png"},
+        "payload": {"path": "missing.png", "projectRevision": window.workflowStore.project.get("revision")},
     })
     return window.logEntries[-1]
 

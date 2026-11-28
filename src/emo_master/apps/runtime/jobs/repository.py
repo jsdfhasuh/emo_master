@@ -28,6 +28,9 @@ class JobRepository:
                         projectRevision=record.projectRevision,
                         workflowId=record.workflowId,
                         acceptedAtMs=record.acceptedAtMs,
+                        projectName=record.projectName,
+                        workflowName=record.workflowName,
+                        targetSlotId=record.targetSlotId,
                     )
             return record
 
@@ -49,6 +52,9 @@ class JobRepository:
             projectId=str(loaded.get("projectId", "")),
             projectRevision=int(loaded.get("projectRevision", 1) or 1),
             workflowId=str(loaded.get("workflowId", "")),
+            projectName=str(loaded.get("projectName", "")),
+            workflowName=str(loaded.get("workflowName", "")),
+            targetSlotId=str(loaded.get("targetSlotId", "")),
             status=str(loaded.get("status", JobStatus.FAILED.value)),
             pid=int(loaded["pid"]) if isinstance(loaded.get("pid"), int) else None,
             acceptedAtMs=jobTimestampMs(loaded.get("acceptedAt")),

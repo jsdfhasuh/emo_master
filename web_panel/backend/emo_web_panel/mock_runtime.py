@@ -209,10 +209,13 @@ def synthetic_log_page(instance_id, project_id, query):
     if query.get('runtimeInstanceId') and query['runtimeInstanceId']!=instance_id:
         return {**reply,'ok':False,'code':'RESET_REQUIRED','message':'Runtime instance changed'}
     upper=int(query.get('upperEventId',2));after=int(query.get('afterEventId',0))
-    rows=[{'eventId':str(n),'sequence':str(n),'timestampMs':'1793664000000','jobId':'demo-run',
+    rows=[{'eventId':str(n),'sequence':str(n),'timestampMs':str(1793664000122+n),'jobId':'demo-run',
            'projectId':project_id if n==2 else 'previous-project','workflowId':'demo-workflow','nodeId':'node-1',
-           'eventType':'node.log','originApp':'runtime','component':'operator','runtimeInstanceId':instance_id,
-           'level':'INFO','code':'DEMO_LOG','message':'Synthetic Runtime log','payload':{'deviceId':'demo-device'}}
+           'eventType':'node.started','originApp':'runtime','component':'execution','runtimeInstanceId':instance_id,
+           'level':'WARN' if n==2 else 'INFO','code':'DEMO_LOG',
+           'message':'Synthetic Runtime log' if n==2 else 'node started: node-1',
+           'payload':{'deviceId':'demo-device','workflowName':'Demo workflow',
+                      'nodeName':'Demo node','ioSummary':{'version':1,'inputs':{'portCount':0,'items':[],'omitted':0}}}}
           for n in (1,2)]
     rows=[item for item in rows if after<int(item['eventId'])<=upper
           and all(not query.get(key) or item.get(key)==query[key] for key in ('projectId','jobId','component','workflowId','nodeId'))

@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from emo_master.clients.runtime.log_records import querySystemLogPage
+from emo_master.core.runtime_log_messages import runtimeLogComponentTitle
 from emo_master.core.runtime_log_records import StructuredLogEntry
 
 
@@ -21,6 +22,7 @@ _BATCH_INTERVAL_MS = 75
 
 try:
     from PySide2.QtCore import QTimer, Qt, Signal
+    from PySide2.QtGui import QColor
     from PySide2.QtWidgets import (
         QAbstractItemView,
         QCheckBox,
@@ -48,6 +50,7 @@ try:
     from emo_master.apps.designer.ui.log_filters import (
         OptionalDateTimeRange, describeDateBounds, includesTimestamp, updateIdentityChoices,
     )
+    from emo_master.ui.theme import LOG_LEVEL_COLORS
 
     class _LogFilterComboBox(QComboBox):
         popupClosed: Any = Signal()
@@ -60,7 +63,7 @@ try:
     class StructuredLogView(QWidget):
         diagnosticCreated: Any = Signal(object)
         jobExportStatus: Any = Signal(str, bool)
-        columns = ("时间", "级别", "应用 / 模块", "Job", "工作流", "节点", "迭代", "事件", "错误码", "消息")
+        columns = ("时间", "级别", "应用 / 模块", "Job", "工作流", "节点", "轮次", "事件", "日志代码", "消息")
 
         def __init__(
             self,
@@ -161,7 +164,9 @@ try:
             self.historyStatus.setTextFormat(Qt.PlainText)
             self.historyStatus.setWordWrap(True)
             root.addWidget(self.historyStatus)
-            filters = QGridLayout()
+            self.listFilters = QWidget()
+            filters = QGridLayout(self.listFilters)
+            filters.setContentsMargins(0, 0, 0, 0)
             self.levelFilter = _combo(("全部", "DEBUG", "INFO", "WARN", "ERROR"))
             self.sourceFilter = _combo(("全部", "runtime", "designer", "editor"))
             self.sourceFilter.addItem("流程设计", "flow_designer")
@@ -175,7 +180,6 @@ try:
             self.autoScrollCheck = QCheckBox("自动滚动")
             self.autoScrollCheck.setChecked(True)
             for index, (label, widget) in enumerate((
-                ("等级", self.levelFilter),
                 ("来源", self.sourceFilter),
                 ("Job", self.jobFilter),
                 ("工作流", self.workflowFilter),
@@ -189,9 +193,16 @@ try:
                 filters.addWidget(QLabel(label), row, column * 2)
                 filters.addWidget(widget, row, column * 2 + 1)
             self.searchInput.setMinimumWidth(80)
-            root.addLayout(filters)
+            root.addWidget(self.listFilters)
             searchRow = QHBoxLayout()
+            searchRow.addWidget(QLabel("等级"))
+            searchRow.addWidget(self.levelFilter)
             searchRow.addWidget(self.searchInput, 1)
+            self.listFiltersToggle = QPushButton("列表筛选")
+            self.listFiltersToggle.setCheckable(True)
+            self.listFiltersToggle.setAutoDefault(False)
+            self.listFiltersToggle.toggled.connect(self.listFilters.setVisible)
+            searchRow.addWidget(self.listFiltersToggle)
             self.resetFiltersButton = QPushButton("清除筛选")
             self.resetFiltersButton.setToolTip("恢复显示全部日志，不删除日志内容")
             searchRow.addWidget(self.resetFiltersButton)
@@ -232,9 +243,9 @@ try:
             header = self.table.horizontalHeader()
             header.setStretchLastSection(False)
             header.setSectionsMovable(True)
-            for visualIndex, column in enumerate((0, 1, 4, 5, 9, 2, 6, 7, 3, 8)):
+            for visualIndex, column in enumerate((0, 1, 8, 2, 6, 4, 5, 9, 7, 3)):
                 header.moveSection(header.visualIndex(column), visualIndex)
-            for column, width in enumerate((128, 64, 160, 120, 160, 180, 64, 100, 96, 360)):
+            for column, width in enumerate((188, 58, 120, 120, 132, 148, 58, 100, 116, 360)):
                 self.table.setColumnWidth(column, width)
             self.table.setAlternatingRowColors(True)
             self.table.verticalHeader().setDefaultSectionSize(self.fontMetrics().height() + 14)
@@ -391,6 +402,8 @@ try:
         def _historySourceChanged(self):
             self.cancelHistory()
             mode = self.rangeCombo.currentData()
+            self.listFiltersToggle.setVisible(mode == "runtime")
+            self.listFilters.setVisible(mode != "runtime" or self.listFiltersToggle.isChecked())
             self.historyFiltersToggle.setVisible(mode != "current")
             self.historyCommonFields.setVisible(mode == "runtime")
             self.historyTechnicalToggle.setVisible(mode == "runtime")
@@ -637,7 +650,7 @@ try:
             return message
 
         def exportHistory(self, *, jobScope=None):
-            from emo_master.core.log_export import exportLogs, LogExportCancelled
+            from emo_master.core.log_export import exportLogs
             from emo_master.apps.operator_runtime.log_reader import snapshotLogFiles, iterLogFileRecords
             self.syncRuntimeInstance()
             mode = self.rangeCombo.currentData()
@@ -648,15 +661,18 @@ try:
                 if not hasApplied and not self.historyDateRange.isValidRange():
                     self.historyFiltersToggle.setChecked(True)
                     return
+            formats = {"JSON Lines (*.jsonl)": "jsonl", "JSON (*.json)": "json", "文本 (*.txt)": "txt"}
+            if jobScope is not None:
+                formats["Markdown (*.md)"] = "md"
             selected, selectedFilter = QFileDialog.getSaveFileName(self,
                 "导出此 Job 完整记录" if jobScope is not None else "导出完整选定范围",
-                str(self._exportDirectory / "日志历史.jsonl"), "JSON Lines (*.jsonl);;JSON (*.json);;文本 (*.txt)")
+                str(self._exportDirectory / "日志历史.jsonl"), ";;".join(formats))
             if not selected:
                 return
             path = Path(selected)
             formatName = path.suffix.lower().lstrip(".")
-            if formatName not in {"json", "jsonl", "txt"}:
-                formatName = "jsonl" if "jsonl" in selectedFilter else "json" if "json" in selectedFilter else "txt"
+            if formatName not in formats.values():
+                formatName = formats.get(selectedFilter, "txt")
                 path = Path(str(path) + "." + formatName)
                 # The native save dialog checked the selected name, not the
                 # final destination after we appended the export extension.
@@ -688,25 +704,34 @@ try:
                         filters = {key: jobScope[key] for key in ("projectId", "jobId")}
                         requestedInstance, previous = jobScope["runtimeInstanceId"], None
                     def task(cancelled):
+                        def page(cursor, upper, instance):
+                            reply = self._queryHistoryPage(client, dict(filters, afterEventId=cursor,
+                                upperEventId=upper, runtimeInstanceId=instance), cancelled)
+                            if not reply["ok"]:
+                                raise ValueError(reply["code"] + "：" + reply["message"])
+                            if instance and reply["runtimeInstanceId"] != instance:
+                                raise ValueError("Runtime 实例已切换。")
+                            return reply
+
+                        first = page(0, previous["upperEventId"] if previous else None,
+                                     previous["runtimeInstanceId"] if previous else requestedInstance)
+                        upper, instance = first["upperEventId"], first["runtimeInstanceId"]
+
                         def records():
-                            cursor, upper = 0, previous["upperEventId"] if previous else None
-                            instance = previous["runtimeInstanceId"] if previous else requestedInstance
+                            reply = first
                             while True:
-                                if cancelled.is_set():
-                                    raise LogExportCancelled("日志导出已取消")
-                                reply = self._queryHistoryPage(client, dict(filters, afterEventId=cursor,
-                                    upperEventId=upper, runtimeInstanceId=instance), cancelled)
-                                if not reply["ok"]:
-                                    raise ValueError(reply["code"] + "：" + reply["message"])
-                                upper, instance = reply["upperEventId"], reply["runtimeInstanceId"]
                                 for row in reply["events"]:
                                     entry = StructuredLogEntry.fromRuntimeEvent(dict(row["event"], eventId=row["eventId"]))
                                     yield entry.rawRecord() if jobScope is not None else entry.detailPayload()
-                                cursor = reply["nextEventId"]
                                 if not reply["hasMore"]:
-                                    break
+                                    return
+                                reply = page(reply["nextEventId"], upper, instance)
+
+                        if jobScope is not None and formatName == "md":
+                            return exportLogs(path, records(), formatName=formatName, scope="whole_job",
+                                filters=dict(filters, upperEventId=upper), cancelled=cancelled.is_set)
                         return exportLogs(path, records(), formatName=formatName, scope="runtime_history",
-                            filters=filters, cancelled=cancelled.is_set)
+                                          filters=filters, cancelled=cancelled.is_set)
                 self._historyExportPath = path
                 self._startHistoryTask("job_export" if jobScope is not None else "export", task)
             except (OSError, ValueError) as error:
@@ -1082,6 +1107,15 @@ try:
                 f"；当前筛选隐藏了 {hiddenErrors} 条错误"
                 if filtered else "；未设置筛选"
             )
+            if self.rangeCombo.currentData() == "runtime":
+                local = [f"{label} {combo.currentText()}" for label, combo in (
+                    ("来源", self.sourceFilter), ("Job", self.jobFilter), ("工作流", self.workflowFilter),
+                    ("节点", self.nodeFilter), ("事件", self.eventTypeFilter),
+                ) if combo.currentIndex() > 0]
+                if self.searchInput.text().strip():
+                    local.append("关键字 " + self.searchInput.text().strip())
+                if local:
+                    suffix += " · 列表筛选 " + "，".join(local)
             self.filterStatusLabel.setText(
                 f"显示 {len(self._visibleEntries)} / {len(self._entries)} 条日志{suffix}"
             )
@@ -1114,14 +1148,18 @@ try:
                     break
 
         def _setTableRow(self, row: int, entry: StructuredLogEntry) -> None:
+            timestamp = entry.rawTimestampMs if entry.isRuntime else entry.timestampMs
+            time = datetime.fromtimestamp(timestamp / 1000).isoformat(sep=" ", timespec="milliseconds") if timestamp else "未记录"
+            component = str(entry.detailPayload()["component"])
             values = (
-                entry.displayTime(),
+                time,
                 entry.level,
-                (entry.originApp or ("runtime" if entry.source == "runtime" else "designer")) + " / " + str(entry.detailPayload()["component"]),
+                (entry.originApp or ("runtime" if entry.source == "runtime" else "designer"))
+                    + " / " + runtimeLogComponentTitle(component),
                 entry.jobId,
                 entry.displayWorkflow(),
                 entry.displayNode(),
-                "/".join(str(item) for item in entry.iterationPath),
+                "/".join(str(item + 1) for item in entry.iterationPath),
                 entry.eventType,
                 entry.code,
                 entry.displayMessage(),
@@ -1135,6 +1173,10 @@ try:
                     )
                 else:
                     item.setToolTip(entry.message if column == 9 else value)
+                if column == 1 and entry.level in LOG_LEVEL_COLORS:
+                    item.setForeground(QColor(LOG_LEVEL_COLORS[entry.level]))
+                elif column == 2:
+                    item.setToolTip(f"{value} ({component})")
                 self.table.setItem(row, column, item)
 
         def _matches(self, entry: StructuredLogEntry) -> bool:

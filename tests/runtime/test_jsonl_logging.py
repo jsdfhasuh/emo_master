@@ -259,25 +259,34 @@ def testJsonlWriterSkipsNonOperationalAndFailureNotificationEvents(
 
 def testJsonlWriterKeepsSqliteReceiptsAndSubflowEvents(tmp_path: Path) -> None:
     from emo_master.core.runtime_log_messages import frameworkLogMessage
+    from emo_master.core.runtime_log_records import StructuredLogEntry
 
     writer = RuntimeJsonlLogWriter(tmp_path)
     started = {"receipt": {"writeId": "ordinary", "status": "UNKNOWN"}}
     finished = {"receipt": {"writeId": "ordinary", "status": "COMMITTED"}}
     background = {"background": True, "receipt": {"writeId": "background", "status": "UNKNOWN"}}
+    target = {"projectName": "原工程", "workflowName": "父流程", "nodeName": "子调用",
+              "targetWorkflowId": "target", "targetWorkflowName": "子流程"}
     samples = (
         ("sqlite.write.started", "SQLite write started", started),
         ("sqlite.write.finished", "COMMITTED", finished),
         ("sqlite.write.finished", "UNKNOWN", background),
-        ("subflow.started", "subflow started: target", {"workflowId": "target"}),
-        ("subflow.completed", "subflow completed: target", {"workflowId": "target"}),
+        ("subflow.started", "subflow started: target", target),
+        ("subflow.completed", "subflow completed: target", target),
+        ("job.accepted", "job accepted", {"projectName": "原工程", "workflowName": "父流程"}),
     )
     for sequence, (eventType, message, payload) in enumerate(samples, 1):
         assert writer.enqueue(_event(sequence, eventType, message=message, payload=payload))
     assert writer.close() is None
     records = _records(tmp_path)
-    assert [row["sequence"] for row in records] == [1, 2, 3, 4, 5]
+    assert [row["sequence"] for row in records] == [1, 2, 3, 4, 5, 6]
     assert [(row["eventType"], row["message"], row["payload"]) for row in records] == list(samples)
-    assert [row["component"] for row in records] == ["storage"] * 3 + ["execution"] * 2
+    assert [row["component"] for row in records] == ["storage"] * 3 + ["execution"] * 3
+    completed, accepted = map(StructuredLogEntry.fromRuntimeEvent, records[-2:])
+    assert (completed.displayWorkflow(), completed.displayNode()) == ("父流程", "子调用")
+    assert (completed.projectName, completed.targetWorkflowId, completed.targetWorkflowName) == ("原工程", "target", "子流程")
+    assert (accepted.projectName, accepted.displayWorkflow()) == ("原工程", "父流程")
+    assert completed.rawRecord() == records[-2]
     assert frameworkLogMessage("sqlite.write.started", "SQLite write started", payload=started) == "开始写入"
     assert frameworkLogMessage("sqlite.write.started", "UNKNOWN", payload=started) == "开始写入"
     assert frameworkLogMessage("sqlite.write.started", "custom start", payload=started) == "custom start"

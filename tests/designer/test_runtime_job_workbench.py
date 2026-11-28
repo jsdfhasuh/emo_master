@@ -77,6 +77,7 @@ def _project(path, service):
         for item in (IntegerAddOperator.meta, SqliteWriterOperator.meta)
     ]
     body["name"] = "采图、求和与记录"
+    next(node for node in body["nodes"] if node["nodeId"] == "capture")["displayName"] = "软件采图节点"
     payload["workflows"]["main"]["name"] = "软件 While 走查"
     document = ProjectDocument.model_validate(payload)
     (path.parent / "logs").mkdir()
@@ -213,7 +214,8 @@ def _walkRelatedJobs(dialog, service, client, projectId):
                 code="E_PARALLEL_FIXTURE", projectId=projectId, workflowId="branch-flow",
                 workflowRunId=f"failure-branch-{index}", parentWorkflowRunId=sourceRun,
                 nodeId="same-node", nodeRunId=f"failure-node-run-{index}",
-                iterationPath=(index,), timestampMs=started + 1800 + index)
+                iterationPath=(index,), timestampMs=started + 1800 + index,
+                payload={"workflowName": "支路流程", "nodeName": "支路节点"})
         service.eventStore.append(detection, "node.log", "独立检测任务夹具", projectId=projectId,
                                  workflowId="body", timestampMs=started + 21000)
         back = next(button for button in workbench.jobPage.findChildren(QPushButton)
@@ -224,7 +226,8 @@ def _walkRelatedJobs(dialog, service, client, projectId):
         ended = catalogItems("最近已结束")
         assert set(active) >= {detection, storage, independent} and source not in active
         assert active[detection].text(2) == "运行中" and active[storage].text(2) == "停止中"
-        assert active[detection].text(0) == active[independent].text(0)
+        assert active[detection].text(0) == active[independent].text(0) + " · 槽位 detect"
+        assert active[storage].text(0) == active[independent].text(0) + " · 槽位 save"
         item = ended[source]
         assert item.text(2) == "已完成" and "还有 2 个关联任务未结束" in item.text(5)
         assert source not in {row.job_id for row in workbench.recent}
@@ -242,7 +245,7 @@ def _walkRelatedJobs(dialog, service, client, projectId):
         assert workbench.failureRow.isVisible()
         failureSummary = workbench.failureSummary.text()
         assert all(text in failureSummary for text in (
-            "2 条失败记录", "第 2 轮", "branch-flow", "same-node", "E_PARALLEL_FIXTURE", "并行故障短因 1"))
+            "2 条失败记录", "第 2 轮", "支路流程", "支路节点", "E_PARALLEL_FIXTURE", "并行故障短因 1"))
         failures = [entry for entry in workbench.window.entries if entry.code == "E_PARALLEL_FIXTURE"]
         earlierFailure, representative = failures
         workbench.search.setText("关联往返定位夹具")
@@ -250,7 +253,7 @@ def _walkRelatedJobs(dialog, service, client, projectId):
         _click(workbench.failureButton)
         assert workbench.events.currentItem().data(0, Qt.UserRole) == ("event", representative.eventId)
         assert json.loads(workbench.detail.rawTree.toPlainText()) == representative.rawRecord()
-        assert "same-node" in workbench.detail.title.text() and "失败" in workbench.detail.title.text()
+        assert "支路节点" in workbench.detail.title.text() and "失败" in workbench.detail.title.text()
         _click(workbench.returnContext)
         workbench.search.clear()
         waitUntil(lambda: ("event", earlierFailure.eventId) in workbench._items)
@@ -327,7 +330,7 @@ def _walkRelatedJobs(dialog, service, client, projectId):
                 service.deviceManager.dispatchGroups.pop(jobId, None)
 
 
-def testNativeWhileLogsWarningDeviceReturnAndTimeline(ownedDesignerWindow, tmp_path):
+def testNativeWhileLogsWarningDeviceReturnAndTimeline(ownedDesignerWindow, tmp_path, monkeypatch):
     service = RuntimeService(dbPath=tmp_path / "runtime.db", workspaceRoot=tmp_path / "jobs",
                              logDirectory=tmp_path / "runtime-logs")
     server = channel = window = None
@@ -349,7 +352,8 @@ def testNativeWhileLogsWarningDeviceReturnAndTimeline(ownedDesignerWindow, tmp_p
                 context = kwargs["operationContext"]
                 driver.runtimeContext.events("device.action.retry", "软件相机测试告警", level="WARN",
                     code="Q1_SOFTWARE_WARN", action="capture", jobId=context.jobId, source=context.source,
-                    requestId=context.requestId, channelId="software-camera", dataHex="E4BDA0E5A5BD")
+                    requestId=context.requestId, channelId="software-camera", dataHex="E4BDA0E5A5BD",
+                    slot="image-input", receipt={"sentBytes": 0, "confirmed": False}, cycleId="fixture-cycle")
                 second.set()
                 assert releaseSecond.wait(25)
             return execute(*args, **kwargs)
@@ -421,6 +425,16 @@ def testNativeWhileLogsWarningDeviceReturnAndTimeline(ownedDesignerWindow, tmp_p
         assert workbench.failureRow.isHidden()
         captureBranch = workbench._items[("node", warn.workflowRunId, warn.nodeRunId)]
         assert captureBranch.text(1) == "进行中"
+        for keyword in ("Q1_SOFTWARE_WARN", "采图、求和与记录", "软件采图节点", "confirmed"):
+            workbench.search.setText(keyword)
+            waitUntil(lambda: not workbench.redraw.isActive())
+            assert ("event", warn.eventId) in workbench._items, keyword
+        workbench.search.clear()
+        waitUntil(lambda: not workbench.redraw.isActive())
+        loop, = [workbench._items[key] for key, branch in workbench._branches.items() if branch.kind == "loop"]
+        loop.setExpanded(False)
+        assert "WARN 1" in loop.text(0) and ("event", warn.eventId) in workbench._items
+        loop.setExpanded(True)
 
         _click(workbench.warning)
         waitUntil(lambda: ("event", done.eventId) not in workbench._items)
@@ -470,6 +484,10 @@ def testNativeWhileLogsWarningDeviceReturnAndTimeline(ownedDesignerWindow, tmp_p
         dialog.resize(1400, 860)
         workbench.mode.setCurrentIndex(1)
         assert workbench.events.currentItem().data(0, Qt.UserRole) == ("event", warn.eventId)
+        timeline = workbench.events.currentItem()
+        assert all(value in timeline.text(0) for value in (
+            "采图、求和与记录", "软件采图节点", "第 2 轮", "Q1_SOFTWARE_WARN"))
+        assert timeline.text(1) == "WARN" and timeline.foreground(1).color().name() == "#854d0e"
         workbench.mode.setCurrentIndex(0)
         _click(workbench.readContext)
         assert "本轮已加载上下文" in workbench.rangeStatus.text()
@@ -478,6 +496,38 @@ def testNativeWhileLogsWarningDeviceReturnAndTimeline(ownedDesignerWindow, tmp_p
                              for row in workbench.window.entries), timeout=10)
         _click(workbench.returnContext)
         assert workbench.warning.isChecked()
+        _selectEntry(workbench, warn)
+
+        readable = workbench.detail.readable
+        fields = {readable.topLevelItem(i).text(0): readable.topLevelItem(i)
+                  for i in range(readable.topLevelItemCount())}
+        assert "设备" in fields, (list(fields), warn.rawRecord())
+        assert fields["设备"].text(1) == "camera" and fields["动作"].text(1) == "capture"
+        assert fields["通道"].text(1) == "software-camera" and fields["设备槽位"].text(1) == "image-input"
+        counter, = [item for label, item in fields.items() if label.startswith("累计次数")]
+        assert "可跨任务或轮次" in counter.text(0) and counter.text(1) == "1"
+        assert fields["报文 HEX"].text(1) == "E4BDA0E5A5BD" and fields["报文 UTF-8"].text(1) == "你好"
+        assert fields["发生时间"].text(1).count(".") == 1
+        assert not fields["记录身份"].isExpanded()
+        fields["记录身份"].setExpanded(True)
+        assert "周期 ID" in {fields["记录身份"].child(i).text(0) for i in range(fields["记录身份"].childCount())}
+        fields["记录身份"].setExpanded(False)
+        receiptRow = fields["回执"]
+        assert receiptRow.isExpanded() and {receiptRow.child(i).text(1) for i in range(receiptRow.childCount())} == {"0", "false"}
+        assert json.loads(workbench.detail.rawTree.toPlainText()) == warn.rawRecord()
+        _click(workbench.detail.copyRecordButton)
+        from PySide2.QtWidgets import QApplication
+        assert json.loads(QApplication.clipboard().text()) == warn.rawRecord()
+        back = next(button for button in workbench.devicePage.findChildren(QPushButton) if button.text() == "返回事件")
+        with monkeypatch.context() as unavailable:
+            def noCache(*args, **kwargs):
+                raise ValueError("近期缓存不可用")
+            unavailable.setattr(client, "getDeviceDiagnostics", noCache)
+            _click(workbench.deviceButton)
+            waitUntil(lambda: "近期设备缓存不可用于此记录" in workbench.deviceInfo.text())
+            _click(back)
+            assert workbench._detailEntry.eventId == warn.eventId
+            assert readable.findItems("报文 UTF-8", Qt.MatchExactly)[0].text(1) == "你好"
 
         _click(workbench.deviceButton)
         waitUntil(lambda: workbench.devices.records.topLevelItemCount() > 0, timeout=10)
@@ -486,21 +536,34 @@ def testNativeWhileLogsWarningDeviceReturnAndTimeline(ownedDesignerWindow, tmp_p
         assert filterIndex > 0
         workbench.devices.filter.setCurrentIndex(filterIndex)
         workbench.devices.records.setCurrentItem(workbench.devices.records.topLevelItem(0))
+        cacheRow = workbench.devices.records.currentItem()
+        assert len(cacheRow.text(0).rsplit(".", 1)[1]) == 3
+        assert cacheRow.text(1) == "WARN" and cacheRow.foreground(1).color().name() == "#854d0e"
         assert "E4BDA0E5A5BD" in workbench.devices.details.toPlainText().replace(" ", "")
         workbench.devices.format.setCurrentIndex(1)
         assert "你好" in workbench.devices.details.toPlainText()
         _capture(dialog, "q1-device-cache.png")
-        back = next(button for button in workbench.devicePage.findChildren(QPushButton) if button.text() == "返回事件")
         _click(back)
         assert workbench._detailEntry.eventId == warn.eventId and workbench.warning.isChecked()
 
         workbench.inputs["workflowRunId"].clear()
         workbench.inputs["iterationPath"].clear()
         _click(workbench.warning)
-        waitUntil(lambda: ("event", done.eventId) in workbench._items)
-        _selectTreeItem(workbench, workbench._items[("node", done.workflowRunId, done.nodeRunId)])
+        nodeKey = ("node", done.workflowRunId, done.nodeRunId)
+        waitUntil(lambda: nodeKey in workbench._items)
+        assert ("event", done.eventId) not in workbench._items
+        assert "value = 5" in workbench._items[nodeKey].text(0)
+        _selectTreeItem(workbench, workbench._items[nodeKey])
         assert workbench._detailEntry.eventId == done.eventId
         assert done.displayNode() in workbench.detail.title.text()
+        workbench._revealEvent(done)
+        assert workbench.events.currentItem().data(0, Qt.UserRole) == ("event", done.eventId)
+        _click(workbench.returnContext)
+        assert ("event", done.eventId) not in workbench._items
+        _click(workbench.showRoutine)
+        waitUntil(lambda: ("event", done.eventId) in workbench._items)
+        _click(workbench.showRoutine)
+        waitUntil(lambda: ("event", done.eventId) not in workbench._items)
         assert workbench.detail.rawTree.toPlainText() == json.dumps(done.rawRecord(), ensure_ascii=False, indent=2)
         status, = workbench.detail.readable.findItems("状态", Qt.MatchExactly)
         assert status.text(1) == "已完成" and done.rawRecord()["payload"]["status"] == "COMPLETED"
@@ -514,7 +577,6 @@ def testNativeWhileLogsWarningDeviceReturnAndTimeline(ownedDesignerWindow, tmp_p
         workbench.detail.tabs.setCurrentIndex(1)
         assert '"receipt"' in workbench.detail.rawTree.toPlainText()
         _click(workbench.detail.copyRecordButton)
-        from PySide2.QtWidgets import QApplication
         assert json.loads(QApplication.clipboard().text()) == receipt.rawRecord()
         close = next(button for button in workbench.drawer.findChildren(QPushButton) if button.text() == "关闭详情")
         selected = workbench.events.currentItem()

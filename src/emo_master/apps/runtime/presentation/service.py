@@ -139,7 +139,10 @@ class PresentationService:
             errors = self.runtime.plcDebugManager.closeSessions()
             if errors:
                 raise RuntimeError("E_PLC_RELEASE_FAILED: " + "; ".join(errors))
-            job = self.runtime.jobManager.createJob(snapshot.projectId, document.project.revision, document.entryWorkflowId)
+            job = self.runtime.jobManager.createJob(
+                snapshot.projectId, document.project.revision, document.entryWorkflowId,
+                projectName=document.project.name, workflowName=document.workflows[document.entryWorkflowId].name,
+            )
             job.executionMode = snapshot.mode
             config = self._attach(job.jobId, prepared.sourceJson,
                 executionRevision=snapshot.executionRevision,

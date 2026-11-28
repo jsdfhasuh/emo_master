@@ -297,6 +297,11 @@ def testJobDetailsPageByFiftyCompletedLoopIterations(designerApplication, global
         assert tree.itemAt(tree.visualItemRect(newest).center()) is newest
         completed = view._items[("iteration", "run", "poll", 104)]
         eventIds = [completed.child(index).data(0, Qt.UserRole)[1] for index in range(completed.childCount())]
+        assert len(eventIds) == 3 and eventIds == sorted(eventIds)
+        view.showRoutine.setChecked(True)
+        waitUntil(lambda: view._items[("iteration", "run", "poll", 104)].childCount() == 5)
+        completed = view._items[("iteration", "run", "poll", 104)]
+        eventIds = [completed.child(index).data(0, Qt.UserRole)[1] for index in range(completed.childCount())]
         assert len(eventIds) == 5 and eventIds == sorted(eventIds)
         assert tree.verticalScrollBar().maximum() > 0
         scrollForEarlier(5)
@@ -449,7 +454,8 @@ def testNativeWorkbenchHistoryAndWholeJobExportAfterRestart(ownedDesignerWindow,
             (endMs, "WARN", "恰在终点"),
         ):
             first.eventStore.append(jobId, "node.log", message, level=level, nodeId="early",
-                                    projectId=projectId, workflowId="main", timestampMs=timestamp)
+                                    projectId=projectId, workflowId="main", timestampMs=timestamp,
+                                    code="Q2_HISTORY_READABLE", iterationPath=(0,))
         matching = [("WARN", "早期范围命中"), ("ERROR", "早期错误命中")]
         for index in range(205):
             message = f"分页夹具 {index + 1}"
@@ -461,6 +467,8 @@ def testNativeWorkbenchHistoryAndWholeJobExportAfterRestart(ownedDesignerWindow,
             else:
                 first.eventStore.append(jobId, "node.log", message, projectId=projectId,
                     level="WARN" if index == 204 else "INFO", timestampMs=startMs + 1 if index == 204 else endMs)
+        first.eventStore.append(jobId, "node.log", "原文 [链接](目标)\n**保留文字**",
+                                projectId=projectId, timestampMs=endMs, payload={"opaque": "不导出整段载荷"})
         first.eventStore.append("__runtime__", "device.action.failed", "同 Job 的设备摘要",
                                 projectId=projectId, payload={"jobId": jobId, "deviceId": "software"})
         first.eventStore.append("__runtime__", "node.preview.failed", "独立系统事件", projectId=projectId)
@@ -509,8 +517,9 @@ def testNativeWorkbenchHistoryAndWholeJobExportAfterRestart(ownedDesignerWindow,
         waitUntil(lambda: jobs.pending is None, timeout=10)
         assert historyCalls[-1]["startEndedAtMs"] == endedAt and "endEndedAtMs" not in historyCalls[-1]
         jobs.catalogDateRange.setBounds(endedAt, None)
-        item, = jobs.directory.findItems("main", Qt.MatchExactly | Qt.MatchRecursive)
+        item, = jobs.directory.findItems(loaded.workflows["main"].name, Qt.MatchExactly | Qt.MatchRecursive)
         assert item.toolTip(0) == jobId and item.text(2) == "已完成"
+        assert item.text(1) == loaded.project.name and projectId in item.toolTip(1)
         jobs.directory.setCurrentItem(item)
         assert not jobs.stopButton.isVisible()
         screenshot("q2-directory-date.png")
@@ -554,6 +563,21 @@ def testNativeWorkbenchHistoryAndWholeJobExportAfterRestart(ownedDesignerWindow,
         assert history.historyDateRange.bounds() == (startMs, endMs)
         assert history.levelFilter.currentText() == "告警 / 错误"
         assert history.historyInputs["projectId"].isReadOnly() and history.historyInputs["jobId"].isReadOnly()
+        assert history.listFilters.isHidden()
+        firstRow = next(i for i, row in enumerate(history._visibleEntries) if row.message == "早期范围命中")
+        from datetime import datetime
+        assert history.table.item(firstRow, 0).text() == datetime.fromtimestamp(startMs / 1000).isoformat(
+            sep=" ", timespec="milliseconds")
+        assert history.table.item(firstRow, 2).text() == "runtime / 算子"
+        assert history.table.item(firstRow, 6).text() == "1"
+        assert history.table.item(firstRow, 8).text() == "Q2_HISTORY_READABLE"
+        click(history.listFiltersToggle)
+        assert history.listFilters.isVisible()
+        history.eventTypeFilter.setCurrentIndex(history.eventTypeFilter.findText("node.log"))
+        click(history.listFiltersToggle)
+        assert history.listFilters.isHidden() and "node.log" in history.filterStatusLabel.text()
+        assert len(history._visibleEntries) == 200
+        history.eventTypeFilter.setCurrentIndex(0)
         screenshot("q2-history-warning-levels.png")
 
         applied = history._historyReply
@@ -636,18 +660,26 @@ def testNativeWorkbenchHistoryAndWholeJobExportAfterRestart(ownedDesignerWindow,
                                            jobId=jobId, limit=1000)
         assert expected["ok"] and not expected["hasMore"]
         logPages.clear()
-        target = tmp_path / "whole-job.json"
-        monkeypatch.setattr(QFileDialog, "getSaveFileName", lambda *_: (str(target), "JSON (*.json)"))
+        target = tmp_path / "whole-job.md"
+
+        def chooseMarkdown(_parent, title, _initial, formats):
+            assert "此 Job" in title and "Markdown (*.md)" in formats
+            return str(target), "Markdown (*.md)"
+
+        monkeypatch.setattr(QFileDialog, "getSaveFileName", chooseMarkdown)
         click(jobs.exportButton)
         waitUntil(lambda: target.exists() and history._historyFuture is None, timeout=10)
-        exported = json.loads(target.read_text(encoding="utf-8"))
-        rows = exported["entries"]
-        assert exported["entryCount"] > len(jobs.window.entries)
-        assert [(row["eventId"], row["jobId"], row["message"]) for row in rows] == [
-            (row["eventId"], row["event"]["jobId"], row["event"]["message"]) for row in expected["events"]]
-        assert all(row["runtimeInstanceId"] == "q2-before-restart" for row in rows)
-        assert any(row["level"] == "INFO" for row in rows)
-        assert exported["filters"]["jobId"] == jobId
+        exported = target.read_text(encoding="utf-8")
+        heading, timeline = exported.split("## 时间线\n")
+        assert "完整 Job（固定上界内仍可查询的记录）" in heading and f"Job · {jobId}" in heading
+        assert f"记录上界 · {expected['upperEventId']}" in heading
+        rows = [line for line in timeline.splitlines() if line.startswith("- ")]
+        assert len(rows) > len(jobs.window.entries)
+        assert [int(row.split("事件 ", 1)[1].split(" ·", 1)[0]) for row in rows] == [
+            row["eventId"] for row in expected["events"]]
+        assert "早期范围命中" in timeline and " · INFO · " in timeline and "value = 5" in timeline
+        assert "原文 \\[链接\\](目标) \\*\\*保留文字\\*\\*" in timeline
+        assert "不导出整段载荷" not in exported and f"导出条数 · {len(rows)}" in timeline
         firstPage, secondPage = logPages
         assert firstPage[0]["afterEventId"] == 0 and firstPage[1]["hasMore"]
         assert secondPage[0]["afterEventId"] == firstPage[1]["nextEventId"]

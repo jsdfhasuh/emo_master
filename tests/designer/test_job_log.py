@@ -127,6 +127,10 @@ def testTreeAssociatesChildCallsAndNestedLoopsBeforeProjectingWarnings():
     assert ("job",) not in tree.defaultExpandedKeys
     assert tree.branchForEvent(30) is tree.branchForEvent(31) is branches["unlinked",]
     assert tree.branchForEvent(32) is branches["workflow", "first"]
+    assert loop.warningCount == 1
+    compact = {branch.key for branch in _walk(tree.project(lambda _: True, compact=True, revealEventId=11))}
+    assert {("event", 10), ("event", 11), ("event", 25), ("event", 27)} <= compact
+    assert all(("event", eventId) not in compact for eventId in (1, 3, 4, 9, 12))
 
 
 def testLoopPageReportsEndedIterationsWhenBodyExecutionIsUnknown():
@@ -358,13 +362,15 @@ def testCatalogUsesRunStatusAndProvesRelatedJobsFromCurrentIdentity(designerAppl
 
     source = active("source", "FAILED", run_group_id="group", source_job_id="source", ended_at_ms=10,
                     allowed_actions=["stop"], message="实际错误")
-    one = active("one", "ACCEPTED", run_group_id="group", source_job_id="source")
+    one = active("one", "ACCEPTED", run_group_id="group", source_job_id="source",
+                 target_slot_id="inspect-camera")
     two = active("two", "STOPPING", run_group_id="group", source_job_id="source")
     independent = active("independent", "RUNNING", run_group_id="group", source_job_id="other-source")
     otherProject = active("other-project", "RUNNING", run_group_id="group", source_job_id="source", project="other")
     owned = active("owned", "ABORTED", owns_resources=True)
     ordinary = JobHistorySummary(job_id="ordinary", project_id="project", workflow_id="ordinary", status="COMPLETED",
-                                 ended_at_ms=20)
+                                 project_name="运行当时的工程", workflow_name="运行当时的工作流",
+                                 target_slot_id="saved-slot", message="job.completed", ended_at_ms=20)
     duplicate = JobHistorySummary(job_id=source.job_id, project_id=source.project_id, workflow_id="stale",
                                   status="COMPLETED", ended_at_ms=10)
     view = RuntimeJobLogs(10, StructuredLogEntry.fromRuntimeEvent)
@@ -379,13 +385,18 @@ def testCatalogUsesRunStatusAndProvesRelatedJobsFromCurrentIdentity(designerAppl
             group, = view.directory.findItems(section, Qt.MatchExactly)
             return {group.child(i).toolTip(0): group.child(i) for i in range(group.childCount())}
 
-        assert set(rows("运行中")) == {"one", "two", "independent", "other-project"}
+        activeRows = rows("运行中")
+        assert set(activeRows) == {"one", "two", "independent", "other-project"}
+        assert "槽位 inspect-camera" in activeRows["one"].text(0)
         ended = rows("最近已结束")
         assert set(ended) == {"ordinary", "source", "owned"}
         assert ended["source"].text(2) == "失败" and "还有 2 个关联任务未结束" in ended["source"].text(5)
         assert ended["owned"].text(2) == "已停止" and ended["owned"].text(5) == "结束处理未完成"
         assert "未提供具体原因" in ended["owned"].toolTip(5)
-        assert ended["ordinary"].text(5) == ""
+        assert ended["ordinary"].text(0) == "运行当时的工作流 · 槽位 saved-slot"
+        assert ended["ordinary"].text(1) == "运行当时的工程" and "工程 ID project" in ended["ordinary"].toolTip(1)
+        assert ended["ordinary"].text(5) == "任务已完成"
+        assert "实际错误" in ended["source"].text(5)
         view.directory.setCurrentItem(ended["source"])
         assert view.stopButton.isVisible() and view.catalogRelatedButton.isVisible()
         view._renderCatalog()
@@ -484,6 +495,13 @@ def testRelatedBookmarkRestoresTemporarilyRevealedEventOrClosesDrawer(designerAp
             view.returnContext.click()
             assert set(view._items) == {original} and view.events.currentItem().data(0, Qt.UserRole) == original
             assert view._detailEntry.eventId == original[1]
+            view.openJob(source, eventId=revealed[1], upper=25)
+            waitUntil(lambda: not view._opening and view._detailEntry is not None)
+            assert not view.showRoutine.isChecked() and view._reveal == revealed
+            assert view.events.currentItem().data(0, Qt.UserRole) == revealed
+            assert view._detailEntry.rawRecord() == rows["job"][-1].rawRecord()
+            view.returnContext.click()
+            assert revealed not in view._items and view.drawer.isHidden()
         else:
             assert view._reveal is None and view.returnContext.isHidden()
             assert set(view._items) == {original} and view.events.currentItem() is None

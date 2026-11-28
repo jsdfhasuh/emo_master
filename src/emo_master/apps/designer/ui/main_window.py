@@ -4562,7 +4562,10 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             projectId, token = identity
             if not entry.projectId or entry.projectId == projectId:
                 entry = replace(entry, projectId=projectId, projectInstanceToken=token)
-                if projectId == self._currentProjectId() and token == self._runtimeLogProjectToken:
+                recordedRevision = entry.payload.get("projectRevision", event.get("projectRevision"))
+                currentRevision = self.workflowStore.project.get("revision")
+                if (projectId == self._currentProjectId() and token == self._runtimeLogProjectToken
+                        and type(recordedRevision) is int and recordedRevision == currentRevision):
                     workflow = self.workflowStore.workflows.get(entry.workflowId)
                     if workflow is not None:
                         nodeName = ""
@@ -4580,9 +4583,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                             nodeName = "工作流输入"
                         elif kind == "workflow_output" and nodeName in {"", "Workflow Output"}:
                             nodeName = "工作流输出"
-                        # Names are captured with the event, not re-resolved from
-                        # a later project or a renamed node while browsing history.
-                        entry = replace(entry, workflowName=workflow.name, nodeName=nodeName)
+                        entry = replace(entry, workflowName=entry.workflowName or workflow.name,
+                                        nodeName=entry.nodeName or nodeName)
         return entry
 
     def _showRunFailure(self, failure: dict[str, object]) -> None:

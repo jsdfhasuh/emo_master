@@ -168,8 +168,13 @@ def testOperatorRuntimeSourcesAndExactExportScopes(qtApp, tmp_path, monkeypatch)
             return reply
 
         monkeypatch.setattr(logs.runtimeLogs.client, 'queryRuntimeLogs', queryAndAppend)
-        wholePath = tmp_path / 'whole-job.json'
-        monkeypatch.setattr(QFileDialog, 'getSaveFileName', lambda *_: (str(wholePath), 'JSON (*.json)'))
+        wholePath = tmp_path / 'whole-job.md'
+
+        def chooseMarkdown(_parent, title, _initial, formats):
+            assert '完整 Job' in title and 'Markdown (*.md)' in formats
+            return str(wholePath.with_suffix('')), 'Markdown (*.md)'
+
+        monkeypatch.setattr(QFileDialog, 'getSaveFileName', chooseMarkdown)
         jobs.exportWholeAction.trigger()
         try:
             waitFor(firstPageReady.is_set)
@@ -184,12 +189,16 @@ def testOperatorRuntimeSourcesAndExactExportScopes(qtApp, tmp_path, monkeypatch)
         finally:
             releasePage.set()
         waitFor(lambda: wholePath.is_file() and logs.runtimeLogs.export is None)
-        whole = json.loads(wholePath.read_text(encoding='utf-8'))
+        whole = wholePath.read_text(encoding='utf-8')
+        heading, timeline = whole.split('## 时间线\n')
+        exportedIds = [int(row.split('事件 ', 1)[1].split(' ·', 1)[0])
+                       for row in timeline.splitlines() if row.startswith('- ')]
         late = next(row.event_id for row in rows(job_id=first) if row.event.message == 'r3-after-export-bound')
-        bound = whole['filters']['upperEventId']
-        assert whole['scope'] == 'whole_job' and whole['filters']['jobId'] == first
-        assert {entry['eventId'] for entry in whole['entries']} == allFirst
-        assert whole['entryCount'] == len(allFirst)
+        bound = pages[0][1]['upperEventId']
+        assert '完整 Job（固定上界内仍可查询的记录）' in heading and f'Job · {first}' in heading
+        assert f'记录上界 · {bound}' in heading and f'Job · {second}' not in heading
+        assert exportedIds == sorted(allFirst)
+        assert f'导出条数 · {len(allFirst)}' in timeline
         assert {ids[label] for label in ('r3-window-excluded', 'r3-current-info', 'r3-current-error')} <= allFirst - matching
         assert ids['r3-other-job'] not in allFirst | matching and late > bound and late not in allFirst
         assert len(pages) >= 2 and pages[0][1]['hasMore']

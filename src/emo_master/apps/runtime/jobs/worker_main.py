@@ -128,7 +128,8 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue, communicationPi
         if not isinstance(inputs, dict):
             raise ValueError("inputs_json must contain an object")
         publisher = _eventPublisher(spec.jobId, spec.projectId, eventQueue, modelSources=spec.modelSources,
-                                    inspectionCredits=spec.inspectionCredits, cancellation=token)
+                                    inspectionCredits=spec.inspectionCredits, cancellation=token,
+                                    compiledProject=compiled)
         globalCounters = (
             ProjectGlobalCounters(SqliteStore(Path(spec.runtimeDbPath)), spec.projectId)
             if spec.runtimeDbPath and spec.projectId
@@ -355,8 +356,20 @@ def _collector(spec, eventQueue):
 
 
 def _eventPublisher(jobId: str, projectId: str, eventQueue, *, inspectionCredits=None, cancellation=None,
-                    modelSources=None):
+                    modelSources=None, compiledProject=None):
     def publish(eventType, context, message, level="INFO", code="", payload=None):
+        if compiledProject is not None and eventType.startswith(("workflow.", "node.", "loop.", "subflow.", "dispatch.")):
+            payload = dict(payload or {})
+            workflow = compiledProject.workflows.get(context.workflowId)
+            # A child workflow records its caller ID, but that ID belongs to
+            # the parent. Resolve a node name only within an actual node run.
+            node = workflow.nodeById.get(context.callerNodeId) if workflow and context.nodeRunId else None
+            if compiledProject.projectName:
+                payload["projectName"] = redactLogText(compiledProject.projectName)
+            if workflow and workflow.name:
+                payload["workflowName"] = redactLogText(workflow.name)
+            if node and node.displayName:
+                payload["nodeName"] = redactLogText(node.displayName)
         if modelSources and eventType == "node.completed" and payload:
             diagnostics = payload.get("diagnostics", {})
             loaded = diagnostics.get("modelPath") if isinstance(diagnostics, dict) else None

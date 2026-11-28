@@ -210,6 +210,7 @@ message RunState {
   string message = 18;
   string start_request_id = 19;
   repeated string allowed_actions = 20;
+  string project_name = 21;
 }
 message ListRunsReply {
   bool ok = 1;
@@ -239,6 +240,9 @@ message JobHistorySummary {
   string error_code = 9;
   string message = 10;
   string stop_mode = 11;
+  string project_name = 12;
+  string workflow_name = 13;
+  string target_slot_id = 14;
 }
 message ListJobHistoryReply {
   bool ok = 1;
@@ -329,6 +333,8 @@ message ReadProjectResourceReply {
 
 message StreamJobEventsRequest {
   string job_id = 1;
+  // Resume after the last handled sequence. New periodic worker heartbeats do
+  // not receive sequences. Replay preserves already stored legacy heartbeats.
   int64 after_sequence = 2;
   bool follow = 3;
 }

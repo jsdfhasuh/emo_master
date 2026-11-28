@@ -11,6 +11,7 @@ from emo_master.apps.designer.state.job_log import ExecutionTree, JobEventWindow
 from emo_master.apps.designer.ui.log_dialog import StructuredLogEntry
 from emo_master.apps.designer.ui.runtime_job_logs import RuntimeJobLogs
 from emo_master.apps.runtime.grpc_server.generated.runtime_pb2 import JobEvent, JobHistorySummary, RunState
+from emo_master.ui.runtime_logs import job_log
 from tests.designer.qt_wait import waitUntil
 
 
@@ -83,6 +84,13 @@ def testTreeAssociatesChildCallsAndNestedLoopsBeforeProjectingWarnings():
         _event(23, "workflow.started", "child", parent="unloaded-parent", caller="not-loaded"),
         _event(24, "node.log", "detached", parentWorkflowRunId=None, iterationPath=None),
         _event(25, "device.action.retry", caller="loop", nodeRun="outer", path=(0,)),
+        _event(26, "job.started", run=""),
+        _event(27, "job.failed", run=""),
+        _event(28, "process.terminated", run=""),
+        _event(29, "dispatch.group.retired", run=""),
+        _event(30, "node.failed", run="", caller="operator"),
+        _event(31, "dispatch.invocation.failed", run=""),
+        _event(32, "job.failed", run="first"),
     ]
     tree = ExecutionTree(reversed(rows))
     assert tree.rootCount == 2
@@ -94,6 +102,8 @@ def testTreeAssociatesChildCallsAndNestedLoopsBeforeProjectingWarnings():
     assert branches["node", "body", "inner"].totalIterations == 1
     assert branches["node", "nested", "same"].executionTime().elapsedMs == 200
     assert tree.branchForEvent(10) is branches["node", "nested", "same"]
+    assert tree.nodeRecord(("node", "nested", "same")) is rows[10]
+    assert tree.nodeRecord(("node", "second", "same")) is rows[21]
     assert tree.representativeEventId(("iteration", "body", "repeat", 0, 0)) == 7
     assert branches["node", "second", "same"].end is None
     assert branches["workflow", "unloaded-parent"].children == [branches["workflow", "child"]]
@@ -114,6 +124,14 @@ def testTreeAssociatesChildCallsAndNestedLoopsBeforeProjectingWarnings():
     assert context is not None
     assert [row.eventId for row in rows if context(row)] == [7, 8, 9, 10, 11, 12, 13]
     assert tree.branchForEvent(25) is branches["iteration", "first", "loop", 0]
+    assert [child.entry.eventId for child in branches["job",].children] == [26, 27, 28, 29]
+    assert ("job",) not in tree.defaultExpandedKeys
+    assert tree.branchForEvent(30) is tree.branchForEvent(31) is branches["unlinked",]
+    assert tree.branchForEvent(32) is branches["workflow", "first"]
+    assert loop.warningCount == 1
+    compact = {branch.key for branch in _walk(tree.project(lambda _: True, compact=True, revealEventId=11))}
+    assert {("event", 10), ("event", 11), ("event", 25), ("event", 27)} <= compact
+    assert all(("event", eventId) not in compact for eventId in (1, 3, 4, 9, 12))
 
 
 def testLoopPageReportsEndedIterationsWhenBodyExecutionIsUnknown():
@@ -123,7 +141,8 @@ def testLoopPageReportsEndedIterationsWhenBodyExecutionIsUnknown():
     tree = ExecutionTree(rows)
     loop = next(branch for branch in _walk(tree.roots) if branch.kind == "loop")
     assert loop.completedIterations == 0
-    assert loop.title == "loop · 循环类型未记录 · 已加载 50 次迭代结束记录（循环体执行情况未记录） · 总数未记录"
+    assert loop.title == "loop · 当前范围未见循环头 · 已加载 50 次迭代结束记录（循环体执行情况未记录） · 总数未记录"
+    assert next(branch for branch in loop.children if branch.start).title == "第 51 次迭代"
 
 
 def testOnlyOuterRoundsAreNewestFirstWithinTheirOwningLoop():
@@ -210,6 +229,7 @@ def testTimeAndCurrentPositionUseOnlyMatchedLifecycleAndCurrentObservation():
     assert jobExecutionTime({"status": "ACCEPTED", "startAtMs": 300}, 800).acceptedAtMs == 300
     stopping = jobExecutionTime({"status": "STOPPING", "startedAtMs": 400, "acceptedAtMs": 300}, 800)
     assert stopping.estimated and stopping.elapsedMs == 400
+    assert jobExecutionTime({"status": "STOPPING", "startedAtMs": 400}, 900).elapsedMs == 500
     completed = jobExecutionTime({"status": "FAILED", "active": True, "startedAtMs": 400, "endedAtMs": 700}, 900)
     assert not completed.estimated and completed.elapsedMs == 300
     restarted = jobExecutionTime({"status": "FAILED", "startedAtMs": 400, "endedAtMs": 700,
@@ -234,6 +254,25 @@ def testTimeAndCurrentPositionUseOnlyMatchedLifecycleAndCurrentObservation():
     assert missing.elapsedMs is None and "原始时间" in missing.note
     assert branches["node", "first", "skip"].executionTime().elapsedMs is None
     assert branches["node", "first", "unfinished"].executionTime().endedAtMs is None
+    window = JobEventWindow("job")
+    window.mergeRecent(rows)
+    window.pause(1000)
+    window.pause(1500)
+    for key in (("workflow", "next"), ("node", "next", "active")):
+        branch = branches[key]
+        live = branch.executionTime(active=True, nowMs=1000)
+        frozen = branch.executionTime(active=True, nowMs=1500, pausedAtMs=window.pausedAtMs)
+        assert live.estimated and frozen.elapsedMs == live.elapsedMs
+        assert frozen.note == "结束状态待刷新" and "进行中" not in frozen.display(showRange=True)
+        historical = branch.executionTime(pausedAtMs=window.pausedAtMs, terminal=True)
+        assert historical.elapsedMs is None and historical.note == "当前范围未见结束记录"
+    assert branches["node", "next", "later"].executionTime(pausedAtMs=window.pausedAtMs).elapsedMs is None
+    iteration = ExecutionTree([
+        _event(1, "loop.started", caller="loop", nodeRun="loop-run", payload={"mode": "while"}),
+        _event(2, "loop.iteration.started", caller="loop", nodeRun="loop-run", path=(0,)),
+    ]).roots[0].children[0].children[-1]
+    assert iteration.title == "第 1 次迭代"
+    assert iteration.executionTime(active=True, pausedAtMs=window.pausedAtMs).elapsedMs == 800
     options = dict(jobStatus="STOPPING", runtimeInstanceId="runtime", continuous=True)
     assert tree.currentNode(**options) == rows[-2]
     assert tree.currentNode(**dict(options, continuous=False)) is None
@@ -262,6 +301,52 @@ def testRuntimeAttributionAndRawRecordKeepRecordedIdentityAndMissingFields():
     nonLoopDevice = _event(5, "device.action.failed", payload={"cursor": 23, "iterationPath": []})
     assert oldDevice.rawRecord()["iterationPath"] == [] and not oldDevice.iterationPathRecorded
     assert nonLoopDevice.iterationPathRecorded and nonLoopDevice.iterationPath == ()
+
+
+def testOpenNodeDetailsFreezeTheEstimateAndShowOnlyAPairedActualTime(designerApplication, monkeypatch):
+    now = [1000]
+    monkeypatch.setattr(job_log, "_now", lambda explicit: now[0] if explicit is None else explicit)
+    call = _event(1, "workflow.started", timestampMs=100)
+    start = _event(2, "node.started", caller="capture", nodeRun="first-capture", timestampMs=200)
+    unrelated = _event(3, "node.completed", caller="capture", nodeRun="second-capture", timestampMs=1400)
+    end = _event(4, "node.completed", caller="capture", nodeRun=start.nodeRunId, timestampMs=1500)
+    view = RuntimeJobLogs(10, StructuredLogEntry.fromRuntimeEvent)
+    try:
+        view.instance = start.runtimeInstanceId
+        view.job = RunState(job_id=start.jobId, workflow_id="main", status="RUNNING", started_at_ms=200)
+        view.window = JobEventWindow(start.jobId)
+        view._continuous = True
+        view._upper = start.eventId
+        view.window.mergeRecent([call, start])
+        view.pages.setCurrentWidget(view.jobPage)
+        view.show()
+        view.mode.setCurrentText("时间顺序")
+        view._select(("event", start.eventId))
+        readable = view.detail.readable
+        timing, = readable.findItems("节点执行时间", Qt.MatchExactly)
+        raw = view.detail.rawTree.toPlainText()
+        readable.setCurrentItem(timing)
+        assert timing.text(1) == "估算 800 ms" and not view.window.paused
+        assert not readable.findItems("节点总耗时", Qt.MatchExactly)
+
+        view._pauseReading()
+        view.appendEntry(end)
+        now[0] = 1700
+        view._updateTimes()
+        assert view.window.newCount == 1 and timing.text(1) == "估算 800 ms · 结束状态待刷新"
+        assert "估算 1.50 s" in view.jobTitle.text()
+
+        view.window.mergeRecent([call, start, unrelated])
+        view._render()
+        assert timing.text(1) == "估算 1.50 s" and not readable.findItems("节点总耗时", Qt.MatchExactly)
+        view.appendEntry(end)
+        waitUntil(lambda: timing.text(0) == "节点总耗时")
+        assert timing.text(1) == "1300 ms · 节点起止事件"
+        assert readable.currentItem() is timing and view.detail.rawTree.toPlainText() == raw
+        assert view._detailEntry.eventId == start.eventId
+    finally:
+        view.close()
+        view.shutdown()
 
 
 def testWorkbenchClosesGapBeforeConfirmingContinuityAndReloadsLiveTrimmedRange(designerApplication):
@@ -324,13 +409,15 @@ def testCatalogUsesRunStatusAndProvesRelatedJobsFromCurrentIdentity(designerAppl
 
     source = active("source", "FAILED", run_group_id="group", source_job_id="source", ended_at_ms=10,
                     allowed_actions=["stop"], message="实际错误")
-    one = active("one", "ACCEPTED", run_group_id="group", source_job_id="source")
+    one = active("one", "ACCEPTED", run_group_id="group", source_job_id="source",
+                 target_slot_id="inspect-camera")
     two = active("two", "STOPPING", run_group_id="group", source_job_id="source")
     independent = active("independent", "RUNNING", run_group_id="group", source_job_id="other-source")
     otherProject = active("other-project", "RUNNING", run_group_id="group", source_job_id="source", project="other")
     owned = active("owned", "ABORTED", owns_resources=True)
     ordinary = JobHistorySummary(job_id="ordinary", project_id="project", workflow_id="ordinary", status="COMPLETED",
-                                 ended_at_ms=20)
+                                 project_name="运行当时的工程", workflow_name="运行当时的工作流",
+                                 target_slot_id="saved-slot", message="job.completed", ended_at_ms=20)
     duplicate = JobHistorySummary(job_id=source.job_id, project_id=source.project_id, workflow_id="stale",
                                   status="COMPLETED", ended_at_ms=10)
     view = RuntimeJobLogs(10, StructuredLogEntry.fromRuntimeEvent)
@@ -345,13 +432,18 @@ def testCatalogUsesRunStatusAndProvesRelatedJobsFromCurrentIdentity(designerAppl
             group, = view.directory.findItems(section, Qt.MatchExactly)
             return {group.child(i).toolTip(0): group.child(i) for i in range(group.childCount())}
 
-        assert set(rows("运行中")) == {"one", "two", "independent", "other-project"}
+        activeRows = rows("运行中")
+        assert set(activeRows) == {"one", "two", "independent", "other-project"}
+        assert "槽位 inspect-camera" in activeRows["one"].text(0)
         ended = rows("最近已结束")
         assert set(ended) == {"ordinary", "source", "owned"}
         assert ended["source"].text(2) == "失败" and "还有 2 个关联任务未结束" in ended["source"].text(5)
         assert ended["owned"].text(2) == "已停止" and ended["owned"].text(5) == "结束处理未完成"
         assert "未提供具体原因" in ended["owned"].toolTip(5)
-        assert ended["ordinary"].text(5) == ""
+        assert ended["ordinary"].text(0) == "运行当时的工作流 · 槽位 saved-slot"
+        assert ended["ordinary"].text(1) == "运行当时的工程" and "工程 ID project" in ended["ordinary"].toolTip(1)
+        assert ended["ordinary"].text(5) == "任务已完成"
+        assert "实际错误" in ended["source"].text(5)
         view.directory.setCurrentItem(ended["source"])
         assert view.stopButton.isVisible() and view.catalogRelatedButton.isVisible()
         view._renderCatalog()
@@ -450,6 +542,13 @@ def testRelatedBookmarkRestoresTemporarilyRevealedEventOrClosesDrawer(designerAp
             view.returnContext.click()
             assert set(view._items) == {original} and view.events.currentItem().data(0, Qt.UserRole) == original
             assert view._detailEntry.eventId == original[1]
+            view.openJob(source, eventId=revealed[1], upper=25)
+            waitUntil(lambda: not view._opening and view._detailEntry is not None)
+            assert not view.showRoutine.isChecked() and view._reveal == revealed
+            assert view.events.currentItem().data(0, Qt.UserRole) == revealed
+            assert view._detailEntry.rawRecord() == rows["job"][-1].rawRecord()
+            view.returnContext.click()
+            assert revealed not in view._items and view.drawer.isHidden()
         else:
             assert view._reveal is None and view.returnContext.isHidden()
             assert set(view._items) == {original} and view.events.currentItem() is None

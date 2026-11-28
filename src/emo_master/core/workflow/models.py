@@ -19,6 +19,7 @@ class CompiledNode:
     globalVariableBindings: tuple[Mapping[str, object], ...] = ()
     paramSchema: Mapping[str, object] = MappingProxyType({})
     devicePlans: Mapping[str, object] = MappingProxyType({})
+    displayName: str = ""
 
 
 @dataclass(frozen=True)
@@ -55,6 +56,7 @@ class CompiledProject:
     runtime: Mapping[str, object]
     pluginRootPaths: tuple[str, ...] = ()
     globalVariables: Mapping[str, object] = MappingProxyType({})
+    projectName: str = ""
 
 
 def freezeMapping(value: Mapping[str, Any]) -> Mapping[str, Any]:

@@ -96,7 +96,6 @@ def testBackgroundCompletionIsIncludedInOperationalLog():
                          payloadJson='{"background": true, "receipt": {"writeId": "w1", "status": "COMMITTED"}}')
     assert _isOperationalEvent(final)
     assert _projectEvent(final)['payload']['receipt']['writeId'] == 'w1'
-    assert not _isOperationalEvent(RuntimeEvent('job', 'sqlite.write.finished', 'COMMITTED'))
 
 
 def testSelectedCanvasClearNotifiesOnlyAfterWrappersAndDependencyHintsAreRemoved(ownedFlowScene, retainedQtApplication):

@@ -303,7 +303,10 @@ def testSpawnedWorkerKeepsLivenessUntilTerminalBacklogDrains(monkeypatch, tmp_pa
         supervisor.processExited("job-stop", 0)
         assert repository.get("job-stop").status == "COMPLETED"
         assert consumed[-1] == "job.completed"
-        assert [event.eventType for event in store.read("job-stop")] == consumed
+        assert "process.heartbeat" in consumed
+        assert [event.eventType for event in store.read("job-stop")] == [
+            eventType for eventType in consumed if eventType != "process.heartbeat"
+        ]
         assert not supervisor.ownsJobResources("job-stop")
         assert "job-stop" not in supervisor._heartbeatCells
     finally:

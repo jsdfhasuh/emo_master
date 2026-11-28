@@ -9,6 +9,19 @@ from emo_master.apps.runtime.jobs.models import JobStatus
 from emo_master.apps.runtime.jobs.repository import jobTimestampMs
 
 
+def _matchingDocumentNames(runtime, projectId, revision, workflowId):
+    # Managed publications can change names without changing the file revision
+    # on legacy Job rows. Such rows have no trusted online revision.
+    if runtime.projectConfiguration.current is not None:
+        return '', ''
+    document = runtime.loadedDocument
+    if not (document and document.project.projectId == projectId
+            and getattr(document.project, 'revision', None) == revision):
+        return '', ''
+    workflow = document.workflows.get(workflowId)
+    return getattr(document.project, 'name', ''), workflow.name if workflow else ''
+
+
 def runState(runtime, jobId):
     record = runtime.jobRepository.getCurrentSnapshot(jobId)
     if record is None:
@@ -35,19 +48,17 @@ def runState(runtime, jobId):
                 groupActive = any((memberRecord is not None and not memberRecord.isTerminal)
                     for member in group.members
                     for memberRecord in [runtime.jobRepository.getCurrentSnapshot(member)])
-    document = runtime.loadedDocument
-    sameRevision = (document and document.project.projectId == record.projectId
-                    and getattr(document.project, 'revision', None) == record.projectRevision)
-    workflow = document.workflows.get(record.workflowId) if sameRevision else None
+    projectName, workflowName = _matchingDocumentNames(runtime, record.projectId, record.projectRevision, record.workflowId)
     active = not record.isTerminal or owned or groupActive
     capture = bool(config.get('capture'))
     actions = (['stop'] if active else []) + (['view'] if capture else [])
     return pb.RunState(runtime_instance_id=runtime.runtimeInstanceId, project_id=record.projectId,
         workflow_id=record.workflowId, job_id=record.jobId, status=record.status,
         run_group_id=dispatch.get('runGroupId', ''), source_job_id=dispatch.get('sourceJobId', ''),
-        target_slot_id=dispatch.get('targetSlotId', ''), active=active, owns_resources=owned,
+        target_slot_id=record.targetSlotId or dispatch.get('targetSlotId', ''), active=active, owns_resources=owned,
         capture_enabled=capture, display_resources_released=record.isTerminal and not config and not owned,
-        workflow_name=workflow.name if workflow else record.workflowId, accepted_at_ms=record.acceptedAtMs,
+        workflow_name=record.workflowName or workflowName or record.workflowId,
+        project_name=record.projectName or projectName, accepted_at_ms=record.acceptedAtMs,
         started_at_ms=record.startedAtMs, ended_at_ms=record.endedAtMs, error_code=record.errorCode,
         message=record.message, start_request_id=runtime._jobStartRequestIds.get(jobId, ''), allowed_actions=actions)
 
@@ -146,11 +157,15 @@ class RunReadRpcMixin:
         reply.ok, reply.code = True, 'OK'
         reply.has_more = len(rows) > limit
         for row in rows[:limit]:
-            jobId, projectId, revision, workflowId, status, accepted, started, ended, code, message, mode, _ = row
+            (jobId, projectId, revision, workflowId, status, accepted, started, ended, code, message, mode,
+             projectName, workflowName, targetSlotId, _) = row
+            currentProjectName, currentWorkflowName = _matchingDocumentNames(self, projectId, revision, workflowId)
             reply.jobs.add(job_id=jobId, project_id=projectId, project_revision=revision,
                 workflow_id=workflowId, status=status, accepted_at_ms=jobTimestampMs(accepted),
                 started_at_ms=jobTimestampMs(started), ended_at_ms=jobTimestampMs(ended),
-                error_code=code or '', message=message or '', stop_mode=mode or '')
+                error_code=code or '', message=message or '', stop_mode=mode or '',
+                project_name=projectName or currentProjectName, workflow_name=workflowName or currentWorkflowName,
+                target_slot_id=targetSlotId)
         if reply.has_more:
             last = rows[limit - 1]
             reply.next_cursor = json.dumps([last[-1], last[0]], separators=(',', ':'))

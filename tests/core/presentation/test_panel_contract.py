@@ -108,6 +108,9 @@ def testGeneratedTypesDeriveFromTheSameSchemasAndPreserveRpc64BitRules(contract)
     rpc = schemas['runtime-rpc.schema']['$defs']
     assert rpc['RpcDisplaySnapshot']['properties']['cursor']['type'] == 'string'
     assert rpc['RpcHistoryImageReply']['properties']['data']['contentEncoding'] == 'base64'
+    assert rpc['RpcRunState']['properties']['projectName']['type'] == 'string'
+    history = rpc['RpcJobHistorySummary']['properties']
+    assert all(history[name]['type'] == 'string' for name in ('projectName', 'workflowName', 'targetSlotId'))
     assert 'export type BrowserMessage = ' in generated
     assert '"sqlite_table"' in generated and '"table"' in generated
 

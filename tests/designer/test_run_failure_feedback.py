@@ -103,9 +103,19 @@ def capacityFailureReply(required=2, active=2, limit=2):
 @pytest.mark.parametrize('required,active,limit', [(2, 2, 2), (3, 0, 2), (1, 2, 2)])
 def testCapacityPopupUsesRuntimeCountsAndExplainsRecovery(
         ownedDesignerWindow, failureBoxes, required, active, limit):
+    from emo_master.core.runtime_log_messages import runtimeEventMessage, runtimeLogBrief
+
     window = ownedDesignerWindow(Client(), settingsStore=Settings())
     window.workflowStore.runtime['maxConcurrentJobs'] = 99
     reply = capacityFailureReply(required, active, limit)
+    prestart = dict(eventType='job.failed', message=reply.message,
+                    payload=dict(diagnostics=json.loads(reply.diagnostics_json)))
+    assert runtimeEventMessage(prestart) == reply.message
+    assert f'本次需要 {required} 个 Job' in runtimeLogBrief(prestart)
+    restart = dict(eventType='job.failed', code='E_RUNTIME_RESTARTED',
+                   message='runtime restarted while job was active')
+    assert runtimeEventMessage(restart) == '任务运行期间 Runtime 已重启'
+    assert runtimeEventMessage(dict(restart, message='客户要求重启计量工位')) == '客户要求重启计量工位'
     window.runtimeController.runs[''].controller._onJobStatus(reply)
     box, = failureBoxes
     main = box.informativeText()

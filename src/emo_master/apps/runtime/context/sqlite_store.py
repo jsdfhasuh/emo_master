@@ -139,6 +139,14 @@ class SqliteStore:
                         "INSERT INTO schemaMigrations(version, appliedAt) VALUES (6, ?)", (_utcNow(),)
                     )
                     connection.commit()
+                if 7 not in applied:
+                    connection.executescript(
+                        (migrationDir / "007_job_display_names.sql").read_text(encoding="utf-8")
+                    )
+                    connection.execute(
+                        "INSERT INTO schemaMigrations(version, appliedAt) VALUES (7, ?)", (_utcNow(),)
+                    )
+                    connection.commit()
         finally:
             connection.close()
 
@@ -152,6 +160,9 @@ class SqliteStore:
         workflowId: str = "",
         pid: int | None = None,
         acceptedAtMs: int | None = None,
+        projectName: str = "",
+        workflowName: str = "",
+        targetSlotId: str = "",
     ) -> None:
         accepted = acceptedAtMs if acceptedAtMs is not None else _timestampMs()
         now = _utcNow()
@@ -161,8 +172,8 @@ class SqliteStore:
                 INSERT INTO jobs(
                   jobId, projectId, releaseId, status, startAt, endAt,
                   durationMs, errorCode, projectRevision, workflowId, pid,
-                  acceptedAt, errorMessage, stopMode
-                ) VALUES (?, ?, ?, ?, ?, NULL, NULL, NULL, ?, ?, ?, ?, NULL, NULL)
+                  acceptedAt, errorMessage, stopMode, projectName, workflowName, targetSlotId
+                ) VALUES (?, ?, ?, ?, ?, NULL, NULL, NULL, ?, ?, ?, ?, NULL, NULL, ?, ?, ?)
                 """,
                 (
                     jobId,
@@ -174,6 +185,9 @@ class SqliteStore:
                     workflowId,
                     pid,
                     datetime.fromtimestamp(accepted / 1000.0, timezone.utc).isoformat(),
+                    projectName,
+                    workflowName,
+                    targetSlotId,
                 ),
             )
             connection.commit()
@@ -366,7 +380,9 @@ class SqliteStore:
     def getJob(self, jobId: str) -> dict[str, object] | None:
         with self.connection() as connection:
             row = connection.execute(
-                "SELECT jobId, projectId, projectRevision, workflowId, status, pid, acceptedAt, startAt, startedAt, endAt, durationMs, errorCode, errorMessage, stopMode FROM jobs WHERE jobId = ?",
+                "SELECT jobId, projectId, projectRevision, workflowId, status, pid, acceptedAt, startAt, "
+                "startedAt, endAt, durationMs, errorCode, errorMessage, stopMode, projectName, workflowName, "
+                "targetSlotId FROM jobs WHERE jobId = ?",
                 (jobId,),
             ).fetchone()
         if row is None:
@@ -374,7 +390,7 @@ class SqliteStore:
         fields = [
             "jobId", "projectId", "projectRevision", "workflowId", "status", "pid",
             "acceptedAt", "startAt", "startedAt", "endAt", "durationMs", "errorCode",
-            "errorMessage", "stopMode",
+            "errorMessage", "stopMode", "projectName", "workflowName", "targetSlotId",
         ]
         return dict(zip(fields, row))
 
@@ -402,6 +418,7 @@ class SqliteStore:
             return connection.execute(
                 "SELECT jobId, projectId, projectRevision, workflowId, status, "
                 "COALESCE(acceptedAt, startAt), startedAt, endAt, errorCode, errorMessage, stopMode, "
+                "projectName, workflowName, targetSlotId, "
                 f"{orderTime} FROM jobs WHERE " + " AND ".join(clauses)
                 + f" ORDER BY {orderTime} DESC, jobId DESC LIMIT ?",
                 (*values, limit + 1),

@@ -277,8 +277,9 @@ def testRealLogLevelsDetailsPlainTextEmptyFilterAndSelectionPreservation(qtApp, 
 def testCombinedFiltersTimeAndClipboardOnlyUseDisplayedRedactedRecords(qtApp, tmp_path):
     feed, path = fixtureFeed(tmp_path)
     stamp = 1770000000123
-    match = line("find this; password=never-copy", "WARNING", component="device", timestampMs=stamp,
-                 jobId="CaseSensitiveJob", payload={"deviceId": "camera-full-id", "token": "never-copy"})
+    match = line("worker heartbeat timed out", "WARNING", component="device", timestampMs=stamp,
+                 eventType="job.failed", jobId="CaseSensitiveJob",
+                 payload={"deviceId": "camera-full-id", "token": "never-copy", "note": "password=never-copy"})
     path.write_bytes(match + b"".join((
         line("other device", "WARNING", component="device", jobId="CaseSensitiveJob", payload={"deviceId": "other"}),
         line("other level", "ERROR", component="device", jobId="CaseSensitiveJob", payload={"deviceId": "camera-full-id"}),
@@ -302,16 +303,25 @@ def testCombinedFiltersTimeAndClipboardOnlyUseDisplayedRedactedRecords(qtApp, tm
         waitFor(lambda: view.model.rowCount() == 1)
         assert view.model.records[0] is feed.records[0]
         assert "当前显示 1 条" in view.statusLabel.text() and "仅限已加载记录" in view.statusLabel.text()
+        for keyword in ("任务进程心跳超时", "worker heartbeat timed out"):
+            view.keywordEdit.setText(keyword)
+            waitFor(lambda: not view.keywordTimer.isActive())
+            assert view.model.records == [feed.records[0]]
+        view.keywordEdit.setText("CASESENSITIVEJOB")
+        waitFor(lambda: not view.keywordTimer.isActive())
 
         time = view.model.index(0, 0)
         assert time.data() == datetime.fromtimestamp(stamp / 1000).isoformat(sep=" ", timespec="milliseconds")
         assert str(stamp) in time.data(Qt.ToolTipRole) and "2026-10-25T02:03:04+00:00" in time.data(Qt.ToolTipRole)
         level = view.model.index(0, 1)
         assert level.data() == "WARNING" and level.data(Qt.ForegroundRole).color().isValid()
+        assert view.model.index(0, 3).data() == "设备"
+        assert view.model.index(0, 5).data() == "E_SYNTHETIC · 任务进程心跳超时"
         view.table.selectRow(0)
         QTest.mouseClick(view.copyDetailButton, Qt.LeftButton)
         details = qtApp.clipboard().text()
         assert str(stamp) in details and "2026-10-25T02:03:04+00:00" in details
+        assert "任务进程心跳超时" in details and "worker heartbeat timed out" in details
         assert "never-copy" not in details and "<redacted>" in details
         assert not view.raw.isVisible()
         QTest.mouseClick(view.copyRawButton, Qt.LeftButton)

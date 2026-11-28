@@ -54,10 +54,11 @@ Subflow；`iterationPath` 表示嵌套 Loop 的索引路径。Designer 使用
 
 ## 重放和实时订阅
 
-`StreamJobEvents(after_sequence=N)` 返回 `sequence > N` 的历史事件。
-`follow=true` 会先重放 SQLite，再等待新事件直到 Job 进入终态或客户端取消。
-内存 retention 截断不会隐藏 SQLite 中的早期事件；Runtime 重启后仍可读取
-完整历史。
+`StreamJobEvents(after_sequence=N)` 返回 `sequence > N` 的已保留事件。
+`follow=true` 会先重放，再等待新事件直到 Job 终态收尾结束或客户端取消。
+客户端用最后一条已处理事件的序号继续读取。内存截断不影响 SQLite 中仍保留的
+记录，Runtime 重启后仍可重放这些记录。SQLite 沿用原有裁剪规则。
+旧 Job 重放保留实际已存心跳及其原序号，全局历史查询继续过滤这些心跳。
 
 跨进程只传 JSON-safe 事件和 `ArtifactRef`，不传 Qt 对象、gRPC channel、
 算子实例或 NumPy 图像。
@@ -67,8 +68,9 @@ Subflow；`iterationPath` 表示嵌套 Loop 的索引路径。Designer 使用
 Supervisor 为每个新 Job 创建固定大小的共享心跳时间戳；现有心跳线程在
 发送 `process.heartbeat` 前更新它。看门狗使用同机跨进程的 monotonic 时钟，
 从进程启动起保持原 `heartbeatTimeoutMs`，不把 SQLite 持久化、Supervisor
-锁等待或旧事件排队时间当作 worker 停止发心跳。正式心跳事件仍按原队列顺序
-持久化，不跳过事件，也不提前公布尚未持久化的终态。
+锁等待或旧事件排队时间当作 worker 停止发心跳。Supervisor 收到周期心跳后
+更新既有判活状态，不为它分配业务序号，也不占用 SQLite 或内存的业务保留配额。
+逐 Job 订阅只接收后续业务事件，单条、批量和终态事件沿用原有发布顺序。
 
 共享时间戳的读写只尝试非阻塞锁；锁不可读时使用最后一次有效时间戳或启动
 基线，不重新计时。过期、负值和未来时间戳不能延长存活期限；即使事件队列
@@ -175,12 +177,13 @@ SQLite 是事件查询和重放的权威存储，默认位于
 Runtime 还异步写入面向运维的 UTF-8 JSONL，默认目录为
 `~/.emo_master/runtime/logs`，可通过 `EMO_RUNTIME_LOG_DIR` 覆盖。文件达到 64 MiB 后轮转，
 关闭文件保留 14 天，目录总量上限 2 GiB；当前活动文件不会被清理。JSONL 记录 Job、
-Workflow、Loop、Node、artifact 生命周期及 `node.log`，完成事件不会复制大体积 outputs。
+Workflow、Loop、Subflow、Node、artifact 生命周期、SQLite 写入起止与最终回执及 `node.log`，
+完成事件不会复制大体积 outputs。
 ERROR 和 Job 终态立即 flush/fsync，其余至少每秒刷新。JSONL 故障不影响作业，Runtime 会把
 `runtime.logfile.failed` 仅写入 SQLite，避免递归失败。
 
 记录追加 `originApp/component/runtimeInstanceId`。运行事件归 `runtime`；`node.log` 为 `operator`，
-Job/节点生命周期为 `execution`，设备为 `device`，页面为 `presentation`，存储诊断为 `storage`，
+Job、节点和子工作流生命周期为 `execution`，设备为 `device`，页面为 `presentation`，存储诊断为 `storage`，
 其他为 `application`。`timestampMs` 保留事件产生时间，SQLite 文本 timestamp 仍为入库时间。
 006 迁移给旧记录补应用/模块分类并保留空历史实例 ID，旧 JSONL 只在读取时补显示分类。
 

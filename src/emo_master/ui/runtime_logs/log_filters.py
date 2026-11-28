@@ -145,7 +145,7 @@ def updateIdentityChoices(inputs, entries):
         if entry.workflowId:
             choices["workflowId"][(entry.workflowId, entry.projectId, "")] = (
                 f"{entry.displayWorkflow()} · {entry.workflowId} · 工程 {entry.projectId}")
-        if entry.nodeId:
+        if entry.nodeId and not entry.isWorkflowCaller:
             choices["nodeId"][(entry.nodeId, entry.projectId, entry.workflowId)] = (
                 f"{entry.displayNode()} · {entry.nodeId} · 工作流 {entry.displayWorkflow()}（{entry.workflowId}）"
                 f" · 工程 {entry.projectId}")

@@ -1,15 +1,20 @@
 """Error visibility and safe, read-only navigation from the runtime log."""
 from copy import deepcopy
 from dataclasses import replace
+import json
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-from PySide2.QtCore import QCoreApplication, QEvent
+from PySide2.QtCore import QCoreApplication, QEvent, Qt
+from PySide2.QtTest import QTest
+from PySide2.QtWidgets import QApplication
 
 from emo_master.apps.designer.state.flow_graph_model import FlowNode
+from emo_master.apps.designer.state.job_log import JobEventWindow
 from emo_master.apps.designer.ui.flow_scene import FlowNodeViewModel
 from emo_master.apps.designer.ui.log_dialog import RuntimeLogDock, StructuredLogEntry
+from emo_master.apps.runtime.grpc_server.generated.runtime_pb2 import RunState
 
 
 class Client:
@@ -166,7 +171,7 @@ def acceptedError(window, workflowId="main", projectId=None, jobId="job-1"):
         "projectId": window._currentProjectId() if projectId is None else projectId,
         "workflowId": workflowId, "workflowRunId": "workflow-run",
         "nodeId": "shared-node", "nodeRunId": "node-run", "iterationPath": [2],
-        "payload": {"path": "missing.png"},
+        "payload": {"path": "missing.png", "projectRevision": window.workflowStore.project.get("revision")},
     })
     return window.logEntries[-1]
 
@@ -210,7 +215,82 @@ def testNavigationChangesWorkflowAndSelectionWithoutApplyingParamsOrDirty(
     assert entry.detailPayload()["projectId"] == window._currentProjectId()
     assert entry.detailPayload()["nodeRunId"] == "node-run"
     assert entry.iterationPath == (2,)
-    assert entry.payload == {"path": "missing.png"}
+    assert entry.payload == {"path": "missing.png", "projectRevision": window.workflowStore.project["revision"]}
+
+
+def testChildWorkflowLogLocatesTheParentCallerWithTheSameNodeId(ownedDesignerWindow):
+    window = ownedDesignerWindow(Client(), settingsStore=Settings())
+    window.workflowStore.workflows["main"].name = "父流程"
+    addNode(window, 1)
+    window.flowModel.nodes["shared-node"].displayName = "父流程调用节点"
+    window.workflowController.captureActiveWorkflow()
+    child = window.createWorkflow("子流程")
+    addNode(window, 2)
+    window.flowModel.nodes["shared-node"].displayName = "子流程无关节点"
+    window.workflowController.captureActiveWorkflow()
+    window.runtimeController.callbacks["onJobAccepted"](SimpleNamespace(job_id="caller-job"))
+
+    def event(eventId, eventType, workflowId, workflowRunId, **extra):
+        payload = dict(projectRevision=window.workflowStore.project["revision"])
+        return window._runtimeLogEntry(dict(eventId=eventId, eventType=eventType, jobId="caller-job",
+            projectId=window._currentProjectId(), workflowId=workflowId, workflowRunId=workflowRunId,
+            runtimeInstanceId="runtime", level="INFO", message=eventType, timestampMs=eventId * 100, payload=payload,
+            nodeId="shared-node", **extra))
+
+    parent = event(1, "node.started", "main", "parent-run", nodeRunId="parent-node")
+    started = event(2, "workflow.started", child, "child-run", parentWorkflowRunId="parent-run")
+    ordinary = event(3, "node.completed", child, "child-run", parentWorkflowRunId="parent-run", nodeRunId="child-node")
+    assert started.displayWorkflow() == "子流程" and not started.nodeName and not started.displayNode()
+    assert parent.displayNode() == "父流程调用节点" and ordinary.displayNode() == "子流程无关节点"
+
+    window.show()
+    window.openLogDialog()
+    dialog = window.logDialog
+    view = dialog.jobLogs
+    view.instance = started.runtimeInstanceId
+    view.job = RunState(job_id=started.jobId, project_id=started.projectId, workflow_id="main", status="COMPLETED")
+    view.window = JobEventWindow(started.jobId)
+    view._upper = ordinary.eventId
+    view.window.mergeRecent([parent, started, ordinary])
+    view.pages.setCurrentWidget(view.jobPage)
+    view.mode.setCurrentText("时间顺序")
+    view._select(("event", started.eventId))
+    for label in (view.events.currentItem().text(0), view.detail.title.text()):
+        assert "子流程" in label and "调用节点 父流程 / 父流程调用节点" in label
+        assert "子流程无关节点" not in label
+    assert view.navigate.isEnabled()
+    assert json.loads(view.detail.rawTree.toPlainText()) == started.rawRecord()
+    QTest.mouseClick(view.detail.copyRecordButton, Qt.LeftButton)
+    assert json.loads(QApplication.clipboard().text()) == started.rawRecord()
+    QTest.mouseClick(view.navigate, Qt.LeftButton)
+    assert window.activeWorkflowId == "main" and window.flowModel.selectedNodeId == parent.nodeId
+    assert view._detailEntry is started
+
+    window.openLogDialog()
+    view._select(("event", ordinary.eventId))
+    assert view.navigate.isEnabled() and "子流程无关节点" in view.detail.title.text()
+    QTest.mouseClick(view.navigate, Qt.LeftButton)
+    assert window.activeWorkflowId == child and window.flowModel.selectedNodeId == ordinary.nodeId
+
+    window.openLogDialog()
+    foreign = StructuredLogEntry.fromRuntimeEvent(dict(parent.rawRecord(), runtimeInstanceId="other-runtime"))
+    view.window.mergeRecent([foreign, started, ordinary])
+    view._render()
+    view._select(("event", started.eventId))
+    assert not view.navigate.isEnabled()
+    assert "子流程" in view.detail.title.text() and "调用节点" not in view.detail.title.text()
+    assert json.loads(view.detail.rawTree.toPlainText()) == started.rawRecord()
+    assert "无法确认父调用" in window.navigateToRuntimeLogEntry(started)
+    assert window.activeWorkflowId == child
+
+    view.window.mergeRecent([parent, started, ordinary])
+    view._render()
+    assert view._detailEntry is started and view.navigate.isEnabled()
+    assert "调用节点 父流程 / 父流程调用节点" in view.detail.title.text()
+
+    dialog.view.setEntries([started])
+    dialog.view.table.setCurrentCell(0, 0)
+    assert not dialog.view.locateButton.isEnabled()
 
 
 @pytest.mark.parametrize("change,expected", [

@@ -12,13 +12,16 @@ from PySide2.QtWidgets import (
 )
 
 from emo_master.core.runtime_log_messages import (
-    describePort, executionStatusTitle, frameworkLogMessage,
+    describePort, executionStatusTitle, frameworkSkipReason, prestartFailureSummary, runtimeEventMessage,
+    runtimeLogComponentTitle,
 )
+from emo_master.core.runtime_log_records import WORKFLOW_LIFECYCLE_EVENTS
 from emo_master.core.contracts.run_inspection import normalizeInspection
 from emo_master.core.contracts.sqlite_writer import OPERATOR_ID as SQLITE_WRITER_ID, receiptSummary
 from emo_master.core.plugin.result_schema import parameterSchemaAtPath
 from emo_master.core.project.node_input_files import NODE_INPUT_FILES
 from .log_json_tree import LogJsonTree, _VALUE_ROLE, _copyText, _json
+from emo_master.ui.communication_panel import deviceBytePreview
 from emo_master.ui.wrap_label import OptionalWrapLabel, WrapLabel
 
 
@@ -50,6 +53,24 @@ _DEBUG_EVENT_TITLES = {
 }
 _MESSAGE_PREVIEW_CHARS = 220
 _SEMANTICS_ROLE = Qt.UserRole + 11
+_RECORD_IDENTITY = {
+    "projectId": "工程 ID", "jobId": "Job", "workflowId": "工作流 ID", "workflowRunId": "工作流调用",
+    "parentWorkflowRunId": "父工作流调用", "nodeId": "节点 ID", "nodeRunId": "节点执行",
+    "runtimeInstanceId": "Runtime 实例", "eventId": "事件 ID", "sequence": "业务序号",
+    "iterationPath": "迭代路径（索引）",
+}
+_PAYLOAD_IDENTITY = {
+    **_RECORD_IDENTITY, "cycleId": "周期 ID", "runGroupId": "任务组 ID", "dispatchId": "派发 ID",
+    "deliveryId": "投递 ID", "invocationId": "调用 ID", "targetSlotId": "目标槽位 ID",
+    "planRevision": "计划修订", "projectRevision": "工程修订", "ownerId": "归属 ID", "requestId": "请求 ID",
+    "previousRequestId": "上次请求 ID", "projectLoadGeneration": "工程加载代次",
+    "deviceGeneration": "设备代次", "serviceGeneration": "服务代次", "connectionGeneration": "连接代次",
+}
+_DEVICE_ENVELOPE = {
+    "eventType": "事件类型", "level": "等级", "timestampMs": "时间戳", "message": "消息", "code": "日志代码",
+    "cursor": "设备游标", "source": "事件来源", "scope": "缓存归属", "selectors": "选择器",
+    "preview": "截断前片段",
+}
 _METRIC_GROUPS = {
     "duration": "算子内部耗时",
     "business": "业务统计",
@@ -69,6 +90,10 @@ _PARAMETER_SOURCES = {
 
 def _mapping(value):
     return value if isinstance(value, Mapping) else {}
+
+
+def _recorded(value):
+    return value not in (None, "", [], {}, ())
 
 
 def _backgroundSqliteReceipt(event):
@@ -208,7 +233,7 @@ def debugEventText(wrapper):
     """The wrapper type names transport notifications, the inner type names a log."""
     inner = wrapper.get("event")
     if isinstance(inner, dict):
-        message = _eventMessage(inner)
+        message = runtimeEventMessage(inner)
         return " · ".join(str(value) for value in (inner.get("level"), inner.get("code"), message) if value) or str(inner.get("eventType", ""))
     kind = wrapper.get("type", "")
     title = _DEBUG_EVENT_TITLES.get(kind, kind)
@@ -216,12 +241,6 @@ def debugEventText(wrapper):
     if kind == "execution.finished":
         status = executionStatusTitle(status) or status
     return " · ".join(str(value) for value in (title, status, wrapper.get("code"), wrapper.get("message")) if value)
-
-
-def _eventMessage(event):
-    return frameworkLogMessage(event.get("eventType", ""), event.get("message", ""),
-                               nodeId=event.get("nodeId", ""), workflowId=event.get("workflowId", ""),
-                               iterationPath=event.get("iterationPath"), payload=event.get("payload"))
 
 
 class LogRecordDetail(QWidget):
@@ -275,6 +294,7 @@ class LogRecordDetail(QWidget):
 
     def clear(self, title="选择记录查看详情"):
         self._copyData = _MISSING
+        self._nodeTimingItem = None
         self.title.setText(title)
         self.message.setText("")
         self.notice.setText("")
@@ -299,28 +319,58 @@ class LogRecordDetail(QWidget):
             self.readable.setCurrentItem(self.readable.topLevelItem(0))
         self._updateActions()
 
-    def setEvent(self, record, *, displayMessage=None, context=None, nodeElapsedMs=None):
+    def setEvent(self, record, *, displayMessage=None, context=None, nodeTiming=None, nodeTitle=""):
         self._showEvent(record, record, displayMessage=displayMessage, context=context,
-                        includeTime=True, nodeElapsedMs=nodeElapsedMs)
+                        includeTime=True, nodeTiming=nodeTiming, nodeTitle=nodeTitle)
 
-    def _showEvent(self, raw, event, *, displayMessage=None, context=None, includeTime=False, nodeElapsedMs=None):
+    def _showEvent(self, raw, event, *, displayMessage=None, context=None, includeTime=False,
+                   nodeTiming=None, nodeTitle=""):
         kind = event.get("eventType", "")
         title = _NODE_TITLES.get(kind) or _FRAMEWORK_TITLES.get(kind) or kind or "日志记录"
         finalReceipt = _backgroundSqliteReceipt(event)
         if finalReceipt is not None:
             title = "SQLite 后台写入结果"
         message = event.get("message", "")
-        readable = _eventMessage(event) if displayMessage is None else displayMessage
+        readable = runtimeEventMessage(event) if displayMessage is None else displayMessage
         if kind in _FRAMEWORK_TITLES and readable == title and message != readable:
             readable = ""
         if event.get("level"):
             title = f"{event['level']} · {title}"
+        if nodeTitle:
+            title = f"{nodeTitle} · {title}"
         self._startRecord(raw, title, readable, originalMessage=message)
         if includeTime:
             self.readable.field("发生时间", event.get("timestampMs", _MISSING), description=_timeText(event.get("timestampMs")))
         if event.get("code"):
             self.readable.field("日志代码", event["code"])
-        payload = event.get("payload")
+        if event.get("component"):
+            self.readable.field("模块", event["component"], description=runtimeLogComponentTitle(event["component"]))
+        if nodeTiming is not None:
+            self.updateNodeTiming(nodeTiming)
+        rawPayload = event.get("payload")
+        payload = dict(rawPayload) if isinstance(rawPayload, dict) else rawPayload
+        callerRecord = kind in WORKFLOW_LIFECYCLE_EVENTS and bool(event.get("nodeId"))
+        info = {("调用节点 ID" if callerRecord and key == "nodeId" else label): event[key]
+                for key, label in _RECORD_IDENTITY.items()
+                if _recorded(event.get(key)) and (key != "sequence" or event[key] != 0)}
+        if isinstance(payload, dict):
+            categories = _PAYLOAD_IDENTITY | (_DEVICE_ENVELOPE if kind.startswith("device.") else {})
+            for key, label in categories.items():
+                value = payload.pop(key, _MISSING)
+                if (value is not _MISSING and _recorded(value) and (key != "sequence" or value != 0)
+                        and (key not in event or event[key] != value)):
+                    info[label if label not in info else f"载荷{label}"] = value
+            for key, label in (("projectName", "工程"), ("workflowName", "工作流"), ("nodeName", "节点"),
+                               ("targetWorkflowName", "目标工作流")):
+                payloadName = payload.pop(key, None)
+                value = payloadName or event.get(key)
+                if _recorded(value) and not (callerRecord and key == "nodeName"):
+                    self.readable.field(label, value)
+            capacityOrResource = prestartFailureSummary(payload)
+            if capacityOrResource:
+                self.readable.field("启动失败摘要", capacityOrResource)
+            if kind.startswith("device."):
+                self._devicePayload(event, payload, rawPayload)
         definition = self._definition(payload)
         if finalReceipt is not None:
             self._section("后台最终回执（receipt）", finalReceipt, {
@@ -329,23 +379,83 @@ class LogRecordDetail(QWidget):
             })
             payload = {key: value for key, value in payload.items() if key not in ("receipt", "background")}
         if isinstance(payload, dict):
-            self._eventPayload(kind, payload, definition, nodeElapsedMs)
+            self._eventPayload(kind, payload, definition)
         elif "payload" in event:
             self.readable.field("数据", payload, expand=True)
-        info = {label: event[key] for key, label in (
-            ("projectId", "工程"), ("jobId", "Job"), ("workflowId", "工作流"),
-            ("workflowRunId", "工作流调用"), ("parentWorkflowRunId", "父工作流调用"),
-            ("nodeId", "节点"), ("nodeRunId", "节点执行"), ("deviceId", "设备"),
-            ("runtimeInstanceId", "Runtime 实例"), ("eventId", "事件 ID"),
-        ) if event.get(key) not in (None, "")}
-        if "iterationPath" in event:
-            info["迭代路径（索引）"] = event["iterationPath"]
         info.update(self._identity(payload))
         if context:
             info.update(context)
         if info:
             self.readable.field("记录身份", info)
         self._finishRecord()
+
+    def updateNodeTiming(self, timing):
+        # Update the selected execution's timing in place so its raw record and reading position stay selected.
+        value = timing.elapsedMs
+        if (value is not None and not timing.estimated
+                and timing.startedAtMs is not None and timing.endedAtMs is not None):
+            label = "节点总耗时"
+            description = f"{value} ms · 节点起止事件"
+        else:
+            label = "节点执行时间"
+            description = timing.display()
+            if value is None:
+                value = description
+        item = self._nodeTimingItem
+        if item is None:
+            item = self._nodeTimingItem = self.readable.field(label, value, description=description)
+        else:
+            item.setText(0, label)
+            item.setText(1, description)
+            item.setData(0, _VALUE_ROLE, (value,))
+        item.setToolTip(1, timing.display(showRange=True))
+
+    def _devicePayload(self, event, payload, rawPayload):
+        selectors = _mapping(rawPayload.get("selectors"))
+        source = _mapping(rawPayload.get("source"))
+        for key, label in (
+            ("deviceId", "设备"), ("action", "动作"), ("channelId", "通道"), ("slot", "设备槽位"),
+            ("outcome", "结果"), ("occurrences", "累计次数（同设备、动作及问题类型，可跨任务或轮次）"),
+            ("occurrencesSinceLastLog", "自上次记录新增次数"),
+        ):
+            value = next((value for value in (payload.pop(key, None), event.get(key), selectors.get(key), source.get(key))
+                          if _recorded(value)), _MISSING)
+            if value is not _MISSING:
+                self.readable.field(label, value)
+        if "occurrences" in rawPayload and "durationMs" in payload:
+            self.readable.field("累计时长（ms，可跨任务或轮次）", payload.pop("durationMs"))
+        diagnostics = _mapping(payload.get("diagnostics"))
+        result = payload.get("result")
+        receipt = payload.pop("receipt", _MISSING)
+        if receipt is _MISSING:
+            receipt = diagnostics.get("tcpReceipt", _MISSING)
+            if receipt is _MISSING and _mapping(result).get("type") == "tcpSendReceipt":
+                receipt = payload.pop("result")
+        if receipt is not _MISSING:
+            self.readable.field("回执", receipt, expand=True)
+        remainingDiagnostics = {key: value for key, value in diagnostics.items() if key != "tcpReceipt"}
+        if remainingDiagnostics:
+            payload["diagnostics"] = remainingDiagnostics
+        elif diagnostics:
+            payload.pop("diagnostics")
+        preview = deviceBytePreview(rawPayload)
+        notes = []
+        if preview:
+            hexData, utf8, truncated = preview
+            self.readable.field("报文 HEX", hexData)
+            if utf8 is not None:
+                self.readable.field("报文 UTF-8", utf8)
+            if truncated:
+                notes.append("原始报文已截断")
+            payload.pop("dataHex", None)
+            payload.pop("dataUtf8", None)
+            if isinstance(payload.get("result"), dict):
+                payload["result"] = {key: value for key, value in result.items()
+                                     if key not in {"dataHex", "dataUtf8"}}
+        if rawPayload.get("fieldsTruncated") is True:
+            notes.append("部分诊断字段已截断")
+        if notes:
+            self.notice.setText("；".join(notes) + "。详情与复制使用当前收到的数据。")
 
     def _definition(self, identity):
         if self.operatorLookup is None or not isinstance(identity, dict):
@@ -362,9 +472,9 @@ class LogRecordDetail(QWidget):
         return {label: record[key] for key, label in (("operatorId", "算子 ID"), ("operatorVersion", "算子版本"))
                 if key in record}
 
-    def _eventPayload(self, kind, payload, definition, nodeElapsedMs):
+    def _eventPayload(self, kind, payload, definition):
         remaining = dict(payload)
-        if payload.get("truncated") is True:
+        if payload.get("truncated") is True and not self.notice.text():
             self.notice.setText("该记录标记为已截断。详情与复制使用当前收到的数据。")
         nodeRecord = kind in {"node.started", "node.completed", "node.failed", "node.skipped"}
         if (nodeRecord or kind in _FRAMEWORK_TITLES) and "status" in remaining:
@@ -374,8 +484,6 @@ class LogRecordDetail(QWidget):
             resultSchema = _mapping(definition.get("resultSchema"))
             for key in ("operatorId", "operatorVersion"):
                 remaining.pop(key, None)
-            if nodeElapsedMs is not None:
-                self.readable.field("节点总耗时", nodeElapsedMs, description=f"{nodeElapsedMs} ms · 节点起止事件")
             metrics = remaining.pop("metrics", _MISSING)
             metricFields = _mapping(resultSchema.get("metrics"))
             source = remaining.pop("ioSummary", None)
@@ -389,7 +497,8 @@ class LogRecordDetail(QWidget):
                                ("code", "记录代码"), ("reason", "原因"), ("missingInputs", "缺少输入"),
                                ("blockedByBranches", "未选中的上游分支")):
                 if key in remaining:
-                    self.readable.field(label, remaining.pop(key))
+                    translated = frameworkSkipReason(payload) if kind == "node.skipped" and key == "message" else None
+                    self.readable.field(label, remaining.pop(key), description=translated)
             diagnostics = remaining.get("diagnostics")
             diagnosticFields = _mapping(resultSchema.get("diagnostics"))
             if (kind == "node.completed" and isinstance(diagnostics, dict) and diagnosticFields.get("modelPath")

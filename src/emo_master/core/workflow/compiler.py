@@ -130,6 +130,7 @@ class WorkflowCompiler:
             runtime=freezeMapping(document.runtime.model_dump(mode="python")),
             pluginRootPaths=tuple(pluginRootPaths),
             globalVariables=freezeMapping({key: value.model_dump() for key, value in document.globalVariables.items()}),
+            projectName=document.project.name,
         )
 
     def _devicePlans(self, document, node, requirements=None):
@@ -230,6 +231,7 @@ class WorkflowCompiler:
                 globalVariableBindings=tuple(freezeMapping(binding.model_dump()) for binding in node.globalVariableBindings),
                 paramSchema=freezeMapping(_operatorParamSchema(self.operatorRegistry.get(node.operatorId or ""))),
                 devicePlans=freezeMapping(self._devicePlans(document, node)),
+                displayName=node.displayName or "",
             )
             nodes.append(compiled)
             nodeById[node.nodeId] = compiled

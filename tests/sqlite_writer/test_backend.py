@@ -65,8 +65,10 @@ def testRealRunnerSingleRecordFullJsonFalsyAndReceipt(tmp_path, value):
         assert stored is None if value is None else json.loads(stored) == value
         assert writeId == receipt["writeId"]
     assert [e['eventType'] for e in events].count('sqlite.write.started') == 1
-    started = next(event["payload"]["receipt"] for event in events if event["eventType"] == "sqlite.write.started")
-    assert started["status"] == "UNKNOWN" and started["rowsAffected"] is None
+    started = next(event for event in events if event["eventType"] == "sqlite.write.started")
+    assert started["message"] == "SQLite write started"
+    assert started["payload"]["receipt"]["status"] == "UNKNOWN"
+    assert started["payload"]["receipt"]["rowsAffected"] is None
     completed = next(event["payload"] for event in events if event["eventType"] == "node.completed"
                      and event["context"].callerNodeId == "writer")
     assert completed["diagnostics"]["mappingSources"] == {"node_output": 1}

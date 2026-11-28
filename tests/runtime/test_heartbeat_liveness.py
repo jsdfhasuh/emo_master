@@ -67,11 +67,10 @@ def testDelayedPersistenceDoesNotKillWorkerWithUnconsumedHeartbeat(monkeypatch) 
     assert not process.terminated
     assert supervisor._heartbeatTimeouts["job-stop"] == 5000
     assert "job-stop" not in supervisor._heartbeatSeen
-    # The formal heartbeat is still in order in the queue, and still persists.
+    # The queued heartbeat updates observation without entering business history.
     supervisor.consumeWorkerEvent("job-stop", events.get_nowait())
-    assert [event.eventType for event in store.read("job-stop")] == [
-        "job.process.started", "process.heartbeat",
-    ]
+    assert "job-stop" in supervisor._heartbeatSeen
+    assert [event.eventType for event in store.read("job-stop")] == ["job.process.started"]
 
 
 def testFullDiagnosticQueueDoesNotBlockCellOrTerminalLock(monkeypatch) -> None:
@@ -129,7 +128,7 @@ def testQueuedHeartbeatsCannotMaskSilentWorker(monkeypatch, published) -> None:
     assert process.terminated
     assert repository.get("job-stop").errorCode == "E_HEARTBEAT_TIMEOUT"
     assert events.qsize() == 99  # A nonempty backlog does not postpone checks.
-    assert store.read("job-stop")[0].eventType == "process.heartbeat"
+    assert [event.eventType for event in store.read("job-stop")] == ["process.terminated", "job.failed"]
 
 
 @pytest.mark.parametrize("sample", [-1, -100, 1_000_000_000])

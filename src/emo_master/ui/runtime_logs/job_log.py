@@ -8,8 +8,10 @@ from datetime import datetime
 import time
 from typing import TYPE_CHECKING
 
+from emo_master.core.runtime_log_records import resolveWorkflowCaller
+
 if TYPE_CHECKING:
-    from emo_master.core.runtime_log_records import StructuredLogEntry
+    from emo_master.core.runtime_log_records import RuntimeLogCaller, StructuredLogEntry
 
 
 BranchKey = tuple[str | int, ...]
@@ -24,6 +26,15 @@ _LOOP_START = "loop.started"
 _LOOP_END = {"loop.completed", "loop.failed", "loop.timeout", "loop.limit_reached"}
 _ITERATION_START = "loop.iteration.started"
 _ITERATION_END = "loop.iteration.completed"
+_ROUTINE_EVENTS = {
+    _WORKFLOW_START, "workflow.completed", _NODE_START, "node.completed",
+    _LOOP_START, "loop.completed", _ITERATION_START, _ITERATION_END,
+}
+_JOB_EVENTS = {
+    "job.accepted", "job.process.started", "job.started", "job.stopping",
+    "job.completed", "job.failed", "job.aborted", "process.terminated",
+    "dispatch.group.started", "dispatch.group.retired", "dispatch.source.ended",
+}
 JOB_LOG_PAGE_ROUNDS = 50
 
 
@@ -67,12 +78,16 @@ class JobEventWindow:
     def __init__(self, jobId: str, maximumEntries: int = 10_000):
         self.jobId = jobId
         self.maximumEntries = max(1, maximumEntries)
-        self.paused = False
+        self.pausedAtMs: int | None = None
         self.newCount = 0
         self.trimmed = False
         self.liveTrimmed = False
         self._entries: dict[int, StructuredLogEntry] = {}
         self._observedEventId = 0
+
+    @property
+    def paused(self) -> bool:
+        return self.pausedAtMs is not None
 
     @property
     def entries(self) -> tuple[StructuredLogEntry, ...]:
@@ -85,6 +100,9 @@ class JobEventWindow:
     @property
     def lastEventId(self) -> int | None:
         return next(reversed(self._entries), None)
+
+    def entry(self, eventId: int) -> StructuredLogEntry | None:
+        return self._entries.get(eventId)
 
     def _owned(self, entries: Iterable[StructuredLogEntry]) -> dict[int, StructuredLogEntry]:
         return {
@@ -99,11 +117,12 @@ class JobEventWindow:
         self.liveTrimmed = self.trimmed
         self._entries = {key: rows[key] for key in keys[-self.maximumEntries:]}
         self._observedEventId = keys[-1] if keys else 0
-        self.paused = False
+        self.pausedAtMs = None
         self.newCount = 0
 
-    def pause(self) -> None:
-        self.paused = True
+    def pause(self, nowMs: int | None = None) -> None:
+        if not self.paused:
+            self.pausedAtMs = _now(nowMs)
 
     def appendLive(self, entries: Iterable[StructuredLogEntry], *, truncated: bool = False) -> bool:
         rows = self._owned(entries)
@@ -160,7 +179,8 @@ class ExecutionTime:
     def display(self, showRange: bool = False) -> str:
         parts = []
         if showRange:
-            parts.append(f"{_clockText(self.startedAtMs)} 至 {_clockText(self.endedAtMs) if not self.estimated else '进行中'}")
+            end = "进行中" if self.estimated and not self.note else _clockText(self.endedAtMs)
+            parts.append(f"{_clockText(self.startedAtMs)} 至 {end}")
             if self.confirmedAtMs is not None:
                 parts.append("重启确认 " + _clockText(self.confirmedAtMs))
         if self.elapsedMs is not None:
@@ -221,9 +241,12 @@ class ExecutionBranch:
     start: StructuredLogEntry | None = None
     end: StructuredLogEntry | None = None
     mode: str = ""
+    loopHeaderSeen: bool = False
     totalIterations: int | None = None
     bodyExecuted: bool | None = None
     completedIterations: int = 0
+    warningCount: int = 0
+    errorCount: int = 0
 
     @property
     def isOuterIteration(self) -> bool:
@@ -231,22 +254,28 @@ class ExecutionBranch:
         return self.kind == "iteration" and len(self.key) == 4
 
     def executionTime(self, active: bool = False, hasEarlier: bool = False,
-                      nowMs: int | None = None) -> ExecutionTime:
+                      nowMs: int | None = None, *, pausedAtMs: int | None = None,
+                      terminal: bool = False) -> ExecutionTime:
+        if self.kind not in {"workflow", "iteration", "node", "loop"}:
+            return ExecutionTime()
         start = self.start.rawTimestampMs if self.start else None
         end = self.end.rawTimestampMs if self.end else None
-        running = active and self.end is None
-        elapsed = _elapsed(start, _now(nowMs) if running else end)
+        estimating = active and self.end is None and not terminal
+        elapsed = _elapsed(start, _now(pausedAtMs if pausedAtMs is not None else nowMs) if estimating else end)
         note = ""
-        if elapsed is None and self.kind in {"workflow", "iteration", "node", "loop"}:
-            if self.end and self.end.eventType == "node.skipped" and self.start is None:
-                note = "节点已跳过，未记录执行开始"
-            elif (self.start and start is None) or (self.end and end is None):
-                note = "生命周期记录未包含有效的原始时间"
-            elif hasEarlier and (self.start is None or self.end is None):
-                note = "配对事件尚未加载完整"
-            else:
-                note = "时间信息不完整，原因未确认"
-        return ExecutionTime(start, end, elapsedMs=elapsed, estimated=running and elapsed is not None, note=note)
+        if self.end and self.end.eventType == "node.skipped" and self.start is None:
+            note = "节点已跳过，未记录执行开始"
+        elif (self.start and start is None) or (self.end and end is None):
+            note = "生命周期记录未包含有效的原始时间"
+        elif self.start and self.end is None and terminal:
+            note = "当前范围未见结束记录"
+        elif self.start and self.end is None and pausedAtMs is not None:
+            note = "结束状态待刷新"
+        elif self.start is None and self.end and (terminal or hasEarlier):
+            note = "当前范围未见开始记录"
+        elif elapsed is None:
+            note = "时间信息不完整，原因未确认"
+        return ExecutionTime(start, end, elapsedMs=elapsed, estimated=estimating and elapsed is not None, note=note)
 
 
 class ExecutionTree:
@@ -257,8 +286,13 @@ class ExecutionTree:
         self._events: dict[int, ExecutionBranch] = {}
         self._branches: dict[BranchKey, ExecutionBranch] = {}
         self._unlinked = ExecutionBranch(("unlinked",), "unlinked", "未完整关联事件")
+        self._lifecycle = self._branch(("job",), "job", "任务生命周期")
         self.rootCount = 0
         rows = sorted(entries, key=lambda entry: entry.eventId or 0)
+        self._workflowNames = {entry.workflowRunId: entry.workflowName for entry in rows
+                               if entry.workflowRunId and entry.workflowName}
+        self._nodeNames = {self._nodeKey(entry): entry.nodeName for entry in rows
+                           if entry.workflowRunId and entry.nodeRunId and entry.nodeName}
         byRun: dict[str, list[StructuredLogEntry]] = defaultdict(list)
         nodesByCaller: dict[IterationKey, set[BranchKey]] = defaultdict(set)
         iterations: dict[IterationKey, ExecutionBranch] = {}
@@ -268,8 +302,11 @@ class ExecutionTree:
             if not entry.workflowRunId:
                 continue
             byRun[entry.workflowRunId].append(entry)
-            if entry.nodeRunId and entry.nodeId and entry.iterationPathRecorded and not entry.eventType.startswith("loop.iteration."):
+            if (entry.nodeRunId and entry.nodeId and entry.iterationPathRecorded and not entry.isWorkflowCaller
+                    and not entry.eventType.startswith("loop.iteration.")):
                 nodesByCaller[entry.workflowRunId, entry.nodeId, entry.iterationPath].add(self._nodeKey(entry))
+        self._workflowRows = byRun
+        self._callers: dict[tuple[str, ...], RuntimeLogCaller | None] = {}
 
         for runId, runEntries in byRun.items():
             workflow = self._workflow(runId)
@@ -287,7 +324,10 @@ class ExecutionTree:
         for entry in rows:
             owningWorkflow = self._branches.get(("workflow", entry.workflowRunId))
             iteration = iterations.get((entry.workflowRunId, entry.nodeId, entry.iterationPath)) if entry.iterationPathRecorded else None
-            if owningWorkflow is None:
+            if (entry.eventType in _JOB_EVENTS and not
+                    (entry.workflowRunId or entry.parentWorkflowRunId or entry.nodeRunId or entry.nodeId)):
+                parent = self._lifecycle
+            elif owningWorkflow is None:
                 parent = self._unlinked
             elif entry.eventType in {_WORKFLOW_START, *_WORKFLOW_END}:
                 parent = owningWorkflow
@@ -296,11 +336,11 @@ class ExecutionTree:
             elif entry.eventType in {_ITERATION_START, _ITERATION_END}:
                 parent = self._unlinked
             elif entry.nodeRunId:
-                parent = self._branch(self._nodeKey(entry), "node", entry.displayNode() or entry.nodeRunId)
+                parent = self._branch(self._nodeKey(entry), "node", self.eventNames(entry)[1] or entry.nodeRunId)
                 if entry.eventType == _NODE_START:
-                    parent.start = entry
+                    parent.start = parent.start or entry
                 elif entry.eventType in _NODE_END:
-                    parent.end = entry
+                    parent.end = parent.end or entry
                 self._attach(parent, owningWorkflow)
             elif entry.eventType in {_LOOP_START, *_LOOP_END} and entry.iterationPathRecorded:
                 parent = loops.get(self._loopKey(entry, entry.iterationPath, nodesByCaller)) or self._unlinked
@@ -334,7 +374,8 @@ class ExecutionTree:
 
         for loop in loops.values():
             self._describeLoop(loop)
-        roots = [branch for branch in self._branches.values() if branch.key not in self._parents]
+        roots = [branch for branch in self._branches.values()
+                 if branch.key not in self._parents and (branch is not self._lifecycle or branch.children)]
         if self._unlinked.children:
             roots.append(self._unlinked)
         self._sortBranches(roots)
@@ -355,7 +396,7 @@ class ExecutionTree:
         for siblings in groupChildren:
             self._newestInPlace(siblings, latestRoundId)
         self.hasOuterIterations = bool(latestRoundId)
-        self.defaultExpandedKeys = {branch.key for branch in roots} | latestRoundId.keys()
+        self.defaultExpandedKeys = {branch.key for branch in roots if branch is not self._lifecycle} | latestRoundId.keys()
         self.roots = tuple(roots)
 
     @staticmethod
@@ -416,17 +457,24 @@ class ExecutionTree:
             return
         path = entry.iterationPath
         loopKey = self._loopKey(entry, path[:-1] if isIteration else path, nodesByCaller)
-        loop = self._branch(loopKey, "loop", entry.displayNode())
+        loop = self._branch(loopKey, "loop", self.eventNames(entry)[1])
         loops[loopKey] = loop
         self._attach(loop, self._workflow(entry.workflowRunId))
         if not isIteration:
             if entry.eventType == _LOOP_START:
+                loop.start = entry
+                loop.loopHeaderSeen = True
                 mode = entry.payload.get("mode")
                 if isinstance(mode, str):
                     loop.mode = mode
                 total = entry.payload.get("totalIterations")
                 if loop.mode in {"foreach", "repeat"} and type(total) is int and total >= 0:
                     loop.totalIterations = total
+            else:
+                loop.end = entry
+                mode = entry.payload.get("mode")
+                if not loop.mode and isinstance(mode, str):
+                    loop.mode = mode
             return
         iteration = self._branch(("iteration", entry.workflowRunId, entry.nodeId, *path), "iteration", "")
         iterations[entry.workflowRunId, entry.nodeId, path] = iteration
@@ -453,13 +501,18 @@ class ExecutionTree:
                 child.title = f"第 {index} 轮"
                 if child.end:
                     completedIndices.append(index)
-            else:
+            elif child.end:
                 child.title = f"第 {index} 次迭代 · 执行情况未记录"
-                if child.end:
-                    unknownBodyEnds += 1
+                unknownBodyEnds += 1
+            else:
+                child.title = f"第 {index} 次迭代"
         loop.completedIterations = len(completedIndices)
         modeLabels = {"while": "While", "foreach": "ForEach", "repeat": "Repeat"}
-        label = modeLabels.get(loop.mode, loop.mode or "循环类型未记录")
+        label = modeLabels.get(loop.mode, loop.mode)
+        if not loop.loopHeaderSeen:
+            label = f"{label} · 当前范围未见循环头" if label else "当前范围未见循环头"
+        if not label:
+            label = "循环类型未记录"
         info = f"已加载 {loop.completedIterations} 轮完成"
         if unknownBodyEnds:
             prefix = f"{info} · 另有" if completedIndices else "已加载"
@@ -481,14 +534,26 @@ class ExecutionTree:
             return firstId(branch.children[0]) if branch.children else 0
 
         for branch in branches:
-            cls._sortBranches(branch.children)
+            if branch.entry is not None:
+                branch.warningCount = int(branch.entry.level == "WARN")
+                branch.errorCount = int(branch.entry.level == "ERROR")
+            else:
+                cls._sortBranches(branch.children)
+                branch.warningCount = sum(child.warningCount for child in branch.children)
+                branch.errorCount = sum(child.errorCount for child in branch.children)
         branches.sort(key=firstId)
 
-    def project(self, matches: EntryPredicate) -> tuple[ExecutionBranch, ...]:
+    def project(self, matches: EntryPredicate, *, compact=False,
+                revealEventId: int | None = None) -> tuple[ExecutionBranch, ...]:
         def visible(branch: ExecutionBranch) -> ExecutionBranch | None:
             if branch.entry is not None:
                 return branch if matches(branch.entry) else None
             children = [child for item in branch.children if (child := visible(item)) is not None]
+            if compact and branch.kind in {"workflow", "node", "loop", "iteration"} and children:
+                return replace(branch, children=[child for child in children if not (
+                    child.entry is not None and child.entry.eventId != revealEventId
+                    and child.entry.level in {"DEBUG", "INFO"} and not child.entry.code
+                    and child.entry.eventType in _ROUTINE_EVENTS)])
             return replace(branch, children=children) if children else None
 
         return tuple(branch for root in self.roots if (branch := visible(root)) is not None)
@@ -500,16 +565,44 @@ class ExecutionTree:
         event = self._events.get(eventId) if eventId is not None else None
         return self._parents.get(event.key) if event is not None else None
 
+    def eventNames(self, entry: StructuredLogEntry) -> tuple[str, str]:
+        workflow = entry.workflowName or self._workflowNames.get(entry.workflowRunId) or entry.workflowId
+        if entry.isWorkflowCaller:
+            caller = self.eventCaller(entry)
+            return workflow, caller.label() if caller else ""
+        node = entry.nodeName or self._nodeNames.get(self._nodeKey(entry)) or entry.nodeId
+        return workflow, node
+
+    def eventCaller(self, entry: StructuredLogEntry) -> RuntimeLogCaller | None:
+        parent = entry.parentWorkflowRunId
+        if not entry.isWorkflowCaller or not parent or parent == entry.workflowRunId:
+            return None
+        key = (entry.effectiveJobId, entry.projectId, entry.runtimeInstanceId, parent, entry.nodeId)
+        if key not in self._callers:
+            self._callers[key] = resolveWorkflowCaller(entry, self._workflowRows.get(parent, ()))
+        return self._callers[key]
+
     def representativeEventId(self, key: BranchKey) -> int | None:
         if key[0] == "event" and isinstance(key[1], int):
             return key[1] if key[1] in self._events else None
         branch = self._unlinked if key == self._unlinked.key else self._branches.get(key)
+        if key[0] == "node":
+            event = self.nodeRecord(key)
+            return event.eventId if event is not None else None
         while branch is not None:
             event = branch.entry or branch.start or branch.end
             if event is not None and event.eventId is not None:
                 return event.eventId
             branch = branch.children[0] if branch.children else None
         return None
+
+    def nodeRecord(self, key: BranchKey) -> StructuredLogEntry | None:
+        branch = self._branches.get(key)
+        if branch is None or key[0] != "node":
+            return None
+        entries = [child.entry for child in reversed(branch.children) if child.entry is not None]
+        return (next((entry for entry in entries if entry.eventType in _NODE_END), None)
+                or branch.end or branch.start or next(iter(entries), None))
 
     def contextMatches(self, eventId: int) -> EntryPredicate | None:
         branch = self._events.get(eventId)

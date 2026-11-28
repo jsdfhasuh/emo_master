@@ -8,6 +8,7 @@ from PySide2.QtTest import QTest
 from PySide2.QtWidgets import QDialog, QPushButton, QTableWidget
 
 from emo_master.ui.runtime_logs import log_json_tree, log_record_detail
+from emo_master.ui.runtime_logs.job_log import ExecutionTime
 from emo_master.apps.designer.ui.log_dialog import StructuredLogEntry
 from emo_master.apps.designer.ui.log_json_tree import LogJsonTree
 from emo_master.apps.designer.ui.log_record_detail import LogRecordDetail
@@ -399,7 +400,7 @@ def testJobAndDebugExplainOnlyMatchingOperatorFieldsAndKeepRawValues(designerApp
         "outputs": {"items": [{"port": "objects", "value": {"kind": "collection", "count": 1}}],
                     "portCount": 1},
     }}}
-    detail.setEvent(event, nodeElapsedMs=3)
+    detail.setEvent(event, nodeTiming=ExecutionTime(startedAtMs=1, endedAtMs=4, elapsedMs=3))
     root = detail.readable.invisibleRootItem()
     assert child(root, "节点总耗时").text(1) == "3 ms · 节点起止事件"
     latency = child(child(root, "运行概览"), "提交用时（latencyMs）")

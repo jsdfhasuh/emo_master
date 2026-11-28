@@ -2,18 +2,21 @@
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
+from dataclasses import replace
 from datetime import datetime
 from itertools import chain
+import json
 from types import SimpleNamespace
 
 from PySide2.QtCore import QTimer, Qt, Signal
+from PySide2.QtGui import QColor
 from PySide2.QtWidgets import (
     QAbstractItemView, QAbstractSlider, QApplication, QCheckBox, QComboBox, QGridLayout, QHBoxLayout, QHeaderView,
     QLabel, QLineEdit, QMenu, QPushButton, QSizePolicy, QSplitter, QStackedWidget, QTreeWidget,
     QTreeWidgetItem, QVBoxLayout, QWidget,
 )
 
-from emo_master.core.runtime_log_messages import frameworkLogMessage
+from emo_master.core.runtime_log_messages import frameworkLogMessage, runtimeLogBrief
 from emo_master.clients.runtime.calls import DisplayCallContext
 from emo_master.ui.runtime_logs.job_log import (
     ExecutionTree, JobEventWindow, JobIterationPage, jobExecutionTime,
@@ -23,6 +26,7 @@ from emo_master.ui.runtime_logs.log_filters import (
 )
 from emo_master.ui.runtime_logs.log_record_detail import LogRecordDetail
 from emo_master.ui.communication_panel import DeviceDiagnosticsView, exportDeviceCache
+from emo_master.ui.theme import LOG_LEVEL_COLORS, RUN_STATUS_COLORS
 
 
 _TERMINAL = {"COMPLETED", "FAILED", "ABORTED"}
@@ -33,6 +37,7 @@ _STATUS = {
     "COMPLETED": "已完成", "FAILED": "失败", "ABORTED": "已停止",
 }
 _ROLE = Qt.UserRole
+_NODE_TIMING_EVENTS = {"node.started", "node.completed", "node.failed", "node.skipped"}
 _COMMON_FIELDS = (("workflowId", "工作流 ID"), ("nodeId", "节点 ID"), ("deviceId", "设备 ID"))
 _TECHNICAL_FIELDS = (("projectId", "工程 ID"), ("component", "模块"), ("eventType", "事件类型"),
                      ("workflowRunId", "调用 ID"), ("iterationPath", "轮次路径（原始索引，如 0/1）"))
@@ -89,12 +94,14 @@ def _jobKey(job):
 
 
 def _jobName(job):
-    return getattr(job, "workflow_name", "") or job.workflow_id or job.job_id
+    name = getattr(job, "workflow_name", "") or job.workflow_id or job.job_id
+    slot = getattr(job, "target_slot_id", "")
+    return f"{name} · 槽位 {slot}" if slot else name
 
 
 
 def _jobMessage(job):
-    return frameworkLogMessage("job." + job.status.lower(), job.message)
+    return frameworkLogMessage("job." + job.status.lower(), job.message, code=getattr(job, "error_code", ""))
 
 
 class RuntimeJobLogs(QWidget):
@@ -126,6 +133,7 @@ class RuntimeJobLogs(QWidget):
         self.historyScope = {}
         self.job = self.window = self.structure = None
         self._selection = None
+        self._detailEntry = None
         self._focus = None
         self._before = self._upper = self._earlierUpper = None
         self._staged = None
@@ -134,6 +142,8 @@ class RuntimeJobLogs(QWidget):
         self._expanded = set()
         self._items = {}
         self._branches = {}
+        self._pausedActive = set()
+        self._representativeFailure = None
         self._continuous = False
         self._readerOnline = False
         self._readerGeneration = 0
@@ -320,6 +330,9 @@ class RuntimeJobLogs(QWidget):
         self.mode = QComboBox()
         self.mode.addItems(("执行结构", "时间顺序"))
         row.addWidget(self.mode)
+        self.showRoutine = QCheckBox("显示普通起止")
+        self.showRoutine.setToolTip("显示执行结构中已用分支表示的普通开始和结束事件")
+        row.addWidget(self.showRoutine)
         self.timeRange = QCheckBox("显示起止时间")
         row.addWidget(self.timeRange)
         row.addStretch(1)
@@ -335,6 +348,15 @@ class RuntimeJobLogs(QWidget):
         self.clearFilters = _button(filterStatus, "清除筛选", self.resetFilters)
         self.clearFilters.hide()
         panel.addLayout(filterStatus)
+
+        self.failureRow = QWidget()
+        failure = QHBoxLayout(self.failureRow)
+        failure.setContentsMargins(0, 0, 0, 0)
+        self.failureSummary = _label()
+        failure.addWidget(self.failureSummary, 1)
+        self.failureButton = _button(failure, "查看失败", self._showFailure)
+        panel.addWidget(self.failureRow)
+        self.failureRow.hide()
 
         self.split = QSplitter(Qt.Horizontal)
         self.events = _tree(["事件 / 执行结构", "等级 / 状态", "时间", "运行时间"], _JobEventTree)
@@ -375,6 +397,7 @@ class RuntimeJobLogs(QWidget):
         panel.addWidget(self.jobHint)
         self.pages.addWidget(self.jobPage)
         self.mode.currentIndexChanged.connect(self._modeChanged)
+        self.showRoutine.toggled.connect(self._scheduleRender)
         self.level.currentIndexChanged.connect(self._scheduleRender)
         self.search.textChanged.connect(self._scheduleRender)
         self.warning.toggled.connect(self._scheduleRender)
@@ -382,7 +405,7 @@ class RuntimeJobLogs(QWidget):
         self.events.itemSelectionChanged.connect(self._eventSelected)
         self.events.itemClicked.connect(self._eventClicked)
         self.events.itemExpanded.connect(self._expandedItem)
-        self.events.itemCollapsed.connect(lambda item: self._expanded.discard(item.data(0, _ROLE)))
+        self.events.itemCollapsed.connect(self._collapsedItem)
         self.events.userScrolled.connect(self._userScrolled)
         self.events.verticalScrollBar().actionTriggered.connect(self._scrollAction)
 
@@ -439,8 +462,7 @@ class RuntimeJobLogs(QWidget):
     def hideEvent(self, event):
         self.clock.stop()
         self.redraw.stop()
-        if self.window is not None:
-            self.window.pause()
+        self._pauseReading()
         super().hideEvent(event)
 
     def synchronize(self, client, instance):
@@ -570,9 +592,10 @@ class RuntimeJobLogs(QWidget):
                 if selected is None and not selectedJob.status:
                     historical = client.getJobStatus(selectedJob.job_id)
                     if historical.ok and historical.project_id == selectedJob.project_id:
-                        selected = SimpleNamespace(job_id=selectedJob.job_id, **{key: getattr(historical, key)
+                        selected = SimpleNamespace(job_id=selectedJob.job_id, **{key: getattr(historical, key, "")
                             for key in ("status", "project_id", "workflow_id", "accepted_at_ms", "started_at_ms",
-                                        "ended_at_ms", "error_code", "message")})
+                                        "ended_at_ms", "error_code", "message", "project_name", "workflow_name",
+                                        "target_slot_id")})
             return features, runs.runs, recent, selected
 
         def accept(value):
@@ -659,10 +682,15 @@ class RuntimeJobLogs(QWidget):
                 timing = jobExecutionTime(job)
                 hint = self._secondaryStatus(job)
                 activity = self.activity.get(job.job_id, _jobMessage(job))
-                item = QTreeWidgetItem([self._jobTitle(job), job.project_id, _STATUS.get(job.status, job.status),
+                status = _STATUS.get(job.status, job.status)
+                project = getattr(job, "project_name", "") or job.project_id
+                item = QTreeWidgetItem([self._jobTitle(job), project, status,
                     _stamp(timing.startedAtMs), timing.display(), " · ".join(filter(None, (hint, activity)))])
                 item.setData(0, _ROLE, job)
                 item.setToolTip(0, job.job_id)
+                item.setToolTip(1, f"{project}\n工程 ID {job.project_id}" if project != job.project_id else job.project_id)
+                if status in RUN_STATUS_COLORS:
+                    item.setForeground(2, QColor(RUN_STATUS_COLORS[status]))
                 tip = "\n".join(filter(None, (_UNFINISHED_PROCESSING, activity))) if hint == "结束处理未完成" else item.text(5)
                 item.setToolTip(5, tip)
                 group.addChild(item)
@@ -730,7 +758,7 @@ class RuntimeJobLogs(QWidget):
             return
         if not catalog and self.window is not None:
             self._rememberAnchor()
-            self.window.pause()
+            self._pauseReading()
         self._relatedSource = job
         self._relatedFromCatalog = catalog
         self.pages.setCurrentWidget(self.relatedPage)
@@ -909,6 +937,7 @@ class RuntimeJobLogs(QWidget):
         self._locateAfterLoad = locate
         self._staged = deque(maxlen=self.maximumEntries)
         self._stagedTruncated = False
+        self._pausedActive.clear()
         self._opening = True
         self._continuous = False
         self.olderWindow.hide()
@@ -1023,7 +1052,7 @@ class RuntimeJobLogs(QWidget):
             staged = (entry for entry in self._staged if entry.eventId > self._upper)
             self.window.appendLive(chain(gapEntries, staged), truncated=truncated or self._stagedTruncated)
         if self._targetEvent or not self.isVisible():
-            self.window.pause()
+            self._pauseReading()
         self._staged = None
         self._opening = False
         self._continuous = (not self._targetEvent and not error and self._readerOnline
@@ -1036,8 +1065,12 @@ class RuntimeJobLogs(QWidget):
             self._applyLocation()
         elif restore is not None:
             self._restoreBookmarkedPosition(restore)
-        elif self._targetEvent and self._selection in self._items:
-            self._select(self._selection)
+        elif self._targetEvent:
+            entry = self.window.entry(self._targetEvent)
+            if entry is not None:
+                if self._selection not in self._items:
+                    self._selection = None
+                self._revealEvent(entry)
 
     def _restoreBookmarkedScope(self, bookmark):
         self._selection, self._anchors, self._expanded = bookmark["selection"], bookmark["anchors"], bookmark["expanded"]
@@ -1109,7 +1142,7 @@ class RuntimeJobLogs(QWidget):
             if self.window.liveTrimmed:
                 self._before = self.window.firstEventId
                 self._earlierUpper = max(self._upper, self.window.lastEventId)
-        self.window.pause()
+        self._pauseReading()
         client = self.client
         scope = dict(self._queryScope(), beforeEventId=self._before, upperEventId=self._earlierUpper)
 
@@ -1249,8 +1282,8 @@ class RuntimeJobLogs(QWidget):
 
     def _scopePredicate(self, structure=None, *, export=False):
         contextMatches = None
+        tree = structure if structure is not None else self.structure
         if self._context is not None:
-            tree = structure if structure is not None else self.structure
             contextMatches = tree.contextMatches(self._context) or (lambda _entry: False)
             if not export:
                 return contextMatches
@@ -1266,13 +1299,16 @@ class RuntimeJobLogs(QWidget):
                 return True
             if levels is not None and entry.level not in levels:
                 return False
-            if needle and needle not in " ".join((entry.message, entry.displayMessage(), entry.code,
-                    entry.eventType, entry.displayWorkflow(), entry.displayNode())).casefold():
-                return False
+            if needle:
+                names = tree.eventNames(entry) if tree is not None else (entry.displayWorkflow(), entry.displayNode())
+                visible = " ".join((entry.message, entry.displayMessage(), entry.code, entry.eventType,
+                                    *names, entry.workflowId, entry.nodeId)).casefold()
+                if needle not in visible and needle not in json.dumps(entry.payload, ensure_ascii=False, default=str).casefold():
+                    return False
             if not includesTimestamp(entry.rawTimestampMs, bounds):
                 return False
             for key in ("projectId", "workflowId", "nodeId", "eventType", "component", "workflowRunId"):
-                if key in filters and getattr(entry, key) != filters[key]:
+                if key in filters and (getattr(entry, key) != filters[key] or (key == "nodeId" and entry.isWorkflowCaller)):
                     return False
             if "iterationPath" in filters and (
                     not entry.iterationPathRecorded or "/".join(map(str, entry.iterationPath)) != filters["iterationPath"]):
@@ -1296,6 +1332,7 @@ class RuntimeJobLogs(QWidget):
     def _modeChanged(self):
         self._rememberAnchor()
         self._shownMode = self.mode.currentIndex()
+        self.showRoutine.setVisible(not self._shownMode)
         self._render(captureAnchor=False)
 
     def _render(self, *, captureAnchor=True, restore=None):
@@ -1304,6 +1341,8 @@ class RuntimeJobLogs(QWidget):
         anchorOffset = self._rememberAnchor() if captureAnchor else 0
         follow = not self.window.paused
         self._dirty = False
+        detail = self._detailEntry
+        previousCaller = self.structure.eventCaller(detail) if self.structure and detail and detail.isWorkflowCaller else None
         previousDefaults = self.structure.defaultExpandedKeys if self.structure is not None else set()
         self.structure = ExecutionTree(self.window.entries)
         if restore is not None:
@@ -1323,9 +1362,12 @@ class RuntimeJobLogs(QWidget):
             self._branches.clear()
             if self.mode.currentIndex():
                 for entry in sorted(filter(matches, self.window.entries), key=lambda row: (row.timestampMs, row.eventId)):
-                    self.events.addTopLevelItem(self._entryItem(entry))
+                    self.events.addTopLevelItem(self._entryItem(entry, timeline=True))
             else:
-                for branch in self.structure.project(matches):
+                compact = not (self.showRoutine.isChecked() or self.search.text().strip()
+                               or self.inputs["eventType"].text().strip())
+                for branch in self.structure.project(matches, compact=compact,
+                                                     revealEventId=self._reveal[1] if self._reveal else None):
                     self._addBranch(branch, self.events.invisibleRootItem())
             self._expanded.intersection_update(self.structure.branchKeys())
             selection = self._items.get(self._selection)
@@ -1342,22 +1384,31 @@ class RuntimeJobLogs(QWidget):
             self.events.blockSignals(False)
         if self._focus:
             workflowRunId, nodeRunId = self._focus
-            target = next((row for row in reversed(self.window.entries)
-                           if row.workflowRunId == workflowRunId and row.nodeRunId == nodeRunId), None)
+            target = self.structure.nodeRecord(("node", workflowRunId, nodeRunId))
             if target is not None:
                 self._focus = None
-                self._select(("event", target.eventId))
+                self._revealEvent(target)
             elif not self._opening:
                 self.jobHint.setText("该次节点执行未在已加载范围内。可以加载更早的记录。")
+        if (detail is not None and self._detailEntry is detail and detail.isWorkflowCaller
+                and self.window.entry(detail.eventId) is detail and self.structure.eventCaller(detail) != previousCaller):
+            self._showEntry(detail)
         self._updateRange()
         self._updateTimes()
+        self._updateFailureHint()
 
-    def _entryItem(self, entry):
+    def _entryItem(self, entry, *, timeline=False):
         key = ("event", entry.eventId)
-        item = QTreeWidgetItem([entry.displayMessage() or entry.eventType, entry.level,
+        message = entry.displayMessage() or entry.eventType
+        if timeline:
+            roundLabel = "第 " + " / ".join(str(index + 1) for index in entry.iterationPath) + " 轮" if entry.iterationPath else ""
+            message = " · ".join(filter(None, (*self.structure.eventNames(entry), roundLabel, entry.code, message)))
+        item = QTreeWidgetItem([message, entry.level,
                                entry.displayTime() if entry.rawTimestampMs else "未记录"])
         item.setData(0, _ROLE, key)
         item.setToolTip(0, "\n".join(part for part in (entry.message, entry.eventType, entry.code) if part))
+        if entry.level in LOG_LEVEL_COLORS:
+            item.setForeground(1, QColor(LOG_LEVEL_COLORS[entry.level]))
         self._items[key] = item
         return item
 
@@ -1388,6 +1439,24 @@ class RuntimeJobLogs(QWidget):
         for child in branch.children:
             self._addBranch(child, item)
         item.setExpanded(branch.key in self._expanded)
+        self._labelBranch(item, branch)
+
+    def _labelBranch(self, item, branch):
+        parts = [branch.title]
+        record = self.structure.nodeRecord(branch.key) if branch.key[0] == "node" else None
+        if record is not None:
+            summary = runtimeLogBrief(record.rawRecord())
+            if record.eventType in {"node.failed", "node.skipped"}:
+                summary = summary or record.payload.get("message") or record.displayMessage()
+            if isinstance(summary, str) and summary:
+                short = " ".join(summary.split())
+                parts.append(short[:110] + ("…" if len(short) > 110 else ""))
+        if not item.isExpanded():
+            if branch.warningCount:
+                parts.append(f"WARN {branch.warningCount}")
+            if branch.errorCount:
+                parts.append(f"ERROR {branch.errorCount}")
+        item.setText(0, " · ".join(parts))
 
     def _roundsFirst(self):
         return self.mode.currentIndex() == 0 and self.structure is not None and self.structure.hasOuterIterations
@@ -1452,6 +1521,24 @@ class RuntimeJobLogs(QWidget):
             suffix.append("实时跟随" if not self._opening and self._upper is not None else "等待最近页")
         self.rangeStatus.setText(f"已加载 {len(self.window.entries)} 条 · " + " · ".join(suffix))
 
+    def _activeBranches(self):
+        if self.structure is None or self.job is None:
+            return set()
+        return self.structure.activeKeys(jobStatus=self.job.status, runtimeInstanceId=self.instance,
+                                         continuous=self._continuous)
+
+    def _pauseReading(self):
+        if self.window is not None and not self.window.paused:
+            self._pausedActive = self._activeBranches()
+            self.window.pause()
+            self._updateTimes()
+
+    def _branchTiming(self, branch, active):
+        pausedAtMs = self.window.pausedAtMs
+        return branch.executionTime(active=branch.key in (self._pausedActive if pausedAtMs is not None else active),
+                                    hasEarlier=self._canReadEarlier(), pausedAtMs=pausedAtMs,
+                                    terminal=self.job.status in _TERMINAL)
+
     def _updateTimes(self):
         if self.job is None:
             return
@@ -1468,8 +1555,7 @@ class RuntimeJobLogs(QWidget):
         extra = "\n重启确认 " + _stamp(time.confirmedAtMs) if time.confirmedAtMs else ""
         if secondary == "结束处理未完成":
             extra += "\n" + _UNFINISHED_PROCESSING
-        active = self.structure.activeKeys(jobStatus=self.job.status, runtimeInstanceId=self.instance,
-            continuous=self._continuous and self.window is not None and not self.window.paused) if self.structure else set()
+        active = self._activeBranches() if self.window is not None and not self.window.paused else set()
         if self.job.status in {"RUNNING", "STOPPING"}:
             calls = sorted(key[1] for key in active if key[0] == "workflow")
             description = f"{len(calls)} 次" if calls else "未确认"
@@ -1479,14 +1565,21 @@ class RuntimeJobLogs(QWidget):
             self.info.setToolTip("")
         if self.job.job_id in self.activity:
             extra += "\n最近活动 " + self.activity[self.job.job_id]
-        self.info.setText(f"Job {self.job.job_id}   ·   工程 {self.job.project_id or '未记录'}\n"
+        projectName = getattr(self.job, "project_name", "") or self.job.project_id
+        self.info.setText(f"Job {self.job.job_id}   ·   工程 {projectName or '未记录'}\n"
                           f"受理 {_stamp(time.acceptedAtMs)}   ·   实际开始 {_stamp(time.startedAtMs)}"
                           f"   ·   实际结束 {_stamp(time.endedAtMs)}{extra}\n"
                           + " ".join(value for value in (time.note, self.job.error_code, _jobMessage(self.job)) if value))
         if self.structure is None or self.window is None:
             return
+        if not self.drawer.isHidden() and self._detailEntry is not None and self._detailEntry.eventType in _NODE_TIMING_EVENTS:
+            detailBranch = self.structure.branchForEvent(self._detailEntry.eventId)
+            if detailBranch is not None and detailBranch.kind == "node":
+                self.detail.updateNodeTiming(self._branchTiming(detailBranch, active))
         for key, branch in self._branches.items():
-            timing = branch.executionTime(active=key in active, hasEarlier=self._canReadEarlier())
+            if branch.kind not in {"workflow", "iteration", "node", "loop"}:
+                continue
+            timing = self._branchTiming(branch, active)
             item = self._items[key]
             if branch.end is not None:
                 eventType = branch.end.eventType
@@ -1496,14 +1589,50 @@ class RuntimeJobLogs(QWidget):
                 if branch.kind == "iteration" and branch.bodyExecuted is not True and branch.mode not in {"foreach", "repeat"}:
                     status = "已结束"
             else:
-                status = "执行中" if key in active else ""
+                status = "进行中" if key in active and timing.estimated else ""
             item.setText(1, status)
+            color = RUN_STATUS_COLORS.get(status)
+            if color:
+                item.setForeground(1, QColor(color))
             if timing.startedAtMs is not None and branch.start is not None:
                 item.setText(2, branch.start.displayTime())
                 item.setToolTip(2, _stamp(timing.startedAtMs))
-            label = "时间信息不完整" if timing.note else timing.display(showRange=self.timeRange.isChecked())
-            item.setText(3, label)
+            item.setText(3, timing.display(showRange=self.timeRange.isChecked()))
             item.setToolTip(3, timing.display(showRange=True))
+
+    def _updateFailureHint(self):
+        failures = [entry for entry in self.window.entries if entry.level == "ERROR"
+                    or entry.eventType.endswith(".failed")]
+        self._representativeFailure = next((entry for entry in reversed(failures)
+            if entry.eventType == "node.failed" and entry.nodeId and entry.nodeRunId),
+            failures[-1] if failures else None)
+        entry = self._representativeFailure
+        self.failureRow.setVisible(entry is not None)
+        if entry is None:
+            return
+        parts = [f"当前范围 {len(failures)} 条失败记录"]
+        if entry.iterationPath:
+            parts.append("第 " + " / ".join(str(index + 1) for index in entry.iterationPath) + " 轮")
+        reason = " ".join((entry.displayMessage() or entry.message).split())
+        parts.extend(value for value in (*self.structure.eventNames(entry), entry.code,
+                                         reason[:120] + ("…" if len(reason) > 120 else "")) if value)
+        self.failureSummary.setText(" · ".join(parts))
+        self.failureSummary.setToolTip(entry.displayMessage())
+
+    def _showFailure(self):
+        if self._representativeFailure is not None:
+            self._revealEvent(self._representativeFailure)
+
+    def _revealEvent(self, entry):
+        key = ("event", entry.eventId)
+        if key not in self._items:
+            if self._context is not None or self._reveal is not None:
+                self._leaveContext()
+            self._saveReadingPosition()
+            self._reveal = key
+            self.returnContext.show()
+            self._render(captureAnchor=False)
+        self._select(key)
 
     def _scrollAction(self, action):
         bar = self.events.verticalScrollBar()
@@ -1526,7 +1655,7 @@ class RuntimeJobLogs(QWidget):
                 or down != self._roundsFirst()):
             return
         if not self.window.paused:
-            self.window.pause()
+            self._pauseReading()
             self._updateRange()
         bar = self.events.verticalScrollBar()
         edge = bar.maximum() if down else bar.minimum()
@@ -1534,10 +1663,19 @@ class RuntimeJobLogs(QWidget):
             self._readEarlier()
 
     def _expandedItem(self, item):
-        self._expanded.add(item.data(0, _ROLE))
+        key = item.data(0, _ROLE)
+        self._expanded.add(key)
+        if key in self._branches:
+            self._labelBranch(item, self._branches[key])
         if self.window and self.events.itemBelow(item) is not None:
-            self.window.pause()
+            self._pauseReading()
             self._updateRange()
+
+    def _collapsedItem(self, item):
+        key = item.data(0, _ROLE)
+        self._expanded.discard(key)
+        if key in self._branches:
+            self._labelBranch(item, self._branches[key])
 
     def _eventClicked(self, item, _column):
         if self.drawer.isHidden():
@@ -1549,49 +1687,61 @@ class RuntimeJobLogs(QWidget):
             return
         key = item.data(0, _ROLE)
         self._selection = key
-        if not key or key[0] != "event":
+        if not key:
+            return
+        entry = self._selectionEntry(key)
+        if entry is None:
             if key in self._branches:
-                self.window.pause()
-                self.jobHint.setText(self._items[key].text(3))
+                self._pauseReading()
                 self._updateRange()
             self._closeDrawer()
+            if key[0] == "node":
+                self.detail.clear("当前范围未加载记录")
+                self.readContext.setEnabled(False)
+                self.navigate.setEnabled(False)
+                self.deviceActions.hide()
+                self.deviceHistoryNote.hide()
+                self.drawer.show()
             return
-        entry = next((row for row in self.window.entries if row.eventId == key[1]), None)
-        if entry is None:
-            return
-        if not self.window.entries or entry != self.window.entries[-1]:
-            self.window.pause()
+        if key[0] != "event" or entry.eventId != self.window.lastEventId:
+            self._pauseReading()
         self._showEntry(entry)
         self._updateRange()
+
+    def _selectionEntry(self, key):
+        if key[0] == "event":
+            return self.window.entry(key[1])
+        return self.structure.nodeRecord(key) if self.structure is not None else None
 
     def _showEntry(self, entry):
         self._detailEntry = entry
         raw = entry.rawRecord()
         context = {}
-        nodeElapsedMs = None
+        nodeTiming = None
         branch = self.structure.branchForEvent(entry.eventId) if self.structure else None
-        if branch is not None:
-            timing = branch.executionTime(hasEarlier=bool(self._before))
+        if branch is not None and branch.kind in {"workflow", "iteration", "node", "loop"}:
+            timing = self._branchTiming(branch, self._activeBranches())
             if timing.startedAtMs is not None:
                 context["实际开始"] = _stamp(timing.startedAtMs)
             if timing.endedAtMs is not None:
                 context["实际结束"] = _stamp(timing.endedAtMs)
-            if branch.kind == "node" and entry.eventType in {"node.started", "node.completed", "node.failed", "node.skipped"}:
-                nodeElapsedMs = timing.elapsedMs
+            if branch.kind == "node" and entry.eventType in _NODE_TIMING_EVENTS:
+                nodeTiming = timing
             elif timing.elapsedMs is not None:
                 context["执行时间"] = timing.display()
-            if timing.note:
+            if timing.note and nodeTiming is None:
                 context["时间说明"] = timing.note
         if entry.effectiveJobId != entry.jobId:
             context["所属任务"] = entry.effectiveJobId
-        for key, label in (("deviceId", "设备"), ("slot", "设备槽位"), ("channelId", "通道"),
-                           ("requestId", "请求 ID"), ("occurrences", "设备同类问题累计次数（可跨任务）"),
-                           ("durationMs", "聚合经过时间（ms，可跨任务）")):
-            if key in entry.payload and (key not in {"durationMs", "occurrences"} or "occurrences" in entry.payload):
-                context[label] = entry.payload[key]
-        self.detail.setEvent(raw, displayMessage=entry.displayMessage(), context=context, nodeElapsedMs=nodeElapsedMs)
+        workflowTitle, nodeTitle = (self.structure.eventNames(entry) if self.structure
+                                    else (entry.displayWorkflow(), entry.displayNode()))
+        if entry.isWorkflowCaller:
+            nodeTitle = " · ".join(filter(None, (workflowTitle, nodeTitle)))
+        self.detail.setEvent(raw, displayMessage=entry.displayMessage(), context=context, nodeTiming=nodeTiming,
+                             nodeTitle=nodeTitle)
         self.readContext.setEnabled(bool(self.structure and self.structure.contextMatches(entry.eventId)))
-        self.navigate.setEnabled(bool(self._onNavigate and entry.nodeId))
+        caller = self.structure.eventCaller(entry) if self.structure else None
+        self.navigate.setEnabled(bool(self._onNavigate and entry.nodeId and (not entry.isWorkflowCaller or caller)))
         self.deviceChoice.clear()
         for label, device, scope in _deviceChoices(entry):
             self.deviceChoice.addItem(f"{label} · {device}" if label != device else device, (device, scope))
@@ -1607,8 +1757,15 @@ class RuntimeJobLogs(QWidget):
         self.detail.clear()
 
     def _navigate(self):
-        if self._detailEntry is not None and self._onNavigate:
-            self.jobHint.setText(self._onNavigate(self._detailEntry))
+        entry = self._detailEntry
+        if entry is None or not self._onNavigate or not self.navigate.isEnabled():
+            return
+        if entry.isWorkflowCaller:
+            caller = self.structure.eventCaller(entry) if self.structure else None
+            if caller is None:
+                return
+            entry = replace(entry, caller=caller)
+        self.jobHint.setText(self._onNavigate(entry))
 
     def _select(self, key, *, followEntry=None):
         item = self._items.get(key)
@@ -1620,6 +1777,7 @@ class RuntimeJobLogs(QWidget):
             while parent is not None:
                 parent.setExpanded(True)
                 self._expanded.add(parent.data(0, _ROLE))
+                self._labelBranch(parent, self._branches[parent.data(0, _ROLE)])
                 parent = parent.parent()
             self.events.setCurrentItem(item)
             self.events.scrollToItem(item, QAbstractItemView.PositionAtCenter)
@@ -1638,7 +1796,7 @@ class RuntimeJobLogs(QWidget):
         eventId = self._detailEntry.eventId
         if self.structure.contextMatches(eventId) is not None:
             self._saveReadingPosition()
-            self.window.pause()
+            self._pauseReading()
             self._context = eventId
             self.returnContext.show()
             self._render(captureAnchor=False)
@@ -1662,8 +1820,8 @@ class RuntimeJobLogs(QWidget):
     def _restoreSelectionDrawer(self):
         item = self.events.currentItem()
         key = item.data(0, _ROLE) if item is not None else None
-        if key is not None and key == self._selection and key[0] == "event":
-            event = next((entry for entry in self.window.entries if entry.eventId == key[1]), None)
+        if key is not None and key == self._selection:
+            event = self._selectionEntry(key)
             if event is not None:
                 self._showEntry(event)
                 return
@@ -1703,7 +1861,7 @@ class RuntimeJobLogs(QWidget):
         if selected is None or self._detailEntry is None:
             return
         device, scope = selected
-        self.window.pause()
+        self._pauseReading()
         self._rememberAnchor()
         self._deviceFocus = QApplication.focusWidget()
         self.pages.setCurrentWidget(self.devicePage)

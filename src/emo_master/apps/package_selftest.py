@@ -37,6 +37,7 @@ _EXPECTED_MIGRATIONS = (
     "003_runtime_timestamps.sql",
     "004_global_counters.sql",
     "006_logging_metadata.sql",
+    "007_job_display_names.sql",
 )
 _TINY_YOLO_ONNX = (
     "CAg6qAEKUxIHb3V0cHV0MCIIQ29uc3RhbnQqPgoFdmFsdWUqMggBCAUIAhABSigAAIBAZmaG"
@@ -208,7 +209,7 @@ def _checkMigrations() -> dict[str, object]:
         finally:
             connection.close()
     # v5 is transactional Python migration (legacy table -> typed state + view).
-    if versions != [1, 2, 3, 4, 5, 6]:
+    if versions != [1, 2, 3, 4, 5, 6, 7]:
         raise RuntimeError(f"unexpected migration versions: {versions}")
     return {
         "files": list(_EXPECTED_MIGRATIONS),

@@ -340,6 +340,10 @@ def testLoggingMetadataMigrationFromV5PreservesHistoryAndReopens(tmp_path):
         migrateVariables(connection)
         connection.execute('CREATE TABLE IF NOT EXISTS schemaMigrations(version INTEGER PRIMARY KEY, appliedAt TEXT NOT NULL)')
         connection.executemany("INSERT OR REPLACE INTO schemaMigrations VALUES (?, 'old')", [(i,) for i in range(1, 6)])
+        connection.execute(
+            "INSERT INTO jobs(jobId, projectId, releaseId, status, startAt, workflowId) "
+            "VALUES ('old-job', 'old-project', '', 'COMPLETED', '2023-11-14T22:13:19+00:00', 'old-flow')"
+        )
         for index, eventType in enumerate(('node.log', 'node.completed', 'device.connect.failed',
                                             'presentation.source.unavailable', 'runtime.logfile.failed', 'unknown',
                                             'dispatch.invocation.failed', 'dispatch.invocation.completed')):
@@ -349,6 +353,9 @@ def testLoggingMetadataMigrationFromV5PreservesHistoryAndReopens(tmp_path):
     store = SqliteStore(db)
     store.initialize()
     store.initialize()
+    oldJob = store.getJob('old-job')
+    assert oldJob is not None and oldJob['workflowId'] == 'old-flow'
+    assert (oldJob['projectName'], oldJob['workflowName'], oldJob['targetSlotId']) == ('', '', '')
     rows = SqliteStore(db).listJobEventsAfter('old-job')
     assert [event.component for event in rows] == ['operator', 'execution', 'device', 'presentation', 'storage',
                                                   'application', 'execution', 'execution']
@@ -408,6 +415,8 @@ def testQueryRuntimeLogsRpcFixedUpperIdentityAssociationsAndTime(queryRpc):
     assert not second.has_more and second.next_event_id == 4
     assert [row.event_id for row in query(after_event_id=4).events] == [5]
     assert [row.event_id for row in query(job_id='A').events] == [1, 3, 5]
+    replay = service.StreamJobEvents(runtime_pb2.StreamJobEventsRequest(job_id='A', after_sequence=1), None)
+    assert [(event.sequence, event.event_type) for event in replay] == [(2, 'process.heartbeat'), (3, 'node.log')]
     assert [row.event_id for row in query(device_id='camera').events] == [1, 2, 3]
     assert not query(device_id='plc').events
     assert [row.event_id for row in query(project_id='old-project').events] == [1, 3]
@@ -503,7 +512,9 @@ def testJobHistoryUsesPersistedTerminalRowsAndKeysetAfterRestart(tmp_path):
             ('older', 'project', 'COMPLETED', sameEnd - 1),
             ('other-project', 'elsewhere', 'COMPLETED', sameEnd + 1),
         ):
-            first.sqliteStore.insertJob(jobId, projectId, projectRevision=7, workflowId='flow', acceptedAtMs=sameEnd - 10)
+            first.sqliteStore.insertJob(jobId, projectId, projectRevision=7, workflowId='flow',
+                acceptedAtMs=sameEnd - 10, projectName='工程原名' if jobId == 'z' else '',
+                workflowName='流程原名' if jobId == 'z' else '', targetSlotId='inspection' if jobId == 'z' else '')
             first.sqliteStore.updateJobStatus(jobId, status, startedAtMs=sameEnd - 3, endedAtMs=ended,
                 errorCode='E_SOFTWARE' if status == 'FAILED' else None,
                 errorMessage='failed in software' if status == 'FAILED' else None,
@@ -520,6 +531,9 @@ def testJobHistoryUsesPersistedTerminalRowsAndKeysetAfterRestart(tmp_path):
         first.close()
 
     service = RuntimeService(dbPath=path, runtimeInstanceId='new-runtime')
+    from types import SimpleNamespace
+    service.loadedDocument = SimpleNamespace(project=SimpleNamespace(
+        projectId='project', name='改名后的工程', revision=8), workflows={'flow': SimpleNamespace(name='改名后的流程')})
     service.sqliteStore.insertJob('still-active', 'project', status='RUNNING')
     server, port, _ = createRuntimeServer(port=0, runtimeService=service)
     server.start()
@@ -533,12 +547,15 @@ def testJobHistoryUsesPersistedTerminalRowsAndKeysetAfterRestart(tmp_path):
         assert (row.job_id, row.project_revision, row.workflow_id, row.status) == ('z', 7, 'flow', 'FAILED')
         assert (row.accepted_at_ms, row.started_at_ms, row.ended_at_ms) == (sameEnd - 10, sameEnd - 3, sameEnd)
         assert (row.error_code, row.message) == ('E_SOFTWARE', 'failed in software')
+        assert (row.project_name, row.workflow_name, row.target_slot_id) == ('工程原名', '流程原名', 'inspection')
         following = client.listJobHistory('new-runtime', 'project', limit=3, cursor=page.next_cursor)
         assert [row.job_id for row in following.jobs] == ['a', 'older', 'legacy']
         assert following.jobs[0].stop_mode == 'graceful'
+        assert not following.jobs[0].project_name and not following.jobs[0].workflow_name
         assert not following.has_more and not following.next_cursor
         legacy = following.jobs[-1]
         assert (legacy.accepted_at_ms, legacy.started_at_ms, legacy.ended_at_ms) == (1_699_999_999_000, 0, 0)
+        assert not legacy.project_name and not legacy.workflow_name
         timed = client.listJobHistory('new-runtime', 'project', startEndedAtMs=sameEnd, endEndedAtMs=sameEnd + 1)
         assert [row.job_id for row in timed.jobs] == ['z', 'a']
         archived = client.listJobHistory('new-runtime', 'elsewhere', startEndedAtMs=sameEnd, endEndedAtMs=sameEnd + 1)
@@ -559,10 +576,10 @@ def testJobHistoryUsesPersistedTerminalRowsAndKeysetAfterRestart(tmp_path):
         service.close()
 
 
-def testWorkerSourceTimestampIsPreservedAndHeartbeatUsesReceiptTime(monkeypatch):
+def testWorkerSourceTimestampIsPreservedAndHeartbeatUsesReceiptTime(monkeypatch, tmp_path):
     from queue import Queue
     from emo_master.apps.runtime.jobs.worker_main import _put, heartbeatLoop
-    from tests.runtime.test_job_supervisor_contracts import _supervisor
+    from emo_master.apps.runtime.jobs.models import JobRecord, JobStatus
     from threading import Event
     import emo_master.apps.runtime.jobs.supervisor as module
     queue = Queue()
@@ -573,10 +590,42 @@ def testWorkerSourceTimestampIsPreservedAndHeartbeatUsesReceiptTime(monkeypatch)
     heartbeatLoop('job-stop', 'project', 'flow', queue, stop, 100)
     pulse = queue.get()
     assert pulse['timestampMs'] > 0
-    supervisor, _, store, _ = _supervisor()
-    supervisor.consumeWorkerEvents('job-stop', [{'eventType': 'node.log', 'timestampMs': 123}])
-    assert store.read('job-stop')[-1].timestampMs == 123
-    monkeypatch.setattr(module, 'nowMs', lambda: 456)
-    supervisor.consumeWorkerEvent('job-stop', dict(pulse, timestampMs=124))
-    assert store.read('job-stop')[-1].timestampMs == 124
-    assert supervisor._heartbeat['job-stop'] == 456
+    service = RuntimeService(dbPath=tmp_path / 'heartbeat.db')
+    try:
+        supervisor = service.jobSupervisor
+        store = service.eventStore
+        jobId = 'job-stop'
+        retention = 5
+        service.sqliteStore.jobEventRetention = store.retentionPerJob = retention
+        service.jobRepository.create(JobRecord(jobId, 'project', 1, 'flow', status=JobStatus.RUNNING.value))
+        supervisor.consumeWorkerEvent(jobId, {
+            'eventType': 'node.failed', 'message': 'earlier failure', 'level': 'ERROR',
+            'code': 'E_SAMPLE', 'timestampMs': 123,
+        })
+        [confirmed] = service.StreamJobEvents(runtime_pb2.StreamJobEventsRequest(job_id=jobId), None)
+        assert (confirmed.sequence, confirmed.timestamp_ms, confirmed.code) == (1, 123, 'E_SAMPLE')
+
+        for receiptTime in range(450, 450 + retention * 2):
+            monkeypatch.setattr(module, 'nowMs', lambda: receiptTime)
+            supervisor.consumeWorkerEvent(jobId, dict(pulse, timestampMs=124))
+        assert supervisor._heartbeat[jobId] == 450 + retention * 2 - 1
+        assert jobId in supervisor._heartbeatSeen
+        assert [event.sequence for event in store.read(jobId)] == [confirmed.sequence]
+        assert [event.sequence for event in service.sqliteStore.listJobEventsAfter(jobId)] == [confirmed.sequence]
+
+        supervisor.consumeWorkerEvent(jobId, {'eventType': 'node.started', 'timestampMs': 125})
+        supervisor.consumeWorkerEvents(jobId, [
+            {'eventType': 'node.log', 'timestampMs': 126},
+            {'eventType': 'node.completed', 'timestampMs': 127},
+        ])
+        supervisor.consumeWorkerEvent(jobId, {'eventType': 'job.completed', 'timestampMs': 128})
+        resumed = service.StreamJobEvents(runtime_pb2.StreamJobEventsRequest(
+            job_id=jobId, after_sequence=confirmed.sequence, follow=True), None)
+        assert [(event.sequence, event.event_type, event.timestamp_ms) for event in resumed] == [
+            (2, 'node.started', 125), (3, 'node.log', 126),
+            (4, 'node.completed', 127), (5, 'job.completed', 128),
+        ]
+        page = service.QueryRuntimeLogs(runtime_pb2.QueryRuntimeLogsRequest(job_id=jobId, levels=['ERROR']), None)
+        assert [(row.event.sequence, row.event.message) for row in page.events] == [(1, 'earlier failure')]
+    finally:
+        service.close()

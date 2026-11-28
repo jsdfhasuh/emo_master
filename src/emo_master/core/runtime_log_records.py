@@ -1,6 +1,7 @@
 """Structured desktop log entries and Runtime ownership classification."""
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from datetime import datetime
 import re
@@ -10,6 +11,17 @@ from emo_master.core.runtime_log_messages import frameworkLogMessage
 
 
 _LINE_PATTERN = re.compile(r"^\[(?P<time>[^]]+)]\[(?P<level>[^]]+)]\s?(?P<message>.*)$")
+WORKFLOW_LIFECYCLE_EVENTS = frozenset({"workflow.started", "workflow.completed", "workflow.failed"})
+
+
+@dataclass(frozen=True)
+class RuntimeLogCaller:
+    workflowId: str
+    workflow: str
+    node: str
+
+    def label(self) -> str:
+        return f"调用节点 {self.workflow} / {self.node}"
 
 
 @dataclass(frozen=True)
@@ -42,7 +54,11 @@ class StructuredLogEntry:
     parentWorkflowRunIdRecorded: bool = False
     iterationPathRecorded: bool = False
     rawTimestampMs: int | None = None
+    projectName: str = ""
+    targetWorkflowId: str = ""
+    targetWorkflowName: str = ""
     _runtimeRecord: dict[str, object] | None = field(default=None, repr=False, compare=False)
+    caller: RuntimeLogCaller | None = field(default=None, repr=False, compare=False)
 
     @classmethod
     def fromLine(cls, line: str) -> "StructuredLogEntry":
@@ -63,6 +79,14 @@ class StructuredLogEntry:
     def fromRuntimeEvent(cls, event: dict[str, object]) -> "StructuredLogEntry":
         eventType = str(event.get("eventType", ""))
         rawPayload = event.get("payload", {})
+        payload = dict(rawPayload) if isinstance(rawPayload, dict) else {}
+
+        def name(field: str) -> str:
+            for value in (payload.get(field), event.get(field)):
+                if isinstance(value, str) and value:
+                    return value
+            return ""
+
         rawIteration = event.get("iterationPath")
         iteration: tuple[int, ...] = ()
         validIteration = False
@@ -91,10 +115,10 @@ class StructuredLogEntry:
             nodeRunId=str(event.get("nodeRunId", "")),
             iterationPath=iteration,
             code=str(event.get("code", "")),
-            payload=dict(rawPayload) if isinstance(rawPayload, dict) else {},
+            payload=payload,
             projectId=str(event.get("projectId", "")),
-            workflowName=str(event.get("workflowName", "")),
-            nodeName=str(event.get("nodeName", "")),
+            workflowName=name("workflowName"),
+            nodeName=name("nodeName"),
             originApp=str(event.get("originApp", "runtime") or "runtime"),
             component=str(event.get("component") or componentForEvent(eventType)),
             runtimeInstanceId=str(event.get("runtimeInstanceId", "")),
@@ -104,6 +128,9 @@ class StructuredLogEntry:
             parentWorkflowRunIdRecorded=isinstance(parentWorkflowRunId, str),
             iterationPathRecorded=validIteration,
             rawTimestampMs=timestampMs,
+            projectName=name("projectName"),
+            targetWorkflowId=name("targetWorkflowId"),
+            targetWorkflowName=name("targetWorkflowName"),
             _runtimeRecord=dict(event),
         )
 
@@ -124,6 +151,10 @@ class StructuredLogEntry:
     def isRuntimeSystem(self) -> bool:
         return self.isRuntime and self.jobId == "__runtime__" and not self.effectiveJobId
 
+    @property
+    def isWorkflowCaller(self) -> bool:
+        return bool(self.nodeId and self.eventType in WORKFLOW_LIFECYCLE_EVENTS)
+
     def displayTime(self) -> str:
         return datetime.fromtimestamp(self.timestampMs / 1000.0).strftime("%H:%M:%S.%f")[:-3]
 
@@ -142,6 +173,8 @@ class StructuredLogEntry:
         return self.workflowName or self.workflowId
 
     def displayNode(self) -> str:
+        if self.isWorkflowCaller:
+            return ""
         return self.nodeName or self.nodeId
 
     def designArea(self) -> str:
@@ -154,7 +187,7 @@ class StructuredLogEntry:
 
     def displayMessage(self) -> str:
         return frameworkLogMessage(self.eventType, self.message, nodeId=self.nodeId, workflowId=self.workflowId,
-                                   iterationPath=self.iterationPath, payload=self.payload)
+                                   code=self.code, iterationPath=self.iterationPath, payload=self.payload)
 
     def rawRecord(self) -> dict[str, object]:
         if self._runtimeRecord is not None and self.isRuntime:
@@ -187,6 +220,26 @@ class StructuredLogEntry:
             "sequence": self.sequence,
             "eventId": self.eventId,
         }
+
+
+def resolveWorkflowCaller(entry: StructuredLogEntry,
+                          entries: Iterable[StructuredLogEntry]) -> RuntimeLogCaller | None:
+    """Resolve the recorded parent run against loaded records from this same Job."""
+    parent = entry.parentWorkflowRunId
+    if not (entry.isWorkflowCaller and parent and parent != entry.workflowRunId
+            and entry.projectId and entry.effectiveJobId):
+        return None
+    candidates = [row for row in entries
+                  if row.workflowRunId == parent and row.projectId == entry.projectId
+                  and row.effectiveJobId == entry.effectiveJobId and row.runtimeInstanceId == entry.runtimeInstanceId]
+    workflowIds = {row.workflowId for row in candidates if row.workflowId}
+    if len(workflowIds) != 1:
+        return None
+    workflowId, = workflowIds
+    workflowName = next((row.workflowName for row in candidates if row.workflowId == workflowId and row.workflowName), "")
+    nodeName = next((row.nodeName for row in candidates if row.workflowId == workflowId and row.nodeId == entry.nodeId
+                     and not row.isWorkflowCaller and row.nodeName), "")
+    return RuntimeLogCaller(workflowId, workflowName or workflowId, nodeName or entry.nodeId)
 
 
 def _integer(value: object, default: int) -> int:

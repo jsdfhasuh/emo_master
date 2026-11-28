@@ -732,6 +732,8 @@ class RuntimeService(OutputRequestsRpcMixin, RunReadRpcMixin, HistoryRpcMixin, P
                 workflowId=workflowId,
                 legacySnapshotPolicy=legacyPolicy,
                 previewProjectKey=self._loadedProjectPreviewKey,
+                projectName=document.project.name,
+                workflowName=document.workflows[workflowId].name,
             )
             requestId = str(getattr(request, "start_request_id", ""))
             if requestId:

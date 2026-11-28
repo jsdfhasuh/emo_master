@@ -7,6 +7,8 @@ import json
 from pathlib import Path
 import re
 
+from emo_master.core.runtime_log_messages import runtimeEventMessage, runtimeLogBrief, runtimeLogComponentTitle
+
 
 TAIL_BYTES = 2 * 1024 * 1024
 TAIL_RECORDS = 2000
@@ -206,7 +208,9 @@ class LogFilters:
             return True
         fields = ("message", "code", "eventType", "source", "component", "jobId")
         return (any(self.keyword in str(record.get(field) or "").casefold() for field in fields)
-                or self.keyword in recordSource(record).casefold())
+                or self.keyword in recordSource(record).casefold()
+                or self.keyword in runtimeLogComponentTitle(str(record.get("component") or "")).casefold()
+                or self.keyword in displayLogMessage(record).casefold())
 
     def exportMetadata(self) -> dict:
         # A search can contain a pasted credential without any recognisable key.
@@ -288,24 +292,34 @@ def recordSource(data):
     payload = data.get("payload")
     payload = payload if isinstance(payload, dict) else {}
     # Only names frozen into this record; never map historical IDs through a current project.
-    return str(data.get("nodeName") or payload.get("nodeName") or data.get("workflowName")
-               or payload.get("workflowName") or payload.get("deviceName")
+    return str(payload.get("nodeName") or data.get("nodeName") or payload.get("workflowName")
+               or data.get("workflowName") or payload.get("deviceName")
                or data.get("nodeId") or data.get("workflowId") or data.get("eventType") or "Runtime")
+
+
+def displayLogMessage(data: dict) -> str:
+    message = runtimeEventMessage(data)
+    summary = runtimeLogBrief(data)
+    return " · ".join(str(value) for value in (data.get("code"), message, summary if summary != message else "") if value)
 
 
 def recordDetails(record: LogRecord) -> str:
     data = record.data
     payload = data.get("payload") if isinstance(data.get("payload"), dict) else {}
     def identity(kind):
-        name = data.get(kind + "Name") or payload.get(kind + "Name")
-        key = data.get(kind + "Id")
+        name = payload.get(kind + "Name") or data.get(kind + "Name")
+        key = data.get(kind + "Id") or payload.get(kind + "Id")
         return f"{name}（{key}）" if name and key else name or key
+    message = runtimeEventMessage(data)
+    original = data.get("message")
     fields = (("原始时间", data.get("timestamp")), ("原始毫秒时间戳", data.get("timestampMs")), ("级别", data.get("level")),
-              ("应用", data.get("originApp")), ("模块", data.get("component")),
+              ("应用", data.get("originApp")), ("模块", runtimeLogComponentTitle(str(data.get("component") or ""))),
               ("Runtime 实例", data.get("runtimeInstanceId")),
               ("来源", recordSource(data)), ("事件", data.get("eventType")), ("错误码", data.get("code")),
-              ("原始消息", data.get("message")), ("工程 / ID", identity("project")),
+              ("消息", message), ("原始消息", original if original != message else None),
+              ("摘要", runtimeLogBrief(data)), ("工程 / ID", identity("project")),
               ("流程 / ID", identity("workflow")), ("节点 / ID", identity("node")),
+              ("子工作流 / ID", identity("targetWorkflow")),
               ("Job ID", data.get("jobId")), ("流程运行 ID", data.get("workflowRunId")),
               ("节点运行 ID", data.get("nodeRunId")))
     lines = [f"{name}：{value}" for name, value in fields if value is not None and value != ""]

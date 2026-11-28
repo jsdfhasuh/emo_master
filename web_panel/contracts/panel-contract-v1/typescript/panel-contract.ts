@@ -243,7 +243,7 @@ export type RpcInspectSqliteTargetRequest = { "databasePath"?: string; "projectD
 
 export type RpcJobEvent = { "jobId"?: string; "nodeId"?: string; "eventType"?: string; "level"?: string; "code"?: string; "message"?: string; "payloadJson"?: string; "timestampMs"?: string; "sequence"?: string; "projectId"?: string; "workflowId"?: string; "workflowRunId"?: string; "parentWorkflowRunId"?: string; "nodeRunId"?: string; "iterationPathJson"?: string; "originApp"?: string; "component"?: string; "runtimeInstanceId"?: string };
 
-export type RpcJobHistorySummary = { "jobId"?: string; "projectId"?: string; "projectRevision"?: string; "workflowId"?: string; "status"?: string; "acceptedAtMs"?: string; "startedAtMs"?: string; "endedAtMs"?: string; "errorCode"?: string; "message"?: string; "stopMode"?: string };
+export type RpcJobHistorySummary = { "jobId"?: string; "projectId"?: string; "projectRevision"?: string; "workflowId"?: string; "status"?: string; "acceptedAtMs"?: string; "startedAtMs"?: string; "endedAtMs"?: string; "errorCode"?: string; "message"?: string; "stopMode"?: string; "projectName"?: string; "workflowName"?: string; "targetSlotId"?: string };
 
 export type RpcListDeviceTypesReply = { "typesJson"?: string; "requirementsJson"?: string; "rejectedJson"?: string };
 
@@ -303,7 +303,7 @@ export type RpcOperatorIconInfo = { "status"?: string; "mimeType"?: string; "sha
 
 export type RpcOperatorIconIssue = { "ruleId"?: string; "code"?: string; "message"?: string };
 
-export type RpcOperatorInfo = { "operatorId"?: string; "displayName"?: string; "version"?: string; "inputPorts"?: { [key: string]: string }; "outputPorts"?: { [key: string]: string }; "paramSchemaJson"?: string; "category"?: string; "iconKey"?: string; "summary"?: string; "inputPortSpecsJson"?: string; "outputPortSpecsJson"?: string; "editorSpecJson"?: string; "editorIssuesJson"?: string; "icon"?: RpcOperatorIconInfo; "iconIssues"?: Array<RpcOperatorIconIssue>; "deviceRequirementsJson"?: string; "nextCycleParameterPathsJson"?: string; "minCoreVersion"?: string; "maxCoreVersion"?: string };
+export type RpcOperatorInfo = { "operatorId"?: string; "displayName"?: string; "version"?: string; "inputPorts"?: { [key: string]: string }; "outputPorts"?: { [key: string]: string }; "paramSchemaJson"?: string; "category"?: string; "iconKey"?: string; "summary"?: string; "inputPortSpecsJson"?: string; "outputPortSpecsJson"?: string; "editorSpecJson"?: string; "editorIssuesJson"?: string; "icon"?: RpcOperatorIconInfo; "iconIssues"?: Array<RpcOperatorIconIssue>; "deviceRequirementsJson"?: string; "nextCycleParameterPathsJson"?: string; "minCoreVersion"?: string; "maxCoreVersion"?: string; "resultSchemaJson"?: string };
 
 export type RpcOperatorPreviewFrame = { "sessionId"?: string; "jpeg"?: string; "sequence"?: string; "blockId"?: string; "deviceTimestamp"?: string; "actualExposureUs"?: number; "width"?: number; "height"?: number; "state"?: string; "generation"?: string; "code"?: string; "message"?: string };
 
@@ -365,7 +365,7 @@ export type RpcRunOperatorPreviewReply = { "ok"?: boolean; "code"?: string; "mes
 
 export type RpcRunOperatorPreviewRequest = { "projectId"?: string; "workflowId"?: string; "nodeId"?: string; "operatorId"?: string; "paramsJson"?: string; "imageAssetId"?: string; "requestId"?: string; "projectJson"?: string; "jobId"?: string; "draftSessionId"?: string };
 
-export type RpcRunState = { "runtimeInstanceId"?: string; "projectId"?: string; "workflowId"?: string; "jobId"?: string; "runGroupId"?: string; "sourceJobId"?: string; "targetSlotId"?: string; "status"?: string; "active"?: boolean; "ownsResources"?: boolean; "captureEnabled"?: boolean; "displayResourcesReleased"?: boolean; "workflowName"?: string; "acceptedAtMs"?: string; "startedAtMs"?: string; "endedAtMs"?: string; "errorCode"?: string; "message"?: string; "startRequestId"?: string; "allowedActions"?: Array<string> };
+export type RpcRunState = { "runtimeInstanceId"?: string; "projectId"?: string; "workflowId"?: string; "jobId"?: string; "runGroupId"?: string; "sourceJobId"?: string; "targetSlotId"?: string; "status"?: string; "active"?: boolean; "ownsResources"?: boolean; "captureEnabled"?: boolean; "displayResourcesReleased"?: boolean; "workflowName"?: string; "acceptedAtMs"?: string; "startedAtMs"?: string; "endedAtMs"?: string; "errorCode"?: string; "message"?: string; "startRequestId"?: string; "allowedActions"?: Array<string>; "projectName"?: string };
 
 export type RpcRuntimeInfoReply = { "ok"?: boolean; "code"?: string; "message"?: string; "runtimeInstanceId"?: string; "protocolVersion"?: string; "capabilities"?: Array<string>; "productionMode"?: boolean; "projectId"?: string; "documentRevision"?: string; "productionInputsJson"?: string; "productionExecutionMode"?: string; "startupWorkflowIds"?: Array<string>; "historyDefinitionRevision"?: string };
 

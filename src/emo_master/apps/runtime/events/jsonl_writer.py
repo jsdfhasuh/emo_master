@@ -386,15 +386,10 @@ def _isPriorityEvent(event: RuntimeEvent) -> bool:
 def _isOperationalEvent(event: RuntimeEvent) -> bool:
     if event.eventType == "runtime.logfile.failed":
         return False
-    if event.eventType == "sqlite.write.finished":
-        try:
-            payload = json.loads(event.payloadJson)
-        except (TypeError, ValueError):
-            return False
-        return isinstance(payload, dict) and payload.get("background") is True
     return (
         event.eventType == "node.log"
         or event.eventType == "artifact.created"
+        or event.eventType in {"sqlite.write.started", "sqlite.write.finished"}
         or event.eventType == "resource.cleanup.failed"
         or event.eventType == "preview.snapshot.failed"
         or event.eventType in {"presentation.source.unavailable", "presentation.source.recovered",
@@ -404,6 +399,7 @@ def _isOperationalEvent(event: RuntimeEvent) -> bool:
         or event.eventType.startswith("device.")
         or event.eventType.startswith("job.")
         or event.eventType.startswith("workflow.")
+        or event.eventType.startswith("subflow.")
         or event.eventType.startswith("dispatch.")
         or event.eventType.startswith("loop.")
         or event.eventType.startswith("node.")
@@ -433,7 +429,12 @@ def _projectEvent(event: RuntimeEvent) -> dict[str, object]:
                 "jobId",
                 "ownerId",
                 "workflowId",
+                "projectName",
+                "workflowName",
                 "nodeId",
+                "nodeName",
+                "targetWorkflowId",
+                "targetWorkflowName",
                 "workflowRunId",
                 "parentWorkflowRunId",
                 "nodeRunId",

@@ -1,3 +1,4 @@
+# Isolated exact-root admission verification: preserve prior outcome.
 name: Build Operator Runtime (native receipt only on rehearsal branch)
 on:
   workflow_dispatch:

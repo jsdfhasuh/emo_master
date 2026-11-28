@@ -1,1 +1,1 @@
-Phase 4 isolated transport: new manual-only origin for diagnostics v2. No push/PR replay.
+Phase 4 isolated transport: new manual-only origin for repository-authenticated public readback v3.

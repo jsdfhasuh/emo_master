@@ -57,5 +57,9 @@
 ## 未验证项
 
 - 使用软件 Runtime、模拟设备和临时工程。真实相机、PLC、现场工程、真实设备人工验收，以及冻结版桌面安装包未验证。
-- GitHub 托管矩阵未触发。此前未执行 Linux Web 浏览器步骤、Web 的 3 个 POSIX 专属用例，以及工作流未选中的独立 `test_web_start_capture`。本次收尾未重跑 Source / Web 全量、Linux 或浏览器验证。
-- 两轮对比留待后续需求。交付仅在本地，未推送、合并或发布。
+- 此前本地验收阶段未触发 GitHub 托管矩阵，未执行 Linux Web 浏览器步骤、Web 的 3 个 POSIX 专属用例，以及工作流未选中的独立 `test_web_start_capture`。上述定向复验未重跑 Source / Web 全量、Linux 或浏览器验证。
+
+## 后续项
+
+- 非阻断：Web、Operator 本机日志详情和 Markdown 导出中，子工作流生命周期事件的父调用节点 ID 标签容易被读成子工作流自身的节点。后续可统一标明父调用关系。
+- 两轮对比留待后续需求。

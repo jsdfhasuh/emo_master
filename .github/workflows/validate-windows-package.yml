@@ -1,3 +1,4 @@
+# Isolated exact-root admission verification: preserve prior outcome.
 # Isolated BuildOnly receipt for 348a39f42a5f8d43d3319a894857db9e9e6ce059
 name: Validate frozen Windows package (native rehearsal receipt only)
 on:

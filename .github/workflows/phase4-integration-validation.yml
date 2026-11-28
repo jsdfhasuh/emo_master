@@ -1,0 +1,31 @@
+name: Phase 4 merged candidate strict proof
+on:
+  push:
+    branches: [dot/phase4-integration-strict]
+    paths: [.github/workflows/phase4-integration-validation.yml]
+permissions:
+  contents: read
+jobs:
+  strict:
+    if: github.repository_id == '1343796337' && github.ref == 'refs/heads/dot/phase4-integration-strict'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    env:
+      OPENSPEC_TELEMETRY: 0
+      OPENSPEC_NO_UPDATE_CHECK: 1
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          sparse-checkout: |
+            scripts/ci_cutover
+            openspec
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '22.22.0'
+          package-manager-cache: false
+      - name: Run only broker contracts
+        run: python3 -m unittest discover -s scripts/ci_cutover -p 'test_*.py' -v
+      - name: Verify cutover OpenSpec strict
+        run: npx --yes --package=@fission-ai/openspec@1.16.1 openspec validate complete-public-ci-cutover-20261127 --strict

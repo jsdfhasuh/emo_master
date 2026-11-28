@@ -266,18 +266,23 @@ def deviceBytePreview(record):
 
 def recordDetails(record, *, utf8=False):
     preview = deviceBytePreview(record)
-    data = ''
+    lines = []
     byteTruncated = bool(record.get('truncated'))
-    if preview:
+    if preview is not None:
         data, text, byteTruncated = preview
-        if utf8 and text is not None:
-            data = repr(text)
+        lines.append(repr(text) if utf8 and text is not None else data)
+    if byteTruncated:
+        lines.append('[原始数据已截断]')
+    if record.get('fieldsTruncated'):
+        lines.append('[部分诊断字段已截断]')
     fields = ' · '.join(f'{label} {record[key]}' for key, label in (
         ('deviceId', '设备'), ('action', '动作'), ('channelId', '通道'), ('slot', '槽位'), ('outcome', '结果')
     ) if record.get(key) not in (None, ''))
-    return (fields + '\n' if fields else '') + data + ('\n[原始数据已截断]' if byteTruncated else '') + (
-        '\n[部分诊断字段已截断]' if record.get('fieldsTruncated') else '') + '\n' + json.dumps(
-        {key: value for key, value in record.items() if key != 'dataHex'}, ensure_ascii=False, indent=2)
+    if fields:
+        lines.append(fields)
+    lines.append(json.dumps({key: value for key, value in record.items() if key != 'dataHex'},
+                            ensure_ascii=False, indent=2))
+    return '\n'.join(lines)
 
 
 class DeviceDiagnosticsView(QWidget):

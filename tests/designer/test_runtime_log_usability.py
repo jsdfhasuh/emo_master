@@ -210,7 +210,7 @@ def testNavigationChangesWorkflowAndSelectionWithoutApplyingParamsOrDirty(
     assert entry.detailPayload()["projectId"] == window._currentProjectId()
     assert entry.detailPayload()["nodeRunId"] == "node-run"
     assert entry.iterationPath == (2,)
-    assert entry.payload == {"path": "missing.png"}
+    assert entry.payload == {"path": "missing.png", "projectRevision": window.workflowStore.project["revision"]}
 
 
 @pytest.mark.parametrize("change,expected", [

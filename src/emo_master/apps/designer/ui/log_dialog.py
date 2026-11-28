@@ -243,7 +243,7 @@ try:
             header = self.table.horizontalHeader()
             header.setStretchLastSection(False)
             header.setSectionsMovable(True)
-            for visualIndex, column in enumerate((0, 1, 8, 2, 6, 4, 5, 9, 7, 3)):
+            for visualIndex, column in enumerate((0, 1, 4, 5, 9, 8, 2, 6, 7, 3)):
                 header.moveSection(header.visualIndex(column), visualIndex)
             for column, width in enumerate((188, 58, 120, 120, 132, 148, 58, 100, 116, 360)):
                 self.table.setColumnWidth(column, width)

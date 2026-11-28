@@ -1,2 +1,1 @@
-Isolated GitHub native event receipt after protected Stage 4 Broker deployment.
-No private source, production route, or product workload.
+Phase 4 isolated transport: fresh push and PR receipt for broker follow-up 2026-11-28.

@@ -69,6 +69,20 @@ def readListenerSettings(preferences=None, *, allowLan=None, host=None, port=Non
     return replace(settings, **overrides)
 
 
+def listenerArgumentOverrides(args, settings):
+    flags = []
+    if args.allow_lan is not None:
+        flags.append("--allow-lan" if args.allow_lan else "--local-only")
+    if settings.allowLan:
+        if args.listen_host is not None:
+            flags.append("--listen-host")
+        if args.listen_port is not None:
+            flags.append("--listen-port")
+    if args.display_subscriptions_per_job is not None:
+        flags.append("--display-subscriptions-per-job")
+    return tuple(flags)
+
+
 def listenerSettingsJson(settings):
     return json.dumps(asdict(settings), ensure_ascii=False, sort_keys=True)
 

@@ -1,3 +1,5 @@
+from datetime import datetime
+import json
 import threading
 from types import SimpleNamespace
 
@@ -7,7 +9,7 @@ from PySide2.QtGui import QTextCursor
 from PySide2.QtTest import QTest
 from PySide2.QtWidgets import QAbstractItemView
 
-from emo_master.apps.operator_runtime.log_reader import LogRecord, MAX_RECORDS, ReadCursor, ReadResult
+from emo_master.apps.operator_runtime.log_reader import LogRecord, MAX_RECORDS, ReadCursor, ReadResult, formatLocalTimestamp
 from emo_master.apps.operator_runtime.log_view import LogFeed, RuntimeLogView
 from emo_master.apps.operator_runtime.main import OperatorWindow
 from tests.runtime.current_production_fixture import currentProductionProject
@@ -20,7 +22,7 @@ def testCompleteSelectedFileExportUsesCapturedRangeAndShowsActualCount(qtApp, tm
     from PySide2.QtWidgets import QFileDialog
     feed, path = fixtureFeed(tmp_path)
     path.write_bytes(b''.join(line(str(index), eventType='node.log') for index in range(2300)))
-    view = RuntimeLogView(feed)
+    view = localLogView(feed)
     view.show()
     feed.setVisible(True)
     target = tmp_path / 'history-export.jsonl'
@@ -34,12 +36,11 @@ def testCompleteSelectedFileExportUsesCapturedRangeAndShowsActualCount(qtApp, tm
         view.exportFileAction.trigger()
         waitFor(lambda: feed.exportWorker is not None and feed.exportWorker.done())
         waitFor(lambda: '已导出 2300' in view.statusLabel.text())
-        import json
         rows = [json.loads(value) for value in target.read_text(encoding='utf-8').splitlines()]
         assert len(rows) == 2300 and rows[0]['message'] == '0'
         assert all(row['message'] != 'after-file-dialog' for row in rows)
         assert not view.cancelExportButton.isVisible()
-        assert view.table.columnCount() == 6
+        assert view.model.columnCount() == 6
     finally:
         closeFeed(feed)
 
@@ -53,7 +54,7 @@ def testAddedSuffixConfirmsFinalTargetBeforeStartingExport(qtApp, tmp_path, monk
     source.write_bytes(line("完整日志导出"))
     feed.activePath, feed.files = source, (source,)
     feed.records = list(feed.reader.read(source).records)
-    view = RuntimeLogView(feed)
+    view = localLogView(feed)
     selected = tmp_path / "已有导出"
     target = selected.with_suffix("." + formatName)
     target.write_bytes(b"previous complete export")
@@ -90,7 +91,7 @@ def testAddedSuffixForNewTargetNeedsNoConfirmation(qtApp, tmp_path, monkeypatch)
     feed, source = fixtureFeed(tmp_path)
     source.write_bytes(line("new export"))
     feed.records = list(feed.reader.read(source).records)
-    view = RuntimeLogView(feed)
+    view = localLogView(feed)
     selected = tmp_path / "new-export"
     monkeypatch.setattr(QFileDialog, "getSaveFileName", lambda *_args: (str(selected), "JSONL (*.jsonl)"))
     monkeypatch.setattr(QMessageBox, "question", lambda *_args: pytest.fail("new target requested overwrite"))
@@ -135,8 +136,7 @@ def testExportCompletionWaitsForFutureBeforeUpdatingControls(qtApp, tmp_path, mo
     monkeypatch.setattr(exportModule, "exportLogs", export)
     feed, path = fixtureFeed(tmp_path)
     path.write_bytes(line("first"))
-    view = RuntimeLogView(feed)
-    view.sources.setCurrentIndex(2)
+    view = localLogView(feed)
     view.show()
     try:
         feed.exportFiles(tmp_path / "export.jsonl", formatName="jsonl", paths=[path])
@@ -164,8 +164,7 @@ def testHistoryExportCancelDoesNotUseBusinessBusyOrReportSuccess(qtApp, tmp_path
     from PySide2.QtWidgets import QFileDialog
     feed, path = fixtureFeed(tmp_path)
     path.write_bytes(line('first'))
-    view = RuntimeLogView(feed)
-    view.sources.setCurrentIndex(2)
+    view = localLogView(feed)
     view.show()
     feed.setVisible(True)
     target = tmp_path / 'cancelled.jsonl'
@@ -197,7 +196,6 @@ def testHistoryExportCancelDoesNotUseBusinessBusyOrReportSuccess(qtApp, tmp_path
 def testDeviceCacheExportAndRuntimeRequestAreSeparateScopes(qtApp, tmp_path, monkeypatch):
     from PySide2.QtWidgets import QFileDialog
     from emo_master.ui.communication_panel import DeviceDiagnosticsView, exportDeviceCache
-    import json
     view = DeviceDiagnosticsView()
     view.show()
     requests = []
@@ -214,6 +212,12 @@ def testDeviceCacheExportAndRuntimeRequestAreSeparateScopes(qtApp, tmp_path, mon
     assert [json.loads(line) for line in target.read_text(encoding='utf-8').splitlines()] == records
     assert '2 条已返回诊断缓存' in view.notice.text()
     view.close()
+
+
+def localLogView(feed):
+    view = RuntimeLogView(feed)
+    view.sources.setCurrentIndex(2)
+    return view
 
 
 def fixtureFeed(tmp_path):
@@ -239,15 +243,15 @@ def testRealLogLevelsDetailsPlainTextEmptyFilterAndSelectionPreservation(qtApp, 
     path.write_bytes(b"".join(line("<b>真实消息</b>", level, projectId="record-project", workflowId="historic-flow",
         nodeId="historic-node", jobId="record-job", payload={"workflowName": "记录中的流程", "password": "do-not-display"})
         for level in ("ERROR", "WARN", "INFO", "DEBUG")))
-    view = RuntimeLogView(feed)
+    view = localLogView(feed)
     view.show()
     feed.setVisible(True)
     try:
-        waitFor(lambda: view.table.rowCount() == 4)
+        waitFor(lambda: view.model.rowCount() == 4)
         assert path.name in view.statusLabel.text()
         for index in range(1, 5):
             view.levelCombo.setCurrentIndex(index)
-            assert view.table.rowCount() == 1
+            assert view.model.rowCount() == 1
         view.table.selectRow(0)
         assert "E_SYNTHETIC" in view.detail.toPlainText()
         assert "historic-node" in view.detail.toPlainText() and "record-job" in view.detail.toPlainText()
@@ -258,22 +262,165 @@ def testRealLogLevelsDetailsPlainTextEmptyFilterAndSelectionPreservation(qtApp, 
         with path.open("ab") as handle:
             handle.write(line("new debug", "DEBUG"))
         feed.refresh()
-        waitFor(lambda: view.table.rowCount() == 2)
-        assert view._shownRecords[view.table.currentRow()].identity == selected
+        waitFor(lambda: view.model.rowCount() == 2)
+        assert view.model.records[view.table.currentIndex().row()].identity == selected
         view.levelCombo.setCurrentIndex(1)
         feed.records = [row for row in feed.records if row.data["level"] != "ERROR"]
         feed.updated.emit()
-        assert not view.table.rowCount() and "无匹配" in view.emptyLabel.text()
+        assert not view.model.rowCount() and "无匹配" in view.emptyLabel.text()
         QTest.mouseClick(view.resetButton, Qt.LeftButton)
-        assert view.levelCombo.currentIndex() == 0 and view.table.rowCount() == 4
+        assert view.levelCombo.currentIndex() == 0 and view.model.rowCount() == 4
     finally:
         closeFeed(feed)
+
+
+def testCombinedFiltersTimeAndClipboardOnlyUseDisplayedRedactedRecords(qtApp, tmp_path):
+    feed, path = fixtureFeed(tmp_path)
+    stamp = 1770000000123
+    match = line("find this; password=never-copy", "WARNING", component="device", timestampMs=stamp,
+                 jobId="CaseSensitiveJob", payload={"deviceId": "camera-full-id", "token": "never-copy"})
+    path.write_bytes(match + b"".join((
+        line("other device", "WARNING", component="device", jobId="CaseSensitiveJob", payload={"deviceId": "other"}),
+        line("other level", "ERROR", component="device", jobId="CaseSensitiveJob", payload={"deviceId": "camera-full-id"}),
+        line("other module", "WARNING", component="runtime", jobId="CaseSensitiveJob", payload={"deviceId": "camera-full-id"}),
+        line("other keyword", "WARN", component="device", jobId="unmatched", payload={"deviceId": "camera-full-id"}),
+    )))
+    feed.activePath = feed.historyPath = path
+    feed.files = (path,)
+    feed.records = list(feed.reader.read(path).records)
+    view = localLogView(feed)
+    view.show()
+    try:
+        assert not view.copyDetailButton.isEnabled() and not view.copyRawButton.isEnabled()
+        view.levelCombo.setCurrentIndex(view.levelCombo.findData("WARN"))
+        view.componentCombo.setCurrentIndex(view.componentCombo.findData("device"))
+        view.setDevice("camera-full-id", "出入口相机")
+        assert view.deviceFilter.isVisible() and view.deviceLabel.toolTip() == "camera-full-id"
+        assert "出入口相机" in view.deviceLabel.text() and view.model.rowCount() == 2
+        view.keywordEdit.setText("CASESENSITIVEJOB")
+        assert view.keywordTimer.isActive() and view.model.rowCount() == 2
+        waitFor(lambda: view.model.rowCount() == 1)
+        assert view.model.records[0] is feed.records[0]
+        assert "当前显示 1 条" in view.statusLabel.text() and "仅限已加载记录" in view.statusLabel.text()
+
+        time = view.model.index(0, 0)
+        assert time.data() == datetime.fromtimestamp(stamp / 1000).isoformat(sep=" ", timespec="milliseconds")
+        assert str(stamp) in time.data(Qt.ToolTipRole) and "2026-10-25T02:03:04+00:00" in time.data(Qt.ToolTipRole)
+        level = view.model.index(0, 1)
+        assert level.data() == "WARNING" and level.data(Qt.ForegroundRole).color().isValid()
+        view.table.selectRow(0)
+        QTest.mouseClick(view.copyDetailButton, Qt.LeftButton)
+        details = qtApp.clipboard().text()
+        assert str(stamp) in details and "2026-10-25T02:03:04+00:00" in details
+        assert "never-copy" not in details and "<redacted>" in details
+        assert not view.raw.isVisible()
+        QTest.mouseClick(view.copyRawButton, Qt.LeftButton)
+        raw = qtApp.clipboard().text()
+        assert "never-copy" not in raw and json.loads(raw) == feed.records[0].data
+        assert path.read_bytes().startswith(match)
+
+        QTest.mouseClick(view.clearDeviceButton, Qt.LeftButton)
+        assert not view.deviceFilter.isVisible() and not view.deviceId and view.model.rowCount() == 2
+        assert (view.levelCombo.currentData(), view.componentCombo.currentData(), view.keywordEdit.text()) == (
+            "WARN", "device", "CASESENSITIVEJOB",
+        )
+        feed.records = [feed.records[3]]  # The selected module disappears after changing source.
+        feed.updated.emit()
+        assert view.componentCombo.currentData() == "device" and "当前已加载记录无匹配" in view.emptyLabel.text()
+        assert not view.copyRawButton.isEnabled() and not view.raw.toPlainText()
+        view.resetButton.click()
+        assert view.sources.currentIndex() == 2
+        assert view.model.rowCount() == 1 and not view.emptyLabel.isVisible()
+        assert feed.historyPath == path and view.fileCombo.currentData() == str(path)
+        feed.records = []
+        feed.updated.emit()
+        assert "暂无已加载记录" in view.emptyLabel.text()
+        feed.error = "synthetic read failure"
+        feed.updated.emit()
+        assert "读取失败" in view.emptyLabel.text()
+    finally:
+        closeFeed(feed)
+        view.close()
+
+
+def testLocalTimestampWithExplicitOffsetAndUncertainTimestampFallback():
+    iso = "2026-10-25T10:03:04.125+08:00"
+    local = datetime.fromisoformat(iso).astimezone().replace(tzinfo=None)
+    assert formatLocalTimestamp({"timestamp": iso, "timestampMs": "invalid"}) == local.isoformat(
+        sep=" ", timespec="milliseconds")
+    assert formatLocalTimestamp({"timestamp": "2026-10-25 10:03:04"}) == "2026-10-25 10:03:04"
+    assert formatLocalTimestamp({"timestamp": "malformed"}) == "malformed"
+
+
+@pytest.mark.parametrize("scope", ["current", "selected-file", "all-files"])
+def testEveryExportScopeFreezesAllFiltersIncludingPendingSearch(qtApp, tmp_path, monkeypatch, scope):
+    from PySide2.QtWidgets import QFileDialog
+    feed, source = fixtureFeed(tmp_path)
+    history = tmp_path / "runtime-history.jsonl"
+    keyword = "Snapshot-Value"
+    device = {"deviceId": "camera-full-id"}
+
+    def matching(message):
+        return line(message, "WARNING", component="camera", jobId=keyword, payload=device)
+
+    excluded = b"".join((
+        line("wrong device", "WARN", component="camera", jobId=keyword, payload={"deviceId": "other"}),
+        line("wrong module", "WARN", component="runtime", jobId=keyword, payload=device),
+        line("wrong search", "WARN", component="camera", jobId="other", payload=device),
+        line("wrong level", "INFO", component="camera", jobId=keyword, payload=device),
+    ))
+    source.write_bytes(matching("before-loaded-window") + excluded * 501 + matching("shown"))
+    history.write_bytes(matching("other-file"))
+    feed.activePath, feed.files = source, (source, history)
+    feed.records = list(feed.reader.read(source).records)
+    lengths = [source.stat().st_size, history.stat().st_size]
+    view = localLogView(feed)
+    view.levelCombo.setCurrentIndex(view.levelCombo.findData("WARN"))
+    view.componentCombo.setCurrentIndex(view.componentCombo.findData("camera"))
+    view.setDevice("camera-full-id")
+    view.keywordEdit.setText(keyword.upper())
+    assert view.keywordTimer.isActive()
+    target = tmp_path / f"{scope}.json"
+
+    def choose(*_args):
+        assert [row.data["message"] for row in view.model.records] == ["shown"]
+        assert not view.keywordTimer.isActive()
+        view.resetButton.click()
+        assert view.sources.currentIndex() == 2
+        for path in (source, history):
+            with path.open("ab") as stream:
+                stream.write(matching("after-destination-dialog"))
+        return str(target), "JSON (*.json)"
+
+    monkeypatch.setattr(QFileDialog, "getSaveFileName", choose)
+    try:
+        view.exportLogs(history=scope != "current", allFiles=scope == "all-files")
+        expected = ["shown"] if scope == "current" else ["before-loaded-window", "shown"]
+        if scope == "all-files":
+            expected.append("other-file")
+        waitFor(lambda: f"已导出 {len(expected)}" in feed.exportMessage)
+        data = json.loads(target.read_text(encoding="utf-8"))
+        assert [record["message"] for record in data["entries"]] == expected
+        filters = data["filters"]
+        assert filters["level"] == "WARN" and filters["component"] == "camera" and filters["deviceId"] == "camera-full-id"
+        assert filters["keywordApplied"] is True and keyword.casefold() not in json.dumps(filters).casefold()
+        if scope == "current":
+            assert data["retainedCount"] == 2000 and "files" not in filters
+        else:
+            expectedOffsets = lengths if scope == "all-files" else lengths[:1]
+            assert [item["endOffset"] for item in filters["files"]] == expectedOffsets
+        assert all(record["timestamp"] == "2026-10-25T02:03:04+00:00" for record in data["entries"])
+    finally:
+        closeFeed(feed)
+        if feed.exportPool is not None:
+            feed.exportPool.shutdown(wait=True)
+        view.close()
 
 
 def testRotationFollowsActiveButHistoryStaysSelectedAndReadFailureCanRefresh(qtApp, tmp_path):
     feed, first = fixtureFeed(tmp_path)
     first.write_bytes(line("first"))
-    view = RuntimeLogView(feed)
+    view = localLogView(feed)
     view.show()
     feed.setVisible(True)
     try:
@@ -310,7 +457,7 @@ def testFileLabelsTrackActiveWriterWithUnchangedFileList(qtApp, tmp_path):
     second = tmp_path / "runtime-second.jsonl"
     first.write_bytes(line("first file"))
     second.write_bytes(line("second file"))
-    view = RuntimeLogView(feed)
+    view = localLogView(feed)
     view.show()
     feed.setVisible(True)
     try:
@@ -345,6 +492,7 @@ def testManuallySelectedActiveLogMatchesWindowRecentLogs(qtApp, tmp_path):
         waitFor(lambda: window.controller is not None and not window.busy
                 and window.logFeed.records and window.logFeed.worker is None)
         window.showLogs()
+        window.logView.sources.setCurrentIndex(2)
         waitFor(lambda: window.logFeed.worker is None)
         active = window.logFeed.activePath
         assert active.name.startswith('runtime_app-')
@@ -372,6 +520,7 @@ def testStartupDiagnosticsPreserveReadingStateOnRefresh(qtApp, tmp_path, appendD
     try:
         waitFor(lambda: window.initializationFailed and not window.busy)
         window.showLogs()
+        window.logView.sources.setCurrentIndex(2)
         waitFor(lambda: window.logFeed.worker is None and window.logView.diagnostics.toPlainText())
         waitMs(100)  # Finish the initial native page layout before recording scroll state.
         edit = window.logView.diagnostics
@@ -401,13 +550,13 @@ def testStartupDiagnosticsPreserveReadingStateOnRefresh(qtApp, tmp_path, appendD
 def testLogAppendPreservesHorizontalScroll(qtApp, tmp_path, followLatest):
     feed, path = fixtureFeed(tmp_path)
     path.write_bytes(b"".join(line(f"record-{index}") for index in range(100)))
-    view = RuntimeLogView(feed)
+    view = localLogView(feed)
     view.resize(1060, 800)
     view.show()
     view.followLatest.setChecked(followLatest)
     feed.setVisible(True)
     try:
-        waitFor(lambda: view.table.rowCount() == 100 and feed.worker is None)
+        waitFor(lambda: view.model.rowCount() == 100 and feed.worker is None)
         view.table.setColumnWidth(0, 900)
         view.table.setColumnWidth(2, 500)
         view.table.selectRow(40)
@@ -416,19 +565,23 @@ def testLogAppendPreservesHorizontalScroll(qtApp, tmp_path, followLatest):
         horizontal.setValue(horizontal.maximum())
         before = horizontal.value()
         assert before > 0
-        selected = view._shownRecords[view.table.currentRow()].identity
-        anchor = view._shownRecords[view.table.rowAt(0)].identity
+        selected = view.model.records[view.table.currentIndex().row()].identity
+        anchor = view.model.records[view.table.rowAt(0)].identity
+        inserted, resets = [], []
+        view.model.rowsInserted.connect(lambda _parent, first, last: inserted.append((first, last)))
+        view.model.modelReset.connect(lambda: resets.append(True))
         with path.open("ab") as handle:
             handle.write(line("appended record"))
         feed.refresh()
-        waitFor(lambda: view.table.rowCount() == 101 and feed.worker is None)
+        waitFor(lambda: view.model.rowCount() == 101 and feed.worker is None)
         assert horizontal.value() == before
-        assert view._shownRecords[view.table.currentRow()].identity == selected
+        assert view.model.records[view.table.currentIndex().row()].identity == selected
+        assert inserted == [(100, 100)] and not resets
         if followLatest:
             vertical = view.table.verticalScrollBar()
             assert vertical.value() == vertical.maximum() and vertical.maximum() > 0
         else:
-            assert view._shownRecords[view.table.rowAt(0)].identity == anchor
+            assert view.model.records[view.table.rowAt(0)].identity == anchor
     finally:
         closeFeed(feed)
 
@@ -476,7 +629,7 @@ def testWriterBecomingReadyPreservesHistoryChoiceAndComboMatchesFeed(qtApp, tmp_
     history = tmp_path / "runtime-history.jsonl"
     history.write_bytes(line("historical record"))
     feed = LogFeed(tmp_path)
-    view = RuntimeLogView(feed)
+    view = localLogView(feed)
     feed.setVisible(True)
     try:
         feed.selectFile(history)
@@ -504,7 +657,7 @@ def testViewCapAndFileOffsetKeepRepeatedTrueErrors(qtApp, tmp_path):
                          ids=["item-scroll", "pixel-scroll"])
 def testViewCapPreservesReadingAnchorAndSelectionWhileAppending(qtApp, tmp_path, scrollMode):
     feed, path = fixtureFeed(tmp_path)
-    view = RuntimeLogView(feed)
+    view = localLogView(feed)
     view.table.setVerticalScrollMode(scrollMode)
     view.resize(1060, 800)
     view.show()
@@ -520,34 +673,46 @@ def testViewCapPreservesReadingAnchorAndSelectionWhileAppending(qtApp, tmp_path,
     def topRecord():
         row = view.table.rowAt(0)
         assert row >= 0
-        return view._shownRecords[row].identity, view.table.rowViewportPosition(row)
+        return view.model.records[row].identity, view.table.rowViewportPosition(row)
 
     try:
         append(0, MAX_RECORDS, reset=True)
         view.table.selectRow(3505)
-        view.table.scrollToItem(view.table.item(3500, 0), QAbstractItemView.PositionAtTop)
+        view.table.scrollTo(view.model.index(3500, 0), QAbstractItemView.PositionAtTop)
         if scrollMode == QAbstractItemView.ScrollPerPixel:
             view.table.verticalScrollBar().setValue(view.table.verticalScrollBar().value() + 11)
         qtApp.processEvents()
         anchor = topRecord()
-        selected = view._shownRecords[view.table.currentRow()].identity
+        selected = view.model.records[view.table.currentIndex().row()].identity
         detail = view.detail.toPlainText()
         assert anchor[0] == (str(path), 3500)
-        assert view.table.visualItemRect(view.table.item(3505, 0)).intersects(view.table.viewport().rect())
+        assert view.table.visualRect(view.model.index(3505, 0)).intersects(view.table.viewport().rect())
+
+        cursor = view.detail.textCursor()
+        cursor.setPosition(0)
+        cursor.setPosition(5, QTextCursor.KeepAnchor)
+        view.detail.setTextCursor(cursor)
+        detailSelection = cursor.selectedText()
+        removed, resets = [], []
+        view.model.rowsRemoved.connect(lambda _parent, first, last: removed.append((first, last)))
+        view.model.modelReset.connect(lambda: resets.append(True))
+        feed.updated.emit()
+        assert view.detail.textCursor().selectedText() == detailSelection and not resets and not removed
 
         append(MAX_RECORDS, 200)
         assert len(feed.records) == MAX_RECORDS and feed.records[0].offset == 200
+        assert removed == [(0, 199)] and not resets
         assert topRecord() == anchor
-        assert view._shownRecords[view.table.currentRow()].identity == selected
-        assert view.table.visualItemRect(view.table.item(view.table.currentRow(), 0)).intersects(view.table.viewport().rect())
-        assert view.detail.toPlainText() == detail
+        assert view.model.records[view.table.currentIndex().row()].identity == selected
+        assert view.table.visualRect(view.table.currentIndex()).intersects(view.table.viewport().rect())
+        assert view.detail.toPlainText() == detail and view.detail.textCursor().selectedText() == detailSelection
 
         # Once the anchor itself expires, show the earliest retained record.
         view.table.selectRow(10)
-        view.table.scrollToItem(view.table.item(5, 0), QAbstractItemView.PositionAtTop)
+        view.table.scrollTo(view.model.index(5, 0), QAbstractItemView.PositionAtTop)
         append(MAX_RECORDS + 200, 200)
         assert topRecord() == ((str(path), 400), 0)
-        assert view.table.currentRow() == -1
+        assert not view.table.currentIndex().isValid()
         assert not view.raw.toPlainText()
 
         view.followLatest.setChecked(True)
@@ -562,7 +727,7 @@ def testViewCapPreservesReadingAnchorAndSelectionWhileAppending(qtApp, tmp_path,
 def testOpenFolderUsesActualCurrentDirectoryAndReportsMissingOrSystemFailure(qtApp, tmp_path, monkeypatch):
     from emo_master.apps.operator_runtime import log_view
     feed = LogFeed(tmp_path / "中文 logs")
-    view = RuntimeLogView(feed)
+    view = localLogView(feed)
     calls = []
     monkeypatch.setattr(log_view.QDesktopServices, "openUrl", lambda url: calls.append(url.toLocalFile()) or False)
     assert not view.openFolder() and not calls
@@ -588,21 +753,35 @@ def testContinuousBusinessPageSessionJobAndDraftSurviveTools(qtApp, tmp_path):
         panel = window.startupPage.storage
         panel.nextEdit.setText(str(tmp_path / "unsaved"))
         window.showLogs()
-        window.logView.levelCombo.setCurrentIndex(1)
+        logView = window.logView
+        logView.sources.setCurrentIndex(2)
+        logView.levelCombo.setCurrentIndex(1)
         waitFor(lambda: bool(window.logFeed.records))
+        component = window.logFeed.records[-1].data["component"]
+        assert logView.componentCombo.findData(component) > 0
+        logView.componentCombo.setCurrentIndex(logView.componentCombo.findData(component))
+        logView.keywordEdit.setText("saved reading filter")
+        logView.setDevice("device-full-id")
+        waitFor(lambda: not logView.keywordTimer.isActive())
         window.backFromTool()
         assert window.contentStack.currentWidget() is window.startupPage and "未保存" in panel.feedback.text()
         assert panel.save()  # Saving remains available while running.
         window.backFromTool()
         assert window.contentStack.currentWidget() is window.businessHost
         assert (window.controller.jobId, window.pages, window.session, window.hub) == (job, pages, session, hub)
-        assert not session.stop.is_set() and window.stopButton.isEnabled() and not window.openButton.isEnabled()
+        assert not session.stop.is_set() and window.stopButton.isEnabled() and not window.openAction.isEnabled()
         assert window.controller.runtime.operationalLogWriter.directory == tmp_path / "data/logs"
         window.showLogs()
-        assert window.logView.levelCombo.currentIndex() == 1
+        assert logView.sources.currentIndex() == 0
+        logView.sources.setCurrentIndex(2)
+        assert (logView.levelCombo.currentIndex(), logView.componentCombo.currentData(),
+                logView.keywordEdit.text(), logView.deviceId) == (1, component, "saved reading filter", "device-full-id")
         window.showSettings()
+        window.startupPage.ensureWidgetVisible(window.startupPage.allLogsButton)
         QTest.mouseClick(window.startupPage.allLogsButton, Qt.LeftButton)
-        assert window.logView.levelCombo.currentIndex() == 0
+        assert logView.sources.currentIndex() == 0
+        assert (logView.levelCombo.currentIndex(), logView.componentCombo.currentIndex(),
+                logView.keywordEdit.text(), logView.deviceId) == (0, 0, "", "")
         window.stopDetection()
         waitFor(lambda: not window.busy and window.state["canStart"])
         assert window.controller.jobId == job
@@ -671,6 +850,7 @@ def testUnavailableWriterShowsRealFailureAndWindowOnlyDiagnostics(qtApp, tmp_pat
     try:
         waitFor(lambda: window.controller is not None and not window.busy)
         window.showLogs()
+        window.logView.sources.setCurrentIndex(2)
         waitFor(lambda: window.logFeed.worker is None)
         writer = window.controller.runtime.operationalLogWriter
         assert not writer.enabled and writer.failureMessage and writer.activePath is None

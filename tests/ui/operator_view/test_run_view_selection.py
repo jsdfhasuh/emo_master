@@ -51,10 +51,20 @@ def testViewingConcurrentRemoteRunKeepsExplicitStopSelection(qtApp, tmp_path, mo
         with grpc.insecure_channel(window.controller.address) as channel:
             second = remoteStart(window, channel)
             waitFor(lambda: len(window.state.get('activeJobIds', [])) == 2 and not window.busy)
+            assert not window.pages.diagnostics.isVisible()
+            assert window.viewRunsAction in window.projectMenu.actions() and window.viewRunsAction.isEnabled()
+            canceled = []
+
+            def cancel(_parent, title, *_args):
+                canceled.append(title)
+                return '', False
+
+            monkeypatch.setattr(QInputDialog, 'getItem', cancel)
+            window.viewRunsAction.trigger()
+            waitFor(lambda: canceled == ['查看已有运行'])
+            assert window.viewSession is None
             selectJob(monkeypatch, second)
-            QTest.mouseClick(window.pages.diagnosticToggle, Qt.LeftButton)
-            assert window.viewRunsButton.isVisible()
-            QTest.mouseClick(window.viewRunsButton, Qt.LeftButton)
+            window.viewRunsAction.trigger()
             waitFor(lambda: window.viewSession is not None and not window.busy or window.error)
             assert not window.error
             window.pages.navigate('main')
@@ -63,8 +73,8 @@ def testViewingConcurrentRemoteRunKeepsExplicitStopSelection(qtApp, tmp_path, mo
             assert {scope.result.identity.jobId for scope in window.pages.displayed.values()} == {second}
             assert window.viewSession.jobId == second and window.session is originalSession
             assert window.controller.sessions['main'].jobId == first and window.state['jobId'] == first
-            assert not window.pages.diagnostics.isVisible() and window.pages.hostMessage.isVisible()
-            summary = window.pages.hostMessage.text()
+            assert not window.pages.diagnostics.isVisible() and window.viewingLabel.isVisible()
+            summary = window.viewingLabel.text()
             assert f'查看：Main · {second[:8]}' in summary and f'默认 {first[:8]}' in summary
             QTest.mouseClick(window.pages.diagnosticToggle, Qt.LeftButton)
             QTest.mouseClick(window.returnRunButton, Qt.LeftButton)
@@ -75,10 +85,17 @@ def testViewingConcurrentRemoteRunKeepsExplicitStopSelection(qtApp, tmp_path, mo
             assert window.controller.runtime.jobRepository.get(second).status == 'RUNNING'
 
             QTest.mouseClick(window.pages.diagnosticToggle, Qt.LeftButton)
-            QTest.mouseClick(window.viewRunsButton, Qt.LeftButton)
+            window.viewRunsAction.trigger()
             waitFor(lambda: window.viewSession is not None and not window.busy or window.error)
             assert not window.error and window.pages.currentPageId == 'main'
             assert window.viewSession.jobId == second
+            window.showLogs()
+            assert window.viewingLabel.isVisible() and window.viewingLabel.text() == summary
+            monkeypatch.setattr(QInputDialog, 'getItem', cancel)
+            QTest.mouseClick(window.stopButton, Qt.LeftButton)
+            waitFor(lambda: canceled == ['查看已有运行', '停止运行'])
+            assert window.viewSession.jobId == second
+            assert all(window.controller.runtime.jobRepository.get(job).status == 'RUNNING' for job in (first, second))
             defaults = []
             def stopSelected(_parent, title, _label, items, current, _editable):
                 assert title == '停止运行'
@@ -92,9 +109,11 @@ def testViewingConcurrentRemoteRunKeepsExplicitStopSelection(qtApp, tmp_path, mo
             assert not window.controller.runtime.jobSupervisor.ownsJobResources(first)
             assert window.controller.runtime.jobRepository.get(second).status == 'RUNNING'
             assert window.viewSession.jobId == second
-            assert f'停止对象：{second[:8]}' in window.pages.hostMessage.text()
+            assert f'停止对象：{second[:8]}' in window.viewingLabel.text()
+            QTest.mouseClick(window.backButton, Qt.LeftButton)
+            assert window.viewSession.jobId == second
             QTest.mouseClick(window.pages.diagnosticToggle, Qt.LeftButton)
-            assert second in window.viewingLabel.text() and window.returnRunButton.isVisible()
+            assert second in window.viewingLabel.toolTip() and window.returnRunButton.isVisible()
             QTest.mouseClick(window.returnRunButton, Qt.LeftButton)
             waitFor(lambda: not window.busy and window.viewSession is None)
             assert window.controller.runtime.jobRepository.get(second).status == 'RUNNING'
@@ -133,7 +152,7 @@ def testCompletedNonStartupRunHasIndependentVisiblePage(qtApp, tmp_path, monkeyp
         waitFor(lambda: any(row['jobId'] == job for row in window.state.get('runCatalog', [])) and not window.busy)
         assert set(window.controller.sessions) == {'main'} and not window.controller.jobId
         selectJob(monkeypatch, job)
-        QTest.mouseClick(window.viewRunsButton, Qt.LeftButton)
+        window.viewRunsAction.trigger()
         waitFor(lambda: window.viewSession is not None and not window.busy or window.error)
         assert not window.error
         waitFor(lambda: bool(window.pages.displayed))
@@ -170,7 +189,7 @@ def testNormalSharedDispatchCaptureAndExplicitConsumerView(qtApp, tmp_path, monk
         assert captures[producer]['capture'] and captures[consumer]['capture']
         waitFor(lambda: any(row['jobId'] == consumer for row in window.state.get('runCatalog', [])) and not window.busy)
         selectJob(monkeypatch, consumer)
-        QTest.mouseClick(window.viewRunsButton, Qt.LeftButton)
+        window.viewRunsAction.trigger()
         waitFor(lambda: window.viewSession is not None and not window.busy or window.error)
         assert not window.error and isinstance(window.viewSession, DispatchDisplaySession)
         assert set(window.viewSession.sessions) == {producer, consumer}

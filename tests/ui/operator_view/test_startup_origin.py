@@ -4,7 +4,11 @@ import json
 import pytest
 
 from emo_master.apps.operator_runtime import main as entry
-from emo_master.apps.operator_runtime.settings import DEFAULT_ROOT_KEY, SOURCE_LABELS
+from emo_master.apps.operator_runtime.settings import (
+    DEFAULT_ROOT_KEY, LISTENER_SETTINGS_KEY, SOURCE_LABELS, ListenerSettings, listenerSettingsJson,
+    readListenerSettings,
+)
+from tests.runtime.current_production_fixture import currentProductionProject
 from tests.ui.operator_view.test_production_window import closeWindow, preferences
 from tests.ui.operator_view.test_view import waitFor
 
@@ -123,3 +127,40 @@ def testMainFailedSavedRootRetryKeepsOriginAndNextLaunchAdoptsSavedChange(qtApp,
         assert (target / "runtime.sqlite3").is_file()
 
     runEntrypoint(qtApp, monkeypatch, prefs, ["--local-only"], restarted)
+
+
+def testMainShowsRealCliListenerOverridesAndKeepsLiveJobOnSave(qtApp, tmp_path, monkeypatch):
+    project, _ = currentProductionProject(tmp_path / "image-project", mode="continuous", autoStart=True)
+    prefs = preferences(tmp_path)
+    saved = ListenerSettings(True, "127.0.0.1", 50057, 3)
+    prefs.setValue(LISTENER_SETTINGS_KEY, listenerSettingsJson(saved))
+
+    def inspect(window):
+        waitFor(lambda: window.error or window.state.get("state") == "RUNNING" and not window.busy)
+        assert not window.error
+        owner = window.controller
+        jobId, server = owner.jobId, owner.server
+        assert jobId and server is not None and server.port
+        window.showSettings()
+        panel = window.startupPage.network
+        assert "--local-only" in panel.overrideLabel.text()
+        assert "--display-subscriptions-per-job" in panel.overrideLabel.text()
+        assert "--listen-host" not in panel.overrideLabel.text() and "--listen-port" not in panel.overrideLabel.text()
+        assert f"已监听 127.0.0.1:{server.port}" in panel.currentLabel.text()
+        assert "最多 6 个" in panel.currentLabel.text() and "最多 3 个" in panel.savedLabel.text()
+        panel.subscriptions.setValue(8)
+        assert "未保存" in panel.feedback.text()
+        window.showLogs()
+        window.backFromTool()
+        assert window.contentStack.currentWidget() is window.startupPage
+        assert panel.subscriptions.value() == 8 and "未保存" in panel.feedback.text()
+        assert panel.save()
+        assert readListenerSettings(prefs) == ListenerSettings(True, "127.0.0.1", 50057, 8)
+        assert "最多 8 个" in panel.savedLabel.text() and "最多 6 个" in panel.currentLabel.text()
+        window.backFromTool()
+        assert window.contentStack.currentWidget() is window.businessHost
+        assert owner.server is server and owner.jobId == jobId and owner.runtime.jobSupervisor.ownsJobResources(jobId)
+
+    runEntrypoint(qtApp, monkeypatch, prefs, [str(project), "--data-root", str(tmp_path / "entry-data"),
+        "--local-only", "--listen-host", "192.0.2.1", "--listen-port", "51000",
+        "--display-subscriptions-per-job", "6"], inspect)

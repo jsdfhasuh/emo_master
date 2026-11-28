@@ -1,0 +1,48 @@
+{
+  "platform": "windows",
+  "scale": "1",
+  "devicePixelRatio": 1.0,
+  "screenGeometry": [
+    0,
+    0,
+    1920,
+    1080
+  ],
+  "availableGeometry": [
+    0,
+    0,
+    1920,
+    1032
+  ],
+  "checks": [
+    "home-default-and-narrow",
+    "long-path-settings-draft",
+    "log-error-and-raw",
+    "manual-active-log-label",
+    "back-preserves-draft",
+    "keyboard-focus",
+    "recent-failure-keeps-recovery-then-valid-project-loads",
+    "tools-preserve-job-page-session-hub",
+    "single-job-stops-from-logs",
+    "narrow-dpi-hidden-custom-stop",
+    "listener-setting-save-during-run",
+    "window-normal-geometry-and-maximized-restored",
+    "initialization-failure-still-has-tools-and-unwritten-reason"
+  ],
+  "screens": [
+    "docs\\testing\\2026-11-28-operator-runtime-r4\\native-100\\home-1060x800.png",
+    "docs\\testing\\2026-11-28-operator-runtime-r4\\native-100\\home-700x620.png",
+    "docs\\testing\\2026-11-28-operator-runtime-r4\\native-100\\settings-expanded-long-path.png",
+    "docs\\testing\\2026-11-28-operator-runtime-r4\\native-100\\logs-error-details.png",
+    "docs\\testing\\2026-11-28-operator-runtime-r4\\native-100\\recent-missing-project.png",
+    "docs\\testing\\2026-11-28-operator-runtime-r4\\native-100\\running-logs-custom.png",
+    "docs\\testing\\2026-11-28-operator-runtime-r4\\native-100\\running-listener-next-start-saved.png",
+    "docs\\testing\\2026-11-28-operator-runtime-r4\\native-100\\returned-authored-running-page.png",
+    "docs\\testing\\2026-11-28-operator-runtime-r4\\native-100\\software-stop-from-logs-complete.png",
+    "docs\\testing\\2026-11-28-operator-runtime-r4\\native-100\\reopened-normal-window.png",
+    "docs\\testing\\2026-11-28-operator-runtime-r4\\native-100\\running-logs-hidden-controls.png",
+    "docs\\testing\\2026-11-28-operator-runtime-r4\\native-100\\initialization-failed.png",
+    "docs\\testing\\2026-11-28-operator-runtime-r4\\native-100\\failure-window-only-diagnostics.png"
+  ],
+  "result": "PASS"
+}

@@ -615,7 +615,8 @@ def testA6ThirdPartyServiceUsesSameFactoryJobStateAndDeviceLogs(tmp_path, retain
         try:
             view.show()
             waitUntil(lambda: 'ticker' in view.states)
-            view.selector.setCurrentIndex(view.selector.findData('ticker'))
+            view.deviceList.setCurrentItem(view.deviceItems['ticker'])
+            assert view.selectedDeviceId() == 'ticker'
             view.close()
             assert not view.timer.isActive() and backend.snapshot()['ready']
             view.show()

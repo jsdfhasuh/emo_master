@@ -4,13 +4,15 @@ from types import SimpleNamespace
 import pytest
 from PySide2.QtCore import QSettings, Qt
 from PySide2.QtTest import QTest
-from PySide2.QtWidgets import QLabel, QWidget
+from PySide2.QtWidgets import QLabel, QPushButton, QWidget
 
 from emo_master.apps.operator_runtime import theme
 from emo_master.apps.operator_runtime.main import OperatorWindow
-from emo_master.apps.operator_runtime.settings import DEFAULT_ROOT_KEY, resolveDataRoot
-from emo_master.apps.operator_runtime.startup_page import StorageSettings
-from emo_master.apps.operator_runtime.startup_page import ListenerSettingsPanel
+from emo_master.apps.operator_runtime.settings import (
+    DEFAULT_ROOT_KEY, LISTENER_SETTINGS_KEY, ListenerSettings, listenerSettingsJson, readListenerSettings,
+    resolveDataRoot,
+)
+from emo_master.apps.operator_runtime.startup_page import ListenerSettingsPanel, StartupPage, StorageSettings
 from tests.ui.operator_view.test_production_window import closeWindow, preferences
 from tests.ui.operator_view.test_view import waitFor
 
@@ -40,19 +42,88 @@ def testOperatorToolFontUsesInstalledPreferenceOrder(qtApp, monkeypatch, familie
 
 
 def testListenerPanelPersistsNextStartupWithoutChangingCurrent(qtApp, tmp_path):
-    from emo_master.apps.operator_runtime.settings import ListenerSettings, readListenerSettings
     prefs = preferences(tmp_path)
     panel = ListenerSettingsPanel(prefs, ListenerSettings())
+    assert "尚未就绪" in panel.currentLabel.text() and "动态端口" in panel.currentLabel.text()
+    assert "下次设置（默认）" in panel.savedLabel.text() and not panel.overrideLabel.text()
+    panel.allowLan.setChecked(True)
+    assert "未保存" in panel.feedback.text() and panel.host.isEnabled() and panel.port.isEnabled()
+    panel.allowLan.setChecked(False)
+    assert not panel.feedback.text() and not panel.host.isEnabled() and not panel.port.isEnabled()
     panel.allowLan.setChecked(True)
     panel.host.setText('127.0.0.1')
     panel.port.setValue(50056)
     panel.subscriptions.setValue(6)
+    panel.setCurrent(SimpleNamespace(listenerSettings=panel.current, server=SimpleNamespace(port=50057)))
+    assert "已监听 127.0.0.1:50057" in panel.currentLabel.text()
+    assert "未保存" in panel.feedback.text()
     assert panel.save()
     assert readListenerSettings(preferences(tmp_path)) == ListenerSettings(True, '127.0.0.1', 50056, 6)
     assert panel.current == ListenerSettings() and '下次启动' in panel.feedback.text()
+    assert '已保存的下次设置' in panel.savedLabel.text() and '127.0.0.1:50056' in panel.savedLabel.text()
+    assert '127.0.0.1:50057' in panel.currentLabel.text()
+    assert not panel.overrideLabel.text()
     panel.host.setText('not an IP')
     assert not panel.save() and '保存失败' in panel.feedback.text()
+    assert panel.host.text() == 'not an IP' and '127.0.0.1:50056' in panel.savedLabel.text()
     assert readListenerSettings(preferences(tmp_path)).host == '127.0.0.1'
+    panel.host.setText('127.0.0.1')
+    assert not panel.feedback.text()
+
+
+def testListenerSaveFailureKeepsSavedValuesAndCanRetryWithSameDraft(qtApp, tmp_path):
+    prefs = preferences(tmp_path)
+    original = ListenerSettings(displaySubscriptionsPerJob=2)
+    prefs.setValue(LISTENER_SETTINGS_KEY, listenerSettingsJson(original))
+    prefs.sync()
+    path = Path(prefs.fileName())
+    originalBytes = path.read_bytes()
+    panel = ListenerSettingsPanel(prefs)
+    panel.subscriptions.setValue(6)
+    path.unlink()
+    path.mkdir()
+    try:
+        assert not panel.save()
+        assert "保存失败" in panel.feedback.text() and "无法写入" in panel.feedback.text()
+        assert panel.saved == original and readListenerSettings(prefs) == original
+        assert panel.subscriptions.value() == 6
+    finally:
+        path.rmdir()
+        path.write_bytes(originalBytes)
+    assert panel.save()
+    assert readListenerSettings(prefs).displaySubscriptionsPerJob == 6
+    assert panel.current == original and "下次启动" in panel.feedback.text()
+
+
+def testStartupRecentAndStoragePathsAreElidedButCopyRemainsExact(qtApp, tmp_path):
+    recent = str(tmp_path / ("最近项目" * 24) / ("工程名称" * 18 + ".emoproj"))
+    root = tmp_path / ("Runtime 本地目录" * 16)
+    page = StartupPage(preferences(tmp_path), resolveDataRoot(root, environment={}))
+    page.setRecentProjects([(recent, "视觉检测 A")])
+    page.resize(520, 620)
+    page.show()
+    qtApp.processEvents()
+    row = page.recentProjects.itemAt(0).widget()
+    pathLabel = next(label for label in row.findChildren(QLabel) if label.toolTip() == recent)
+    assert any(label.toolTip() == "视觉检测 A" for label in row.findChildren(QLabel))
+    assert page.recentPaths == (recent,)
+    openButton = page.recentOpenButtons[0]
+    copyButton = next(button for button in row.findChildren(QPushButton) if button.text() == "复制路径")
+    assert page.storage.currentPath.toolTip() == str(root)
+    assert "…" in QLabel.text(pathLabel) and QLabel.text(pathLabel).endswith("emoproj")
+    assert "…" in QLabel.text(page.storage.currentPath)
+    clicked = []
+    page.recentRequested.connect(clicked.append)
+    page.setProjectLoadingEnabled(False)
+    openButton.click()
+    assert not clicked and copyButton.isEnabled()
+    page.setProjectLoadingEnabled(True)
+    openButton.click()
+    assert clicked == [recent]
+    copyButton.click()
+    assert qtApp.clipboard().text() == recent
+    page.storage.copyCurrentButton.click()
+    assert qtApp.clipboard().text() == str(root)
 
 
 @pytest.mark.parametrize("source", ["explicit", "environment", "saved", "system"])

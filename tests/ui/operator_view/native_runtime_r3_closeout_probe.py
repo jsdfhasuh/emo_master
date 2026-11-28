@@ -27,7 +27,7 @@ from emo_master.apps.operator_runtime.settings import DEFAULT_ROOT_KEY
 from emo_master.clients.runtime.global_logs import RuntimeGlobalLogs
 from tests.ui.operator_view.native_runtime_r3_probe import (
     button, choosePage, chooseProject, chooseTreeItem, click, currentEvent, expose,
-    openLogJob, readPage, selectRun, showControls, softwareProject, tab,
+    openCompactDeviceDialog, openLogJob, readPage, selectRun, showControls, softwareProject, tab,
 )
 from tests.ui.operator_view.test_production_window import closeWindow, preferences
 from tests.ui.operator_view.test_run_view_selection import remoteStart
@@ -79,7 +79,7 @@ def startup(window, evidence, shot):
     font = page.allLogsButton.font()
     family = QFontInfo(font).family()
     fontMatches = font.family() == expected and family == QFontInfo(QFont(expected)).family()
-    assert str(window.resolution.path) in page.storage.currentLabel.text()
+    assert page.storage.currentPath.text() == str(window.resolution.path)
     assert page.horizontalScrollBar().maximum() == 0
     listenSave = page.network.saveButton
     assert page.viewport().rect().contains(listenSave.mapTo(page.viewport(), listenSave.rect().center()))
@@ -250,7 +250,7 @@ def checkLogViews(window, first, second, queries, evidence, shot):
     system = logs.systemLogs.table
     waitFor(lambda: bool(system.findItems("软件 Runtime 系统事件", Qt.MatchExactly)))
     tab(logs.sources, 2)
-    waitFor(lambda: logs.table.rowCount() > 0)
+    waitFor(lambda: logs.model.rowCount() > 0)
     waitMs(650)
     assert len(queries) == queryCount
     tab(logs.sources, 0)
@@ -297,20 +297,25 @@ def checkLogViews(window, first, second, queries, evidence, shot):
 
 
 def verifyDevice(window, jobEvent, evidence, shot):
-    showControls(window)
-    click(window.communicationButton)
-    dialog = window.communicationDialog
-    expose(dialog)
-    waitFor(lambda: dialog.selector.findData("software-camera") >= 0)
-    dialog.selector.setCurrentIndex(dialog.selector.findData("software-camera"))
-    waitFor(dialog.actions["connect"].isEnabled)
-    click(dialog.actions["connect"])
-    waitFor(lambda: dialog.deviceStatus.text().startswith("已连接") and dialog.actions["disconnect"].isEnabled())
+    dialog, details = openCompactDeviceDialog(window)
+    connect = dialog.actions["connect"]
+    waitFor(connect.isEnabled)
+    details.ensureWidgetVisible(connect)
+    assert details.viewport().rect().contains(connect.mapTo(details.viewport(), connect.rect().center()))
+    click(connect)
+    waitFor(lambda: dialog.deviceHealth.text().startswith("已连接") and dialog.actions["disconnect"].isEnabled())
     diagnostics = dialog.diagnostics
     waitFor(lambda: diagnostics.records.topLevelItemCount() > 0 and diagnostics.runtimeLogsButton.isEnabled())
-    chooseTreeItem(diagnostics.records, diagnostics.records.topLevelItem(0))
+    details.ensureWidgetVisible(diagnostics.records)
+    first = diagnostics.records.topLevelItem(0)
+    chooseTreeItem(diagnostics.records, first)
+    point = diagnostics.records.visualItemRect(first).center()
+    assert details.viewport().rect().contains(diagnostics.records.viewport().mapTo(details.viewport(), point))
     assert diagnostics.details.toPlainText()
     shot(dialog, "06-device-management")
+    details.ensureWidgetVisible(diagnostics.runtimeLogsButton)
+    assert details.viewport().rect().contains(diagnostics.runtimeLogsButton.mapTo(
+        details.viewport(), diagnostics.runtimeLogsButton.rect().center()))
     click(diagnostics.runtimeLogsButton)
     logs = window.logView
     assert not dialog.isVisible() and window.contentStack.currentWidget() is logs

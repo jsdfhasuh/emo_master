@@ -9,16 +9,18 @@ from uuid import uuid4
 
 import grpc
 import pytest
-from PySide2.QtCore import QSettings, QTimer, Qt
+from PySide2.QtCore import QRect, QSettings, QTimer, Qt
 from PySide2.QtTest import QTest
-from PySide2.QtWidgets import QPushButton
+from PySide2.QtWidgets import QInputDialog
 
 from emo_master.apps.designer.state.project_store import saveProject
 from emo_master.apps.operator_runtime.controller import ProductionRuntime
 from emo_master.apps.operator_runtime.main import OperatorWindow
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb, runtime_pb2_grpc as rpc
 from emo_master.core.project.delivery_store import DirectoryOwner
+from emo_master.core.project.models import ProjectDocument
 from emo_master.core.project.runtime_package import buildRuntimePackage, installRuntimePackage
+from emo_master.core.presentation.models import Action
 from tests.runtime.current_production_fixture import currentProductionProject
 from tests.runtime.production_fixture import productionProject, saveDocument
 from tests.ui.operator_view.test_view import waitFor
@@ -78,7 +80,7 @@ def testOperatorOnlyProjectPagesContinuousAutoStartStopRestartAndClose(qtApp, tm
         first = window.controller.jobId
         assert not window.pages.editing and not window.pages.editorHost and not window.pages.designExamples
         assert len(window.controller.runtime.jobRepository.all()) == 1
-        assert not window.openButton.isEnabled() and window.stopButton.isEnabled()
+        assert not window.openAction.isEnabled() and window.stopButton.isEnabled()
         result = next(iter(window.pages.displayed.values())).result
         assert result.identity.mode == "runtime" and len(result.sources) == 2
         assert next(source.valueJson for source in result.sources if source.sourceId == "count") == "2"
@@ -97,6 +99,119 @@ def testOperatorOnlyProjectPagesContinuousAutoStartStopRestartAndClose(qtApp, tm
         closeWindow(window)
     assert window.controller.closed and window.controller.runtime._closed
     assert window.session is None
+
+
+@pytest.mark.parametrize('showControls', [True, False])
+def testPagedToolDockPreservesAppearanceAndStopsOriginalJobOnce(qtApp, tmp_path, monkeypatch, showControls):
+    path, document = currentProductionProject(tmp_path / 'project', mode='continuous', autoStart=True)
+    payload = document.model_dump(mode='json')
+    payload['project']['name'] = '产线长项目名称 ' * 12
+    label = '本项目配置的较长停止按钮'
+    payload['presentation']['shell'] = {
+        'showControls': showControls,
+        'startControl': {'label': '本项目开始'},
+        'stopControl': {'label': label, 'appearance': {
+            'minWidth': 290, 'showIcon': True, 'iconPosition': 'right', 'iconSize': 26,
+            'customStyle': {'qtQss': {'enabled': True,
+                'code': 'QPushButton { min-width:290px; max-width:290px; background:#9B2340; }'}}}},
+    }
+    saveProject(path, ProjectDocument.model_validate(payload).model_dump(mode='json'))
+    window = OperatorWindow(path, dataRoot=tmp_path / 'data', preferences=preferences(tmp_path))
+    window.resize(650, 550)
+    window.show()
+    blocked, release = threading.Event(), threading.Event()
+    calls = []
+    originalStop = ProductionRuntime.stop
+
+    def stop(runtime, *args, jobId=None):
+        calls.append(jobId)
+        blocked.set()
+        assert release.wait(10)
+        return originalStop(runtime, *args, jobId=jobId)
+
+    def unexpectedDialog(*_args):
+        pytest.fail('单活动 Job 应直接停止')
+
+    monkeypatch.setattr(ProductionRuntime, 'stop', stop)
+    monkeypatch.setattr(QInputDialog, 'getItem', unexpectedDialog)
+    try:
+        waitFor(lambda: window.pages is not None and not window.busy and window.state['state'] == 'RUNNING')
+        stopButton, startButton = window.stopButton, window.startButton
+        job, pages, session, hub = window.controller.jobId, window.pages, window.session, window.hub
+        assert not pages.diagnostics.isVisible() and not window.contextBanner.isVisible()
+        assert stopButton.isVisible() is showControls and startButton.isVisible() is showControls
+        assert pages.hostControls.indexOf(stopButton) >= 0 and stopButton.text() == label
+        originalStyle = stopButton.styleSheet()
+        waitFor(lambda: bool(pages.displayed))
+        pages.act(Action(type='navigate', pageId='main', context='displayed_result', resultScopeId='root'))
+        pin = pages.frozen
+        assert pin is not None and hub.pins[pages] == pin
+        history = pages.historyReviewState()
+        QTest.mouseClick(window.logsButton, Qt.LeftButton)
+        QTest.mouseClick(window.settingsButton, Qt.LeftButton)
+        assert window.contentStack.currentWidget() is window.startupPage
+        assert window.hostControls.indexOf(stopButton) >= 0 and stopButton.isVisible() and stopButton.isEnabled()
+        assert startButton.isVisible() is showControls
+        assert stopButton.text() == '停止' and '#9B2340' not in stopButton.styleSheet()
+        assert stopButton.maximumWidth() > 290 and stopButton.iconSize().width() != 26
+        for button in (window.backButton, stopButton):
+            assert window.rect().contains(button.mapTo(window, button.rect().bottomRight()))
+        assert payload['project']['name'] in window.projectLabel.toolTip()
+        QTest.mouseClick(window.backButton, Qt.LeftButton)
+        assert window.contentStack.currentWidget() is window.logView
+        QTest.mouseClick(window.backButton, Qt.LeftButton)
+        assert window.contentStack.currentWidget() is window.businessHost
+        assert (window.controller.jobId, window.pages, window.session, window.hub) == (job, pages, session, hub)
+        assert pages.historyReviewState() == history and not session.stop.is_set()
+        assert pages.frozen == pin and hub.pins[pages] == pin
+        assert pages.hostControls.indexOf(stopButton) >= 0 and stopButton.styleSheet() == originalStyle
+        assert stopButton.text() == label and stopButton.iconSize().width() == 26
+        assert stopButton.isVisible() is showControls
+        QTest.mouseClick(window.logsButton, Qt.LeftButton)
+        waitFor(lambda: not window.busy and stopButton.isEnabled())
+        QTest.mouseClick(stopButton, Qt.LeftButton)
+        waitFor(blocked.is_set)
+        assert stopButton.isVisible() and not stopButton.isEnabled()
+        assert window.contextBanner.isVisible() and window.progress.isVisible()
+        if not showControls:
+            window.close()
+            assert window.closing and stopButton.isVisible() and not stopButton.isEnabled()
+        release.set()
+        waitFor(lambda: window.done or not window.busy and window.state['canLoad'])
+        assert calls == [job] and window.controller.runtime.jobRepository.get(job).isTerminal
+        if showControls:
+            assert not window.contextBanner.isVisible()
+    finally:
+        release.set()
+        closeWindow(window)
+
+
+def testWindowPreferencesClampAndRestoreMaximizedNormalGeometry(qtApp, tmp_path):
+    prefs = preferences(tmp_path)
+    area = qtApp.primaryScreen().availableGeometry()
+    prefs.setValue('window/geometry', QRect(area.right() + 500, area.bottom() + 500, 4000, 3000))
+    window = OperatorWindow(dataRoot=tmp_path / 'data', preferences=prefs)
+    window.show()
+    try:
+        waitFor(lambda: window.controller is not None and not window.busy)
+        assert area.contains(window.frameGeometry())
+        window.setGeometry(area.adjusted(28, 45, -65, -65))
+        normal = window.geometry()
+        window.showMaximized()
+        waitFor(window.isMaximized)
+    finally:
+        closeWindow(window)
+    assert prefs.value('window/maximized', type=bool) and prefs.value('window/geometry') == normal
+    restored = OperatorWindow(dataRoot=tmp_path / 'data', preferences=prefs)
+    restored.show()
+    try:
+        waitFor(restored.isMaximized)
+        restored.showNormal()
+        waitFor(lambda: not restored.isMaximized())
+        assert restored.geometry() == normal
+        assert preferences(tmp_path / 'other').value('window/geometry') is None
+    finally:
+        closeWindow(restored)
 
 
 @pytest.mark.parametrize('autoStart', [False, True])
@@ -290,14 +405,12 @@ def testInvalidRememberedProjectStillAllowsSelectionAndClosing(qtApp, tmp_path):
     window.show()
     try:
         waitFor(lambda: window.error and not window.busy)
-        assert window.openButton.isEnabled() and not window.startButton.isEnabled()
-        buttons = set(window.findChildren(QPushButton))
-        assert window.communicationButton in buttons and window.communicationButton.isEnabled()
-        buttons.remove(window.communicationButton)
-        if window.communicationDialog is not None:
-            buttons -= set(window.communicationDialog.findChildren(QPushButton))
-        assert {"选择工程", "更新工程", "重新加载", "开始", "停止", "运行目标…"}.issubset(
-            {button.text() for button in buttons})
+        assert window.openAction.isEnabled() and not window.startButton.isEnabled()
+        assert window.communicationButton.isVisible() and window.communicationButton.isEnabled()
+        assert {window.openAction, window.reloadAction, window.updateAction, window.targetsAction,
+                window.viewRunsAction}.issubset(window.projectMenu.actions())
+        assert window.projectButton.isVisible() and window.reloadAction.isEnabled()
+        assert not window.updateAction.isEnabled() and not window.targetsAction.isEnabled()
         assert window.settingsButton.isEnabled() and window.logsButton.isEnabled()
         assert not window.startupPage.retryButton.isVisible()  # Project error is not a failed Runtime constructor.
         QTest.mouseClick(window.logsButton, Qt.LeftButton)
@@ -322,7 +435,7 @@ def testFailedProjectSwitchKeepsStartControlAndOwnershipConsistent(qtApp, tmp_pa
         with DirectoryOwner(second) if failure == "occupied" else nullcontext():
             window.loadProject(second)
             waitFor(lambda: window.error and not window.busy)
-        assert not window.controller.jobId and window.openButton.isEnabled()
+        assert not window.controller.jobId and window.openAction.isEnabled()
         if failure == "occupied":
             assert window.state["state"] == "READY" and window.startButton.isEnabled()
             assert window.controller.projectOwner is previous and previous.stream is not None
@@ -378,7 +491,7 @@ def testWindowUpdatePreservesOutputsAndUsesNewAutoStartPolicy(qtApp, tmp_path, a
     window.show()
     try:
         waitFor(lambda: window.pages is not None and not window.busy or window.error)
-        assert not window.error and window.updateButton.isEnabled()
+        assert not window.error and window.updateAction.isEnabled()
         document.production.autoStart = autoStart
         document.production.cycleIntervalMs = 200
         saveProject(sourceFile, document.model_dump(mode="json"))
@@ -388,7 +501,7 @@ def testWindowUpdatePreservesOutputsAndUsesNewAutoStartPolicy(qtApp, tmp_path, a
         assert window.controller.settings.autoStart == autoStart
         if autoStart:
             waitFor(lambda: window.hub is not None and bool(window.pages.displayed) or window.error)
-            assert not window.error and not window.updateButton.isEnabled()
+            assert not window.error and not window.updateAction.isEnabled()
             first = window.controller.jobId
             window.updateProject(tmp_path / "not-a-package.vxpkg")
             assert window.controller.jobId == first and not window.error

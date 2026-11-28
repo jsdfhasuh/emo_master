@@ -52,7 +52,7 @@ def testNoPageUsesOwnedJobAndShowsActualTerminalWithoutSelectingHistory(qtApp, t
         assert window.session is None and not window.controller.presentation.jobs
         assert window.startButton.isEnabled()
 
-        QTest.mouseClick(window.reloadButton, Qt.LeftButton)
+        window.reloadAction.trigger()
         waitFor(lambda: not window.busy and not window.controller.jobId)
         assert window.controller.runtime.jobRepository.get(job).status == expected
         assert "尚未开始" in window.pages.jobStatus.text()
@@ -167,18 +167,128 @@ def testDeviceSelectorNamesPreserveSelectionAndControlIds(qtApp):
     dialog.show()
     try:
         waitFor(lambda: len(dialog.states) == 2 and dialog.pending is None)
-        index = dialog.selector.findData(named)
-        assert "入口相机" in dialog.selector.itemText(index) and "模拟相机" in dialog.selector.itemText(index)
-        assert dialog.selector.itemData(index, Qt.ToolTipRole) == named
-        assert dialog.selector.itemText(dialog.selector.findData(unnamed)) == unnamed
-        dialog.selector.setCurrentIndex(index)
+        item = dialog.deviceItems[named]
+        assert "入口相机" in item.text(0) and "模拟相机" in item.text(0)
+        assert item.toolTip(0) == named
+        assert dialog.deviceItems[unnamed].text(0).splitlines()[0] == unnamed
+        dialog.deviceList.setCurrentItem(item)
         QTest.mouseClick(dialog.actions["connect"], Qt.LeftButton)
         waitFor(lambda: bool(calls))
         assert calls[0][0][2] == named and calls[0][0][4] == "connect"
         waitFor(lambda: dialog.pending is None)
         states[named]["name"] = "已重命名的入口相机"
         dialog.nextState = 0
-        waitFor(lambda: "已重命名" in dialog.selector.currentText())
-        assert dialog.selector.currentData() == named
+        waitFor(lambda: "已重命名" in dialog.deviceList.currentItem().text(0))
+        assert dialog.selectedDeviceId() == named
     finally:
         dialog.dispose()
+
+
+def testDeviceHealthUsesStateContractAndClearsStaleSelection(qtApp):
+    scope = dict(runtimeInstanceId="runtime", projectId="project", projectLoadGeneration=1)
+    types = {
+        key: SimpleNamespace(displayName=title, managementActions=[], controlCapabilities=controls)
+        for key, title, controls in (
+            ("camera", "模拟相机", ["connect", "maintenance", "recover"]),
+            ("device.tcp.server", "TCP 服务", ["disconnect"]),
+        )
+    }
+    states = {
+        key: dict(scope, name=key, deviceTypeId="camera", **values)
+        for key, values in (
+            ("online", dict(driverState=dict(connectionState="CONNECTED"), lastError="上次连接失败")),
+            ("offline", dict(lifecycleConnected=False, availableControls=["connect"])),
+            ("maintenance", dict(admissionState="PAUSED", lifecycleConnected=False)),
+            ("failed", dict(state="QUARANTINED", lifecycleConnected=True)),
+            ("unknown", dict(state="IDLE")),
+        )
+    }
+    states["server"] = dict(scope, name="接收服务", deviceTypeId="device.tcp.server",
+        availableControls=["disconnect"], driverState=dict(state="LISTENING",
+            channels=[dict(channelId="route", name="测试通道", allowedIps=[], connected=False)]))
+    readError = threading.Event()
+
+    def read(project):
+        if readError.is_set():
+            raise RuntimeError("测试读取失败")
+        return "runtime", states
+
+    client = SimpleNamespace(listDeviceTypes=lambda: (types, {}, {}), getDeviceStates=read,
+        getDeviceDiagnostics=lambda scope, key, cursor: dict(scope, deviceId=key, cursor=cursor, records=[]),
+        close=lambda: None)
+    dialog = DeviceManagementDialog(client, lambda: "project")
+    dialog.show()
+    try:
+        waitFor(lambda: len(dialog.states) == 6)
+        assert {key: item.text(1) for key, item in dialog.deviceItems.items()} == {
+            "online": "已连接", "offline": "未连接", "maintenance": "维护中", "failed": "已隔离",
+            "unknown": "未知", "server": "监听中",
+        }
+        assert dialog.overview.text() == "6 台设备\n正常 2  ·  非运行 1  ·  维护 1  ·  异常 1  ·  未知 1"
+        dialog.deviceList.setCurrentItem(dialog.deviceItems["online"])
+        assert dialog.deviceError.text() == "上次连接失败"
+        assert dialog.rawState.isHidden()
+        dialog.rawToggle.click()
+        assert dialog.rawState.isReadOnly() and "上次连接失败" in dialog.rawState.toPlainText()
+        dialog.deviceList.setCurrentItem(dialog.deviceItems["server"])
+        assert dialog.deviceIdField.text() == "server"
+        assert "已连接 0 个客户端" in dialog.deviceHealth.text()
+        assert dialog.deviceError.isHidden() and dialog.rawState.isHidden()
+        assert dialog.channelStatus.item(0, 3).text() == "等待客户端"
+        assert dialog.actions["disconnect"].text() == "停止服务"
+        assert dialog.actions["disconnect"].isEnabled() and dialog.actions["connect"].isHidden()
+        dialog.nextState = 0
+        waitFor(dialog.diagnostics.runtimeLogsButton.isEnabled)
+        dialog.diagnostics.runtimeLogsButton.click()
+        assert "Runtime 本机日志窗口" in dialog.status.text() and dialog.isVisible()
+
+        dialog.deviceList.setCurrentItem(dialog.deviceItems["online"])
+        assert dialog.rawToggle.isChecked()
+        readError.set()
+        dialog.nextState = 0
+        waitFor(lambda: "测试读取失败" in dialog.status.text())
+        assert dialog.overview.text().endswith("未知 6") and dialog.deviceHealth.text() == "未知"
+        assert all(item.text(1) == "未知" for item in dialog.deviceItems.values())
+        assert not dialog.rawToggle.isEnabled() and not dialog.actions["connect"].isEnabled()
+        readError.clear()
+        states["online"]["projectLoadGeneration"] = 2
+        states["online"]["name"] = "新发布设备"
+        published = states["online"]
+        states.clear()
+        states["online"] = published
+        dialog.nextState = 0
+        waitFor(lambda: dialog.deviceItems["online"].text(0).startswith("新发布设备"))
+        assert dialog.selectedDeviceId() is None and dialog.selectedDetail.isHidden()
+        assert not dialog.diagnostics.runtimeLogsButton.isEnabled()
+    finally:
+        dialog.dispose()
+
+
+def testDeviceLogDrillDownPreservesOperatorLogConditions(qtApp, tmp_path):
+    key = "camera-full-device-id"
+    scope = dict(runtimeInstanceId="runtime", projectId="project", projectLoadGeneration=1)
+    states = {key: dict(scope, name="入口相机", deviceTypeId="camera")}
+    client = SimpleNamespace(listDeviceTypes=lambda: ({}, {}, {}),
+        getDeviceStates=lambda project: ("runtime", states),
+        getDeviceDiagnostics=lambda scope, key, cursor: dict(scope, deviceId=key, cursor=cursor, records=[]),
+        close=lambda: None)
+    window = OperatorWindow(dataRoot=tmp_path / "data", preferences=preferences(tmp_path))
+    window.show()
+    dialog = DeviceManagementDialog(client, lambda: "project", window)
+    dialog.show()
+    try:
+        logView = window.logView
+        logView.levelCombo.setCurrentIndex(logView.levelCombo.findData("WARN"))
+        logView.keywordEdit.setText("设备")
+        waitFor(lambda: key in dialog.deviceItems)
+        dialog.deviceList.setCurrentItem(dialog.deviceItems[key])
+        dialog.nextState = 0
+        waitFor(dialog.diagnostics.runtimeLogsButton.isEnabled)
+        dialog.diagnostics.runtimeLogsButton.click()
+        assert window.contentStack.currentWidget() is logView and dialog.isHidden()
+        assert logView.deviceId == key and logView.deviceLabel.toolTip() == key
+        assert "入口相机" in logView.deviceLabel.text()
+        assert logView.levelCombo.currentData() == "WARN" and logView.keywordEdit.text() == "设备"
+    finally:
+        dialog.dispose()
+        closeWindow(window)

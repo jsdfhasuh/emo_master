@@ -1,0 +1,14 @@
+Operator Runtime R4 | Windows QWidget native log refresh probe
+Baseline HEAD: 78a547270324553b8e88dea5a05258e562fcfb08 (log_view.py loaded with git show).
+After: same HEAD with uncommitted R4 log source changes, including the independent tool-page scroll area.
+Identical 10,250 prebuilt synthetic LogRecord objects and three repetitions per version. Same Windows native Qt platform, default scale and 1060x800 logical window. Each sample covers LogFeed._accept and QApplication.processEvents. Data preparation, disk read and decoding are outside the timer. The last update adds 350 and evicts 250 from the 9,900-row window. Times are descriptive local measurements.
+
+before | Python 3.10.21 | PySide2 5.15.2.1 | platform windows | 1060x800
+initial-9800: 334.6, 377.0, 413.2 ms, median 377.0 ms
+append-100: 341.6, 363.5, 454.4 ms, median 363.5 ms
+evict-250-append-350: 392.0, 383.1, 491.8 ms, median 392.0 ms
+
+after | Python 3.10.21 | PySide2 5.15.2.1 | platform windows | 1060x800
+initial-9800: 53.1, 28.4, 37.8 ms, median 37.8 ms
+append-100: 23.3, 22.4, 19.4 ms, median 22.4 ms
+evict-250-append-350: 12.2, 20.2, 21.1 ms, median 20.2 ms

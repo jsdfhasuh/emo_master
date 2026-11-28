@@ -18,7 +18,8 @@ from PySide2.QtCore import Qt
 from PySide2.QtTest import QTest
 from PySide2.QtGui import QDesktopServices
 from PySide2.QtWidgets import (
-    QApplication, QBoxLayout, QDialog, QFileDialog, QInputDialog, QPushButton, QTableWidget, QTreeWidgetItemIterator,
+    QApplication, QBoxLayout, QDialog, QFileDialog, QInputDialog, QPushButton, QScrollArea, QTableWidget, QTreeWidgetItemIterator,
+    QWidget,
 )
 
 from emo_master import __version__
@@ -120,6 +121,7 @@ def expose(widget):
 
 
 def chooseProject(window, path):
+    window.startupPage.ensureWidgetVisible(window.startupPage.chooseButton)
     with patch.object(QFileDialog, "getOpenFileName", return_value=(str(path), "")) as chooser:
         click(window.startupPage.chooseButton)
         if not chooser.called:
@@ -128,8 +130,16 @@ def chooseProject(window, path):
 
 
 def showControls(window):
-    if window.pages.config.pageOrder and not window.pages.diagnostics.isVisible():
-        click(window.pages.diagnosticToggle)
+    assert window.topBar.isVisible() and window.projectButton.isVisible()
+
+
+def clickProjectAction(window, action):
+    menu = window.projectMenu
+    assert window.projectButton.menu() is menu and action in menu.actions() and action.isEnabled()
+    menu.popup(window.projectButton.mapToGlobal(window.projectButton.rect().bottomLeft()))
+    QApplication.processEvents()
+    assert menu.isVisible()
+    QTest.mouseClick(menu, Qt.LeftButton, pos=menu.actionGeometry(action).center())
 
 
 def selectRun(window, job):
@@ -137,7 +147,7 @@ def selectRun(window, job):
     def select(_parent, _title, _label, options, _index, _editable):
         return next(text for text in options if job in text), True
     with patch.object(QInputDialog, "getItem", side_effect=select) as chooser:
-        click(window.viewRunsButton)
+        clickProjectAction(window, window.viewRunsAction)
         if not chooser.called:
             waitFor(lambda: chooser.called)
     waitFor(lambda: window.viewSession is not None and window.viewSession.jobId == job and not window.busy)
@@ -165,10 +175,10 @@ def startup(window, root, evidence, shot):
     waitFor(lambda: window.controller is not None and not window.busy)
     assert window.contentStack.currentWidget() is window.startupPage
     assert window.state["state"] == "EMPTY" and not window.startButton.isEnabled()
-    assert window.technicalHost.parentWidget() is window
+    assert window.topBar.parentWidget() is window and window.projectButton.isVisible()
     assert not window.controller.runtime.jobRepository.all()
     panel = window.startupPage.storage
-    assert window.resolution.source == "saved" and str(window.resolution.path) in panel.currentLabel.text()
+    assert window.resolution.source == "saved" and panel.currentPath.text() == str(window.resolution.path)
     assert window.startupPage.network.currentLabel.text()
     shot(window, "01-startup-settings")
     window.resize(900, 700)
@@ -179,7 +189,7 @@ def startup(window, root, evidence, shot):
     click(panel.detailsButton)
     waitMs(100)
     assert str(window.resolution.path / "runtime.sqlite3") in panel.details.toPlainText()
-    assert window.resolution.path.name in panel.currentLabel.text()
+    assert panel.currentPath.toolTip() == str(window.resolution.path)
     nextRoot = root / "下次启动 数据目录"
     window.startupPage.ensureWidgetVisible(panel.nextEdit)
     waitMs(100)
@@ -209,16 +219,16 @@ def loadAndReload(window, root, path, document, evidence):
     waitFor(lambda: window.pages is not None and not window.busy)
     assert not window.error and window.state["state"] == "READY" and window.startButton.isEnabled()
     assert window.contentStack.currentWidget() is window.businessHost
-    assert window.technicalHost.parentWidget() is window.pages.diagnostics
+    assert window.topBar.parentWidget() is window and window._controlDock is window.pages.hostControls
     actualPath = Path(window.controller.runtime.loadedProjectFile).resolve()
     assert actualPath == path.resolve(), (actualPath, path)
     assert window.projectLabel.text() == document.project.name
     showControls(window)
     assert "#8b5cf6" in window.startButton.styleSheet() and window.startButton.text() == "开始检测"
-    header = window.pages.findChild(type(window.technicalHost), "pageShellHeader")
+    header = window.pages.findChild(QWidget, "pageShellHeader")
     assert header is not None and "#f8f5ff" in header.styleSheet()
     prior = window.pages
-    click(window.reloadButton)
+    clickProjectAction(window, window.reloadAction)
     waitFor(lambda: window.pages is not None and window.pages is not prior and not window.busy)
     assert not window.error and not window.controller.runtime.jobRepository.all()
     with grpc.insecure_channel(window.controller.address) as channel:
@@ -230,23 +240,35 @@ def loadAndReload(window, root, path, document, evidence):
     assert info.document_revision == window.state["documentRevision"] == expectedRevision
     evidence["load"] = dict(invalidReason=failure, retrievedProjectId=document.project.projectId,
         documentRevision=expectedRevision, runtimeInstanceId=info.runtime_instance_id,
-        rootAndDiagnosticsHosts=True, customQss=True)
+        persistentTopBarAndBusinessControlDock=True, customQss=True)
 
 
-def verifyDevice(window, evidence, shot):
+def openCompactDeviceDialog(window):
     showControls(window)
     click(window.communicationButton)
     dialog = window.communicationDialog
+    available = dialog.screen().availableGeometry()
+    compactSize = min(920, available.width() - 32), min(620, available.height() - 48)
+    dialog.resize(*compactSize)
     expose(dialog)
-    waitFor(lambda: dialog.selector.findData("software-camera") >= 0)
-    dialog.selector.setCurrentIndex(dialog.selector.findData("software-camera"))
-    waitFor(dialog.actions["connect"].isEnabled)
-    click(dialog.actions["connect"])
+    assert dialog.size().toTuple() == compactSize
+    waitFor(lambda: "software-camera" in dialog.deviceItems)
+    chooseTreeItem(dialog.deviceList, dialog.deviceItems["software-camera"])
+    return dialog, dialog.findChild(QScrollArea)
+
+
+def verifyDevice(window, evidence, shot):
+    dialog, details = openCompactDeviceDialog(window)
+    connect = dialog.actions["connect"]
+    waitFor(connect.isEnabled)
+    details.ensureWidgetVisible(connect)
+    assert details.viewport().rect().contains(connect.mapTo(details.viewport(), connect.rect().center()))
+    click(connect)
     waitFor(lambda: "控制完成" in dialog.status.text() and dialog.actions["disconnect"].isEnabled())
     shown = dialog.states["software-camera"]
     scope = dict(window.controller.runtime.deviceManager.scope)
     assert {key: shown[key] for key in scope} == scope and shown["deviceTypeId"] == "device.simulated.camera"
-    assert shown["lifecycleConnected"] is True and dialog.deviceStatus.text().startswith("已连接")
+    assert shown["lifecycleConnected"] is True and dialog.deviceHealth.text().startswith("已连接")
     shot(dialog, "05-device-controls")
     evidence["device"] = dict(scope, deviceId="software-camera", state=shown["state"], connected=True,
         feedback=dialog.status.text())
@@ -454,7 +476,7 @@ def designerObservation(window, root, first, second, evidence, shot):
 def nativeLocalLogs(window, root, evidence):
     logs = window.logView
     tab(logs.sources, 2)
-    waitFor(lambda: window.logFeed.worker is None and logs.table.rowCount() > 0)
+    waitFor(lambda: window.logFeed.worker is None and logs.model.rowCount() > 0)
     feed = window.logFeed
     assert any(path.name.startswith("runtime-") for path in feed.files)
     assert any(path.name.startswith("runtime_app-") for path in feed.files)
@@ -462,21 +484,22 @@ def nativeLocalLogs(window, root, evidence):
     index = logs.fileCombo.findData(str(feed.activePath))
     assert index > 0
     logs.fileCombo.setCurrentIndex(index)
-    waitFor(lambda: feed.worker is None and logs.table.rowCount() > 0)
+    waitFor(lambda: feed.worker is None and logs.model.rowCount() > 0)
     assert logs.statusLabel.text().startswith("本次活动文件（手动固定，不跟随轮转）")
     logs.levelCombo.setCurrentIndex(logs.levelCombo.findData("WARN"))
     click(logs.refreshButton)
-    waitFor(lambda: feed.worker is None and logs.table.rowCount() > 0)
+    waitFor(lambda: feed.worker is None and logs.model.rowCount() > 0)
     current = root / "native-local-filter.jsonl"
     with patch.object(QFileDialog, "getSaveFileName", return_value=(str(current), "JSONL (*.jsonl)")):
         logs.exportCurrentAction.trigger()
     rows = [json.loads(row) for row in current.read_text(encoding="utf-8").splitlines()]
     matching = [row for row in rows if row.get("level") == "WARN"]
-    assert matching and len(matching) == logs.table.rowCount()
+    assert matching and len(matching) == logs.model.rowCount()
     with patch.object(QFileDialog, "getSaveFileName", return_value=("", "")) as chooser:
         logs.exportFileAction.trigger()
         assert chooser.called and feed.exportWorker is None
     with patch.object(QDesktopServices, "openUrl", return_value=True) as folder:
+        logs.scrollArea.ensureWidgetVisible(logs.folderButton)
         click(logs.folderButton)
         assert Path(folder.call_args.args[0].toLocalFile()) == feed.directory
     evidence["nativeJsonl"] = dict(fileWriters=[path.name for path in feed.files],
@@ -583,16 +606,18 @@ def restart(root, nextRoot, path, evidence):
     try:
         waitFor(lambda: auto.state.get("jobStatus") == "RUNNING" and not auto.busy)
         jobs = auto.controller.runtime.jobRepository.all()
-        assert len(jobs) == 1 and auto.technicalHost.parentWidget() is auto
+        assert len(jobs) == 1 and auto.topBar.parentWidget() is auto
+        assert auto._controlDock is auto.hostControls
         assert auto.controller.jobId != seedJob and auto.explicitProject is None
         assert Path(auto.controller.runtime.loadedProjectFile).resolve() == enabled.resolve()
         assert auto.controller.document.project.projectId == document.project.projectId and auto.stopButton.isEnabled()
         click(auto.logsButton)
-        assert not auto.startButton.isVisible() and not auto.stopButton.isVisible()
+        assert not auto.startButton.isEnabled()
+        assert auto.stopButton.isVisible() and auto.stopButton.isEnabled()
         click(auto.backButton)
         assert auto.stopButton.isVisible() and auto.stopButton.isEnabled()
         evidence["restartTrue"] = dict(projectId=document.project.projectId, jobId=auto.controller.jobId, jobs=1,
-            seedJobId=seedJob, remembered=True, rootControls=True, rootLogControlsHidden=True)
+            seedJobId=seedJob, remembered=True, rootControls=True, rootToolStopAvailable=True)
     finally:
         closeWindow(auto)
     assert auto.controller.closed and auto.controller.runtime._closed
@@ -618,7 +643,7 @@ def main():
         app.processEvents()
         expected = {"01-startup-settings": (1060, 800), "02-startup-900x700": (900, 700),
             "03-production-review": (1060, 800), "04-job-log-workbench": (1060, 800),
-            "05-device-controls": (920, 620), "06-job-log-900x700": (900, 700)}.get(name)
+            "06-job-log-900x700": (900, 700)}.get(name)
         assert expected is None or widget.size().toTuple() == expected, (name, widget.size().toTuple())
         pixmap = widget.grab()
         assert pixmap.save(str(args.output / (name + ".png")))

@@ -1,4 +1,6 @@
 """Native operator controls for current-schema project configuration."""
+import json
+
 from PySide2.QtCore import Qt
 from PySide2.QtTest import QTest
 from PySide2.QtWidgets import QFileDialog
@@ -36,7 +38,7 @@ def testReloadButtonAppliesCurrentProjectAndShowsCommittedRevision(qtApp, tmp_pa
         node(document, 'save').params['outputPath'] = 'outputs/changed.png'
         document.production.cycleIntervalMs = 432
         saveProject(path, document.model_dump(mode='json'))
-        QTest.mouseClick(window.reloadButton, Qt.LeftButton)
+        window.reloadAction.trigger()
         waitFor(lambda: window.error or (not window.busy and window.controller.settings.cycleIntervalMs == 432))
         assert not window.error, window.error
         assert window.state['documentRevision'] == 2
@@ -65,20 +67,51 @@ def testSelectionFailureKeepsOriginalPagesAndSuccessfulSelectionUpdatesPath(qtAp
     monkeypatch.setattr(QFileDialog, 'getOpenFileName', lambda *args: (str(second), ''))
     try:
         ready(window)
-        QTest.mouseClick(window.openButton, Qt.LeftButton)
+        window.openAction.trigger()
         waitFor(lambda: window.error and not window.busy)
         assert window.pages is not None and window.startButton.isEnabled()
         assert window.projectPath == str(first)
         assert prefs.value('projectPath') == str(first)
         node(document, 'load').params['imagePath'] = 'input.png'
         saveProject(second, document.model_dump(mode='json'))
-        QTest.mouseClick(window.openButton, Qt.LeftButton)
+        window.openAction.trigger()
         waitFor(lambda: not window.busy and window.projectPath == str(second))
         assert not window.error
         assert prefs.value('projectPath') == str(second)
         assert window.projectLabel.text() == document.project.name
         runOnce(window)
         assert (savedPixels(second.parent / 'outputs/result.png') == 193).all()
+    finally:
+        closeWindow(window)
+
+
+def testRecentMenuRecordsSuccessfulLoadsAndUsesTheNormalFailurePath(qtApp, tmp_path):
+    first, firstDocument = currentProductionProject(tmp_path / 'first')
+    second, secondDocument = currentProductionProject(tmp_path / 'second')
+    older = [str(tmp_path / f'previous-{index}.emoproj') for index in range(4)]
+    prefs = preferences(tmp_path)
+    prefs.setValue('recentProjects', json.dumps([str(second), *older]))
+    window = OperatorWindow(first, dataRoot=tmp_path / 'runtime', preferences=prefs)
+    window.show()
+    try:
+        ready(window)
+        assert window.startupPage.recentPaths == (str(first), str(second), *older[:3])
+        window.showSettings()
+        links = window.startupPage.recentOpenButtons
+        QTest.mouseClick(links[2], Qt.LeftButton)  # Missing prior project.
+        waitFor(lambda: window.error and not window.busy)
+        assert window.projectPath == str(first) and prefs.value('projectPath') == str(first)
+        assert window.startupPage.recentPaths == (str(first), str(second), *older[:3])
+        assert not window.controller.runtime.jobRepository.all()
+        QTest.mouseClick(links[1], Qt.LeftButton)
+        waitFor(lambda: not window.busy and window.projectPath == str(second) and not window.error)
+        assert window.startupPage.recentPaths == (str(second), str(first), *older[:3])
+        assert json.loads(prefs.value('recentProjects'))[:2] == [
+            dict(path=str(second), name=secondDocument.project.name),
+            dict(path=str(first), name=firstDocument.project.name),
+        ]
+        assert prefs.value('projectPath') == str(second)
+        assert not window.controller.runtime.jobRepository.all()
     finally:
         closeWindow(window)
 
@@ -97,7 +130,7 @@ def testPackageButtonPublishesNewAutoStartPolicyAndStopsOnClose(qtApp, tmp_path,
         saveProject(source, document.model_dump(mode='json'))
         package = buildRuntimePackage(source, tmp_path / 'packages')
         monkeypatch.setattr(QFileDialog, 'getOpenFileName', lambda *args: (str(package), ''))
-        QTest.mouseClick(window.updateButton, Qt.LeftButton)
+        window.updateAction.trigger()
         waitFor(lambda: window.error or (window.pages is not None and window.pages.displayed and not window.busy))
         assert not window.error, window.error
         assert window.controller.settings.autoStart
@@ -135,7 +168,7 @@ def testRememberedStartupRestoresOnlineUntilExplicitReload(qtApp, tmp_path):
         ready(restored)
         assert restored.controller.settings.cycleIntervalMs == 100
         assert restored.state['documentRevision'] == 1
-        QTest.mouseClick(restored.reloadButton, Qt.LeftButton)
+        restored.reloadAction.trigger()
         waitFor(lambda: restored.error or (not restored.busy and restored.state['documentRevision'] == 2))
         assert not restored.error
         assert restored.controller.settings.cycleIntervalMs == 432

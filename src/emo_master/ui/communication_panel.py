@@ -264,7 +264,7 @@ class DeviceDiagnosticsView(QWidget):
     """Device events with channel filtering and bounded UTF-8/HEX receipt details."""
     runtimeLogsRequested = Signal()
     exportRequested = Signal()
-    def __init__(self):
+    def __init__(self, *, compact=False):
         super().__init__()
         self.page = {}
         layout = QVBoxLayout(self)
@@ -276,14 +276,23 @@ class DeviceDiagnosticsView(QWidget):
         self.notice = label('选择一条记录查看来源和回执；传输完成不等于设备动作完成')
         row.addWidget(self.filter)
         row.addWidget(self.format)
-        row.addWidget(self.notice, 1)
+        if compact:
+            row.addStretch(1)
+            layout.addLayout(row)
+            row = QHBoxLayout()
+        else:
+            row.addWidget(self.notice, 1)
         self.runtimeLogsButton = QPushButton('当前设备运行日志…')
         self.exportCacheButton = QPushButton('导出已返回诊断缓存…')
         row.addWidget(self.runtimeLogsButton)
         row.addWidget(self.exportCacheButton)
         self.runtimeLogsButton.clicked.connect(self.runtimeLogsRequested.emit)
         self.exportCacheButton.clicked.connect(self.exportRequested.emit)
+        if compact:
+            row.addStretch(1)
         layout.addLayout(row)
+        if compact:
+            layout.addWidget(self.notice)
         self.records = QTreeWidget()
         self.records.setHeaderLabels(['时间', '事件', '通道 / 槽位', '结果'])
         self.records.setRootIsDecorated(False)

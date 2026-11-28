@@ -1,0 +1,66 @@
+{
+  "head": "78a547270324553b8e88dea5a05258e562fcfb08",
+  "workingTreeChanges": true,
+  "python": "3.10.21",
+  "pyside2": "5.15.2.1",
+  "platform": "windows",
+  "qtScaleFactor": "1.5",
+  "screenPixelRatio": 1.5,
+  "screenLogicalDpi": 96.0,
+  "screenAvailable": [
+    1280,
+    688
+  ],
+  "screenshots": [
+    {
+      "file": "logs-combined-filters.png",
+      "logicalSize": [
+        960,
+        608
+      ],
+      "imageSize": [
+        1440,
+        912
+      ]
+    },
+    {
+      "file": "logs-narrow-scroll-to-tools.png",
+      "logicalSize": [
+        820,
+        440
+      ],
+      "imageSize": [
+        1230,
+        660
+      ]
+    },
+    {
+      "file": "logs-cap-reading-after-eviction.png",
+      "logicalSize": [
+        960,
+        608
+      ],
+      "imageSize": [
+        1440,
+        912
+      ]
+    },
+    {
+      "file": "logs-cap-following-latest.png",
+      "logicalSize": [
+        960,
+        608
+      ],
+      "imageSize": [
+        1440,
+        912
+      ]
+    }
+  ],
+  "checks": {
+    "E": "合成 JSONL，四条件、原始脱敏详情／可复制状态、多范围 JSON 实读导出、往返保留、起始页恢复全部",
+    "F": "合成有界读取结果，10,000 条窗口，淘汰后像素锚点、选择、水平位置与跟随最新",
+    "narrow": "440 逻辑像素高；原始 JSON 展开，顶栏可见且日志区域可滚动到底部操作"
+  },
+  "result": "PASS"
+}

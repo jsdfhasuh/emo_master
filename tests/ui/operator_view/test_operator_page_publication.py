@@ -6,9 +6,6 @@ from uuid import uuid4
 
 import grpc
 import pytest
-from PySide2.QtCore import Qt
-from PySide2.QtTest import QTest
-
 from emo_master.apps.designer.state.project_store import saveProject
 from emo_master.apps.operator_runtime.main import OperatorWindow
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb, runtime_pb2_grpc as rpc
@@ -96,7 +93,7 @@ def testPublicationKeepsExplicitViewAndOriginalStopSelection(qtApp, tmp_path, mo
             waitFor(lambda: window.controller.runtime.jobRepository.get(second).isTerminal
                     and not window.controller.runtime.jobSupervisor.ownsJobResources(second))
         selectJob(monkeypatch, second)
-        QTest.mouseClick(window.viewRunsButton, Qt.LeftButton)
+        window.viewRunsAction.trigger()
         waitFor(lambda: window.viewSession is not None and not window.busy or window.error)
         assert not window.error
         waitFor(lambda: bool(window.pages.displayed))
@@ -143,7 +140,7 @@ def testDeletingViewedCompletedWorkflowReturnsToRemainingPage(qtApp, tmp_path, m
                 and not window.controller.runtime.jobSupervisor.ownsJobResources(viewedJob))
         waitFor(lambda: any(row['jobId'] == viewedJob for row in window.state.get('runCatalog', [])) and not window.busy)
         selectJob(monkeypatch, viewedJob)
-        QTest.mouseClick(window.viewRunsButton, Qt.LeftButton)
+        window.viewRunsAction.trigger()
         waitFor(lambda: window.viewSession is not None and not window.busy or window.error)
         assert not window.error
         waitFor(lambda: bool(window.pages.displayed))
@@ -171,7 +168,7 @@ def testDeletingViewedCompletedWorkflowReturnsToRemainingPage(qtApp, tmp_path, m
         assert oldSession.stop.is_set()
         assert window.pages.config.pageOrder == ['remaining'] and window.pages.isVisible()
         assert not window.returnRunButton.isVisible()
-        assert '已从工程删除' in window.pages.hostMessage.text() and window.pages.hostMessage.isVisible()
+        assert '已从工程删除' in window.viewingLabel.text() and window.viewingLabel.isVisible()
         assert window.controller.sessions['remaining'].jobId == remainingJob
         assert window.selectedWorkflowIds == ['remaining'] and window.startButton.isEnabled()
         assert not calls and len(window.controller.runtime.jobRepository.all()) == 2

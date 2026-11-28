@@ -1,0 +1,40 @@
+{
+  "width": 960,
+  "height": 650,
+  "devicePixelRatio": 1.0,
+  "platform": "windows",
+  "factor": "1",
+  "screenDevicePixelRatio": 1.0,
+  "logicalDpi": 96.0,
+  "available": [
+    1920,
+    1032
+  ],
+  "dialogLogicalSize": [
+    960,
+    650
+  ],
+  "detailsHorizontalScroll": 0,
+  "healthCounts": "6 台设备\n正常 2  ·  非运行 1  ·  维护 1  ·  异常 1  ·  未知 1",
+  "deviceStatuses": {
+    "camera-entry-12345678": "已连接",
+    "camera-wait-01234567": "未连接",
+    "camera-maint-1234567": "维护中",
+    "camera-isolated-1234": "已隔离",
+    "camera-unknown-12345": "未知",
+    "tcp-server-infeed-12345678": "监听中"
+  },
+  "tests": [
+    "六种模拟设备状态与同口径汇总",
+    "TCP 监听且两个通道均等待客户端",
+    "只读原始状态可展开且保持",
+    "非 Operator 宿主日志回退提示",
+    "实际 Qt 按钮提交所选设备完整 ID 和 disconnect"
+  ],
+  "rawScreenshot": {
+    "width": 960,
+    "height": 650,
+    "devicePixelRatio": 1.0
+  },
+  "source": "Qt QTest 原生 Windows 平台与 QT_SCALE_FACTOR，设备状态与操作回执均为模拟"
+}

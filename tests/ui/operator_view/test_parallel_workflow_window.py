@@ -64,10 +64,10 @@ def testIndependentNativeWorkflowStartStopRestartPreservesOtherView(qtApp, tmp_p
         secondSession, secondHub, secondPages = (window.workflowSessions["second"], window.workflowHubs["second"], window.workflowPages["second"])
         secondJob = window.controller.sessions["second"].jobId
         firstJob = window.controller.sessions["main"].jobId
-        window.stopWorkflows("main")
+        QTest.mouseClick(window.workflowControls['main']['stop'], Qt.LeftButton)
         waitFor(lambda: not window.busy and window.state["workflows"]["main"]["canStart"])
         assert window.workflowControls["main"]["start"].isEnabled()
-        assert not window.reloadButton.isEnabled()  # Other workflow still running.
+        assert not window.reloadAction.isEnabled()  # Other workflow still running.
         window.startWorkflows("main")
         waitFor(lambda: not window.busy and window.controller.sessions["main"].jobId != firstJob or window.error)
         assert not window.error
@@ -76,6 +76,12 @@ def testIndependentNativeWorkflowStartStopRestartPreservesOtherView(qtApp, tmp_p
         assert window.controller.sessions["second"].jobId == secondJob
         assert len(window.controller.presentation.jobs) == 2
         window.grab().save(str(tmp_path / "dual-workflow-window.png"))
+        jobs = [owned.jobId for owned in window.controller.sessions.values()]
+        window.showLogs()
+        assert window.stopButton.isVisible() and window.stopButton.text() == '全部停止'
+        QTest.mouseClick(window.stopButton, Qt.LeftButton)
+        waitFor(lambda: not window.busy and window.state['canLoad'])
+        assert all(window.controller.runtime.jobRepository.get(job).isTerminal for job in jobs)
     finally:
         closeWindow(window)
     assert window.controller.closed and not window.workflowSessions

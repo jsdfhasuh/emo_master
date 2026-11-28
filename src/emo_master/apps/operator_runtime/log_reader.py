@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timezone
 import json
 from pathlib import Path
 import re
@@ -174,9 +175,64 @@ def deviceRecordMatches(record: dict, deviceId: str) -> bool:
     if payload.get('deviceId') == deviceId:
         return True
     bindings = payload.get('deviceBindings', {})
-    selected = payload.get('diagnostics', {}).get('deviceSlot')
-    return any(binding.get('deviceId') == deviceId for slot, binding in bindings.items()
-               if not selected or slot == selected)
+    if not isinstance(bindings, dict):
+        return False
+    diagnostics = payload.get('diagnostics')
+    selected = diagnostics.get('deviceSlot') if isinstance(diagnostics, dict) else None
+    return any(isinstance(binding, dict) and binding.get('deviceId') == deviceId
+               for slot, binding in bindings.items() if not selected or slot == selected)
+
+
+def normalizedLevel(value) -> str:
+    level = str(value or "").upper()
+    return "WARN" if level == "WARNING" else level
+
+
+@dataclass(frozen=True)
+class LogFilters:
+    level: str = ""
+    component: str = ""
+    keyword: str = ""
+    deviceId: str = ""
+
+    def matches(self, record: dict) -> bool:
+        if self.level and normalizedLevel(record.get("level")) != self.level:
+            return False
+        if self.component and record.get("component") != self.component:
+            return False
+        if not deviceRecordMatches(record, self.deviceId):
+            return False
+        if not self.keyword:
+            return True
+        fields = ("message", "code", "eventType", "source", "component", "jobId")
+        return (any(self.keyword in str(record.get(field) or "").casefold() for field in fields)
+                or self.keyword in recordSource(record).casefold())
+
+    def exportMetadata(self) -> dict:
+        # A search can contain a pasted credential without any recognisable key.
+        return dict(level=self.level, component=safeText(self.component), deviceId=safeText(self.deviceId),
+                    keywordApplied=bool(self.keyword))
+
+
+def formatLocalTimestamp(data: dict) -> str:
+    milliseconds = data.get("timestampMs")
+    original = data.get("timestamp")
+    if milliseconds is not None and not isinstance(milliseconds, bool):
+        try:
+            value = datetime.fromtimestamp(float(milliseconds) / 1000, timezone.utc).astimezone()
+            return value.replace(tzinfo=None).isoformat(sep=" ", timespec="milliseconds")
+        except (OSError, OverflowError, TypeError, ValueError):
+            pass
+    if isinstance(original, str):
+        try:
+            iso = original[:-1] + "+00:00" if original.endswith("Z") else original
+            value = datetime.fromisoformat(iso)
+            if value.tzinfo is not None:
+                return value.astimezone().replace(tzinfo=None).isoformat(sep=" ", timespec="milliseconds")
+        except (OSError, OverflowError, ValueError):
+            pass
+    fallback = original if original not in (None, "") else milliseconds
+    return safeText(fallback) if fallback not in (None, "") else "未知"
 
 
 @dataclass(frozen=True)
@@ -244,7 +300,7 @@ def recordDetails(record: LogRecord) -> str:
         name = data.get(kind + "Name") or payload.get(kind + "Name")
         key = data.get(kind + "Id")
         return f"{name}（{key}）" if name and key else name or key
-    fields = (("时间", data.get("timestamp") or data.get("timestampMs")), ("级别", data.get("level")),
+    fields = (("原始时间", data.get("timestamp")), ("原始毫秒时间戳", data.get("timestampMs")), ("级别", data.get("level")),
               ("应用", data.get("originApp")), ("模块", data.get("component")),
               ("Runtime 实例", data.get("runtimeInstanceId")),
               ("来源", recordSource(data)), ("事件", data.get("eventType")), ("错误码", data.get("code")),

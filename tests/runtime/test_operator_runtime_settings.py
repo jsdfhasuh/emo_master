@@ -1,8 +1,19 @@
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
-from emo_master.apps.operator_runtime.settings import resolveDataRoot, validateSavedDataRoot
+from emo_master.apps.operator_runtime.settings import ListenerSettings, listenerArgumentOverrides, resolveDataRoot, validateSavedDataRoot
+
+
+def testListenerOverrideNamesFollowEffectiveLanMode():
+    args = SimpleNamespace(allow_lan=None, listen_host="127.0.0.1", listen_port=50505,
+                           display_subscriptions_per_job=None)
+    assert listenerArgumentOverrides(args, ListenerSettings()) == ()
+    assert listenerArgumentOverrides(args, ListenerSettings(allowLan=True)) == ("--listen-host", "--listen-port")
+    args.allow_lan = True
+    assert listenerArgumentOverrides(args, ListenerSettings(allowLan=True)) == (
+        "--allow-lan", "--listen-host", "--listen-port")
 
 
 @pytest.mark.parametrize("explicit,environment,saved,source", [

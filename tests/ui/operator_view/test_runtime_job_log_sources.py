@@ -79,6 +79,7 @@ def testOperatorRuntimeSourcesAndExactExportScopes(qtApp, tmp_path, monkeypatch)
         logs = window.logView
         assert logs.sources.count() == 3 and logs.sources.currentIndex() == 0
         window.showSettings()
+        window.startupPage.ensureWidgetVisible(window.startupPage.allLogsButton)
         QTest.mouseClick(window.startupPage.allLogsButton, Qt.LeftButton)
         assert window.contentStack.currentWidget() is logs and logs.sources.currentIndex() == 0
         queryService = service.QueryRuntimeLogs
@@ -114,6 +115,7 @@ def testOperatorRuntimeSourcesAndExactExportScopes(qtApp, tmp_path, monkeypatch)
         assert jobs.directory.topLevelItem(0).child(0).text(0) == '暂无任务'
 
         window.showSettings()
+        window.startupPage.ensureWidgetVisible(window.startupPage.allLogsButton)
         QTest.mouseClick(window.startupPage.allLogsButton, Qt.LeftButton)
         assert jobs.catalog.isVisible() and jobs.catalogTitle.text() == '运行任务'
         assert not jobs.catalogProject.text() and not jobs.catalogStatus.currentData()
@@ -234,8 +236,11 @@ def testJobReaderStopsAndResumesFromDeliveredCursor(qtApp, tmp_path, monkeypatch
         host, jobs = logs.runtimeLogs, logs.jobLogs
         window.showCommunication()
         dialog = window.communicationDialog
-        dialog.selector.addItem('模拟验收设备', 'software-device')
-        dialog.selector.setCurrentIndex(dialog.selector.findData('software-device'))
+        dialog.timer.stop()
+        dialog._receiveState(document.project.projectId, ({}, service.runtimeInstanceId, {
+            'software-device': {'name': '模拟验收设备', 'deviceTypeId': 'camera', 'projectLoadGeneration': 1},
+        }))
+        dialog.deviceList.setCurrentItem(dialog.deviceItems['software-device'])
         dialog.diagnostics.setPage({'deviceId': 'software-device'})
         QTest.mouseClick(dialog.diagnostics.runtimeLogsButton, Qt.LeftButton)
         assert logs.sources.currentIndex() == 2 and logs.deviceId == 'software-device' and not dialog.isVisible()
@@ -244,6 +249,7 @@ def testJobReaderStopsAndResumesFromDeliveredCursor(qtApp, tmp_path, monkeypatch
         jobs.search.setText('过期的 Job 筛选')
         logs.levelCombo.setCurrentIndex(1)
         window.showSettings()
+        window.startupPage.ensureWidgetVisible(window.startupPage.allLogsButton)
         QTest.mouseClick(window.startupPage.allLogsButton, Qt.LeftButton)
         assert logs.sources.currentIndex() == 0 and not jobs.search.text()
         assert logs.levelCombo.currentIndex() == 0 and not logs.deviceId

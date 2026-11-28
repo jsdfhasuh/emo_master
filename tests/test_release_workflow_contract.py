@@ -34,7 +34,18 @@ class ReleaseWorkflowContractTests(unittest.TestCase):
         workflow = yaml.safe_load(text)
         events = workflow.get("on", workflow.get(True))
         self.assertEqual(set(events), {"pull_request", "workflow_dispatch"})
-        self.assertEqual(set(workflow["jobs"]), {"prepare", "package", "verify"})
+        self.assertEqual(set(workflow["jobs"]), {"prepare", "package", "verify", "shadow-native-receipt"})
+        self.assertEqual(workflow["jobs"]["shadow-native-receipt"], {
+            "if": (
+                "vars.EMO_CI_NATIVE_RECEIPTS == 'shadow' && "
+                "github.repository_id == '1343796337' && "
+                "(github.event_name != 'pull_request' ||\n"
+                " (github.event.pull_request.head.repo.id == '1343796337' &&\n"
+                "  github.event.pull_request.base.repo.id == '1343796337'))"
+            ),
+            "permissions": {"contents": "read"},
+            "uses": "./.github/workflows/emit-ci-cutover-request.yml",
+        })
         package = workflow["jobs"]["package"]
         self.assertNotIn("secrets", package)
         self.assertEqual(package["with"]["source_ref"], "${{ needs.prepare.outputs.source_sha }}")

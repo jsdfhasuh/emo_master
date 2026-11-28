@@ -25,6 +25,7 @@ ROW_LIMIT = 6000
 HOOK_LIMIT = 128
 POOL_LIMIT = 4
 TRACE_BYTES = 12 * 1024 * 1024
+EXTRA_LANE_BYTES = 192 * 1024
 SOURCE_FILES = (
     "scripts/r3_export_credit_trace.py", "scripts/r3_measure.py",
     "scripts/r3_policy_measure.py",
@@ -198,6 +199,8 @@ class ExportCreditTrace:
             raise ValueError("export-credit trace limits exceed their budgets")
         self.row_limit, self.hook_limit = row_limit, hook_limit
         self.rows = []
+        self.lane_tags = {}
+        self.lane_boundaries = []
         self.counters = Counter()
         self.lock = threading.RLock()
         self.local = threading.local()
@@ -283,6 +286,28 @@ class ExportCreditTrace:
             return None
         return {**details, "pool_id": pool_id, "slot": slot, "lane": lane}
 
+    def configure_tags(self, pool, slot, descriptors):
+        """Tag only successful configuration, before descriptors reach the detector."""
+        import uuid
+        pool_id = self.pool_id(pool)
+        if pool_id is None:
+            return
+        with self.lock:
+            for desc in descriptors:
+                key = pool_id, slot, desc["lane"]
+                token, previous = self.lane_tags.get(key, (None, 0))
+                tag = (token or uuid.uuid4().hex, previous + 1)
+                self.lane_tags[key] = tag
+                desc["_credit_trace_lane"] = tag
+
+    def freeze_lane(self, metadata, task=None):
+        data = dict(metadata)
+        key = tuple(data.get(k) for k in ("pool_id", "slot", "lane"))
+        with self.lock:
+            current = self.lane_tags.get(key)
+        data["_trace_lane"] = task.get("_credit_trace_lane") if task is not None else current
+        return data
+
     def record(self, stage, start, end, metadata, outcome="OK", **fields):
         if metadata is None:
             return
@@ -290,9 +315,18 @@ class ExportCreditTrace:
                "elapsed_ms": (end[0] - start[0]) / 1e6,
                "thread_cpu_ns": end[1] - start[1] if start[1] is not None and end[1] is not None else None,
                "thread_id": threading.get_ident(), "outcome": outcome,
-               **metadata, **fields}
+               **{k: v for k, v in metadata.items() if k != "_trace_lane"}, **fields}
         with self.lock:
             self.counters["spans_completed"] += 1
+            # These are observation boundaries, not a sampled ownership state.
+            lane_tag = metadata.get("_trace_lane")
+            active_tag = self.lane_tags.get(tuple(metadata.get(k) for k in ("pool_id", "slot", "lane")))
+            if lane_tag is not None and len(self.lane_boundaries) < self.row_limit:
+                self.lane_boundaries.append({"lane_tag": lane_tag if lane_tag == active_tag else None,
+                    "tag_status": "frozen" if lane_tag == active_tag else "ambiguous_reconfigured",
+                    "event": stage,
+                    **{k: row[k] for k in ("start_ns", "end_ns", "outcome", "pool_id", "slot", "lane",
+                                          "result_key", "job_id", "source_id", "release_reason") if k in row}})
             if len(self.rows) < self.row_limit:
                 self.rows.append(row)
             else:
@@ -301,6 +335,8 @@ class ExportCreditTrace:
     def call(self, stage, metadata, operation, /, *args, fields=None, **kwargs):
         if self.disabled or metadata is None:
             return operation(*args, **kwargs)
+        if "_trace_lane" not in metadata:
+            metadata = self.observe(self.freeze_lane, metadata, default=metadata)
         start = self.stamp()
         outcome = "OK"
         try:
@@ -336,7 +372,8 @@ class ExportCreditTrace:
         self.observe(scope.flush)
 
     def _set_task(self, task, pool_id, stamp):
-        self.local.metadata = self.identity(task, pool_id)
+        details = self.identity(task, pool_id)
+        self.local.metadata = self.freeze_lane(details, task) if details is not None else None
         if stamp is not None:
             self.record("parent.task_dequeued", stamp, stamp, self.current())
 
@@ -397,8 +434,22 @@ class ExportCreditTrace:
                 if trace is not None:
                     stamp = trace.stamp()
                     trace.observe(trace._set_task, task, pool_id, stamp)
+                    if isinstance(task, dict):
+                        task.pop("_credit_trace_lane", None)
                 return task
             return get
+        def put_factory(original):
+            def put(task):
+                trace = ref()
+                if trace is not None and not trace.disabled:
+                    def tag():
+                        details = trace.identity(task, pool_id)
+                        if details is not None:
+                            task["_credit_trace_lane"] = trace.freeze_lane(details)["_trace_lane"]
+                    trace.observe(tag)
+                return original(task)
+            return put
+        self._patch_instance(slot["queue"], "put_nowait", put_factory)
         self._patch_instance(slot["queue"], "get", queue_factory)
         for lane, credit in enumerate(slot["laneFree"]):
             def release_factory(original, lane_index=lane):
@@ -534,6 +585,23 @@ class ExportCreditTrace:
         content = json.dumps(payload, separators=(",", ":")).encode()
         if len(content) > TRACE_BYTES:
             raise RuntimeError("export-credit trace file budget exceeded")
+        if self.lane_boundaries:
+            # Optional diagnostic rows cannot make the original bounded trace fail.
+            allowance = min(EXTRA_LANE_BYTES, TRACE_BYTES - len(content))
+            key = b',"lane_boundary_observations":'
+            subset = self.lane_boundaries
+            while True:
+                value = json.dumps({"schema_version": 1, "clock": "perf_counter_ns",
+                                    "rows": subset,
+                                    "at_limit": len(self.lane_boundaries) == self.row_limit or
+                                                len(subset) < len(self.lane_boundaries)},
+                                   separators=(",", ":")).encode("ascii")
+                if len(key) + len(value) <= allowance:
+                    content = content[:-1] + key + value + b"}"
+                    break
+                if not subset:
+                    break
+                subset = subset[:len(subset) // 2]
         destination.write_bytes(content)
         failures = {key: value for key, value in payload["counters"].items()
                     if value and any(part in key for part in ("overflow", "invalid", "conflict", "dropped", "unverified", "active_at_exit"))}
@@ -580,6 +648,16 @@ def installed(trace, patch, root):
     # with the benchmark's derived MeasuredPool selected by the caller.
     spawn_owner = next(cls for cls in pool_type.__mro__ if "_spawn" in vars(cls))
     patch(spawn_owner, "_spawn", spawn)
+    original_configure = exporter.ExportPool.configureLanes
+
+    def configure(pool, index, count):
+        descriptors = original_configure(pool, index, count)
+        active = ref()
+        if active is not None:
+            active.observe(active.configure_tags, pool, index, descriptors)
+        return descriptors
+
+    patch(exporter.ExportPool, "configureLanes", configure)
     original_run, original_submit = exporter.ExportPool._run, exporter.ExportPool.submit
 
     def run(pool, slot):

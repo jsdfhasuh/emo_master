@@ -22,6 +22,7 @@ from tests.runtime.test_tcp_device_closure import runtime, thirdParty  # noqa: F
 from tests.runtime.test_tcp_device_integration import definition, freePort, graph, node, edge, run, waitWrite
 
 
+@pytest.mark.usefixtures('windowsOffscreenConnectionTestFeedback')
 def testC1ThroughC6PendingDraftPublicationAndRun(runtime, ownedDesignerWindow, tmp_path, monkeypatch):  # noqa: F811
     service, client = runtime
     types, requirements, _ = client.listDeviceTypes()

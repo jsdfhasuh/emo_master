@@ -22,6 +22,7 @@ import weakref
 ROW_LIMIT = 512
 HOOK_LIMIT = 128
 TRACE_BYTES = 1024 * 1024
+EXTRA_LANE_BYTES = 48 * 1024
 ROW_BYTES = TRACE_BYTES - 64 * 1024
 SOURCE_FILES = (
     "scripts/r3_capture_credit_trace.py", "scripts/r3_measure.py",
@@ -77,6 +78,7 @@ class CaptureCreditTrace:
             raise ValueError("capture-credit trace limits exceed their budgets")
         self.row_limit, self.hook_limit = row_limit, hook_limit
         self.rows, self.hooks = [], []
+        self.lane_boundaries = []
         self.counters = Counter()
         self.local = threading.local()
         self.disabled = False
@@ -250,6 +252,7 @@ class CaptureCreditTrace:
                 or ("timeout" in kwargs and not timeout(kwargs["timeout"]))):
             self.counters["invalid_acquire_arguments"] += 1
             return None
+        details["_trace_lane"] = slot.get("_credit_trace_lane")
         details.update(acquire_args=list(args), acquire_kwargs=dict(kwargs))
         return details
 
@@ -265,6 +268,12 @@ class CaptureCreditTrace:
                 or (start[1] is not None and end[1] is not None and end[1] < start[1])):
             self.counters["invalid_clock_schema"] += 1
             return
+        lane_tag = details.pop("_trace_lane", None)
+        if lane_tag is not None and len(self.lane_boundaries) < self.row_limit:
+            self.lane_boundaries.append({"lane_tag": lane_tag, "start_ns": start[0], "end_ns": end[0],
+                "event": "capture.acquire", "result_ordinal": details["result_ordinal"],
+                "outcome": outcome, "acquired": accepted,
+                **{k: details[k] for k in ("job_id", "result_key", "source_id", "slot", "lane")}})
         row = dict(details, stage="producer.capture_credit_acquire", start_ns=start[0], end_ns=end[0],
                    elapsed_ms=(end[0] - start[0]) / 1e6,
                    thread_cpu_ns=end[1] - start[1] if start[1] is not None and end[1] is not None else None,
@@ -353,6 +362,23 @@ class CaptureCreditTrace:
         content = json.dumps(payload, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
         if len(content) > TRACE_BYTES:
             raise RuntimeError("capture-credit trace file budget exceeded")
+        if self.lane_boundaries:
+            # Optional diagnostic rows cannot make the original bounded trace fail.
+            allowance = min(EXTRA_LANE_BYTES, TRACE_BYTES - len(content))
+            key = b',"lane_boundary_observations":'
+            subset = self.lane_boundaries
+            while True:
+                value = json.dumps({"schema_version": 1, "clock": "perf_counter_ns",
+                                    "rows": subset,
+                                    "at_limit": len(self.lane_boundaries) == self.row_limit or
+                                                len(subset) < len(self.lane_boundaries)},
+                                   separators=(",", ":")).encode("ascii")
+                if len(key) + len(value) <= allowance:
+                    content = content[:-1] + key + value + b"}"
+                    break
+                if not subset:
+                    break
+                subset = subset[:len(subset) // 2]
         destination.write_bytes(content)
         return summary
 
@@ -378,11 +404,11 @@ def installed(trace, root):
         return initialize
 
     def image_factory(original):
-        def image(collector, key, value, item):
+        def image(collector, key, value, item, **kwargs):
             active = trace_ref()
             scope = active.observe(active.enter_image, collector, key, value, item) if active is not None else None
             try:
-                return original(collector, key, value, item)
+                return original(collector, key, value, item, **kwargs)
             finally:
                 if scope is not None:
                     active.leave_image(scope)

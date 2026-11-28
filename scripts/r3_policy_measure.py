@@ -395,7 +395,7 @@ def retireGui(windows, hub, app):
     app.processEvents()
 
 
-def normalTrial(root, arm, count, warmup, app, startup=None):
+def normalTrial(root, arm, count, warmup, app, startup=None, hubProbe=None):
     import grpc
     from examples.runtime_pages_p2 import pacedProject, pluginRoots
     from examples.runtime_pages_p3 import pageConfiguration
@@ -449,7 +449,12 @@ def normalTrial(root, arm, count, warmup, app, startup=None):
             startup.job = job
         if ARM_SPECS[arm]["capture"]:
             clients = [base.MeasuredSession(address, job) for _ in range(2)]
-            hub = DisplayHub(clients[0])
+            if hubProbe is None:
+                hub = DisplayHub(clients[0])
+            else:
+                class ObservedHub(DisplayHub):
+                    tick = hubProbe.wrap(DisplayHub.tick)
+                hub = ObservedHub(clients[0])
             windows = [RuntimePages(project.presentation, hub=hub, label=f"Normal Run / {request.legacy_snapshot_policy} / 1080p 5Hz") for _ in range(2)]
             screen = app.primaryScreen().availableGeometry()
             width = max(460, min(1060, screen.width()//2-20))
@@ -612,6 +617,10 @@ def executeTrial(args):
     result = None
     assetTrace = None
     assetTraceSummary = None
+    filePhases = None
+    if getattr(args, "asset_file_subphases", False):
+        from scripts.r3_credit_file_subphases import FileSubphases
+        filePhases = FileSubphases(limit=2048)
     creditTrace = None
     creditTraceSummary = None
     startup = StartupReadiness() if getattr(args, "startup_barrier", False) else None
@@ -661,9 +670,18 @@ def executeTrial(args):
             base.wrap(base.OWNER_TRACE, patch, RuntimePages, "submit", "gui.apply", base.guiDetails)
             base.wrap(base.OWNER_TRACE, patch, PreviewAssetStore, "promote", "terminal.legacy_promotion")
             root = args.output / "work-trial"
-            with installed(assetTrace, patch, ROOT) if assetTrace is not None else nullcontext():
+            with installed(assetTrace, patch, ROOT, file_phases=filePhases) if assetTrace is not None else nullcontext():
                 with creditInstalled(creditTrace, patch, ROOT) if creditTrace is not None else nullcontext():
-                    result = normalTrial(root, args.arm, args.count, args.warmup, app, startup)
+                    if getattr(args, "hub_tick_trace", False):
+                        from scripts.r3_credit_hub_tick_probe import HubTickProbe
+                        hubProbe = HubTickProbe()
+                    else:
+                        hubProbe = None
+                    try:
+                        result = normalTrial(root, args.arm, args.count, args.warmup, app, startup, hubProbe)
+                    finally:
+                        if hubProbe is not None:
+                            hubProbe.save(args.output / "hub-tick-observations.json")
             (args.output / "owners-closed.json").write_text(json.dumps({
                 "all_original_trial_close_calls_returned": True}), encoding="utf-8")
     finally:
@@ -680,6 +698,17 @@ def executeTrial(args):
                 # Optional evidence must not replace a real trial/cleanup error.
                 assetTraceSummary = {"enabled": True, "complete": False,
                     "save_error_type": type(error).__name__, "performance_verdict": "NOT_EVALUATED"}
+        if filePhases is not None:
+            # Separate optional file; cannot increase the original report byte budget.
+            try:
+                payload = {"schema": 1, "clock": "perf_counter_ns",
+                           "rows": filePhases.rows, "dropped": filePhases.dropped}
+                raw = json.dumps(payload, separators=(",", ":")).encode("ascii")
+                if len(raw) <= 512 * 1024:
+                    with (args.output / "asset-file-subphases.json").open("xb") as output:
+                        output.write(raw)
+            except OSError:
+                pass
         base.OWNER_TRACE.save()
         for pid, trace in base.ENCODER_TRACES.items():
             content = json.dumps(trace, separators=(",", ":"))
@@ -899,6 +928,8 @@ def main():
         help="opt-in worker's original nonblocking lane acquire result; metadata only, no extra semaphore call")
     parser.add_argument("--startup-barrier", action="store_true",
         help="diagnostic v3: wait for two subscribers and native window paints before the first scheduled input")
+    parser.add_argument("--asset-file-subphases", action="store_true", help=argparse.SUPPRESS)
+    parser.add_argument("--hub-tick-trace", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--child", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--arm", choices=tuple(ARM_SPECS), default="all_off", help=argparse.SUPPRESS)
     args = parser.parse_args()
@@ -911,6 +942,10 @@ def main():
     args.output = args.output.resolve()
     if any(args.output.is_relative_to(ROOT/name) for name in ("src", "tests", "scripts", "proto", "examples", "prototypes")):
         parser.error("evidence must be outside source identity directories")
+    if args.asset_file_subphases and not (args.child and args.asset_split_trace and args.arm == "none_qt"):
+        parser.error("--asset-file-subphases requires the original asset-split diagnostic child")
+    if args.hub_tick_trace and not (args.child and args.arm == "none_qt" and args.startup_barrier):
+        parser.error("--hub-tick-trace requires the original none_qt diagnostic child")
     if args.child:
         executeTrial(args)
         return 0

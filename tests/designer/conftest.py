@@ -27,7 +27,8 @@ def designerApplication():
 
 
 @pytest.fixture(autouse=True)
-def cleanupDesignerWidgets(designerApplication, monkeypatch, isolatedDesignerSettings):
+def cleanupDesignerWidgets(designerApplication, monkeypatch, isolatedDesignerSettings,
+                           windowsOffscreenConnectionTestFeedback):
     if designerApplication is None:
         yield
         return
@@ -51,18 +52,6 @@ def cleanupDesignerWidgets(designerApplication, monkeypatch, isolatedDesignerSet
             return QMessageBox.Discard
         return originalQuestion(parent, title, *args, **kwargs)
     monkeypatch.setattr(QMessageBox, 'question', question)
-
-    if os.name == 'nt' and designerApplication.platformName() == 'offscreen':
-        originalOpen = QMessageBox.open
-
-        def openMessage(box, *args):
-            # Windows offscreen crashes while rendering QMessageBox. Dedicated
-            # connection-result layout tests use the native windows platform.
-            if box.objectName() == 'deviceConnectionTestResult':
-                return
-            return originalOpen(box, *args)
-
-        monkeypatch.setattr(QMessageBox, 'open', openMessage)
 
     existing = set(designerApplication.topLevelWidgets())
     yield

@@ -31,6 +31,7 @@ REQUIRED_STAGES = (
     "client.protobuf_deserialize",
 )
 SOURCE_FILES = (
+    "scripts/r3_credit_file_subphases.py",
     "scripts/r3_asset_split_trace.py", "scripts/r3_measure.py",
     "scripts/r3_policy_measure.py",
     "src/emo_master/apps/runtime/presentation/assets.py",
@@ -567,7 +568,7 @@ class _Channel:
 
 
 @contextmanager
-def installed(trace, patch, root):
+def installed(trace, patch, root, file_phases=None):
     """Use r3_measure.patches()'s patch function; restore only after all owners close."""
     import grpc
     import cv2
@@ -658,7 +659,12 @@ def installed(trace, patch, root):
         metadata = getattr(trace.local, "metadata", None)
         if trace.disabled or metadata is None or not getattr(trace.local, "asset_read", False):
             return original_file_read(path)
+        if file_phases is not None:
+            with file_phases.armed(path, metadata["call_id"]):
+                return trace.call("server.file_read", metadata, original_file_read, path)
         return trace.call("server.file_read", metadata, original_file_read, path)
+    if file_phases is not None:
+        patch(Path, "open", file_phases.wrap_open(Path.open))
     patch(Path, "read_bytes", file_read)
     original_unary = AioRuntimeServer._unary
 

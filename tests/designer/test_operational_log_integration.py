@@ -879,6 +879,9 @@ def testReaderErrorRetryKeepsMatchingCursorAndInstance(ownedDesignerWindow, tmp_
         cursor, instance = first.cursor, first.runtimeInstanceId
         stopped.append(True)
         waitUntil(first.finished.is_set)
+        window._pollOperationalLogs()
+        notice = next(row for row in window.logEntries if row.code == "READ_FAILED")
+        assert notice.eventType == "runtime.logs.connection" and notice.level == "WARN"
         stopped.clear()
         if changedInstance:
             service.runtimeInstanceId = "new-runtime"

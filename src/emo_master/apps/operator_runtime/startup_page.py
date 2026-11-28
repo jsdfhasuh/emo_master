@@ -8,6 +8,8 @@ from PySide2.QtWidgets import (
     QPushButton, QScrollArea, QSizePolicy, QSpinBox, QToolButton, QVBoxLayout, QWidget,
 )
 
+from emo_master.ui.wrap_label import OptionalWrapLabel
+
 from .settings import (DEFAULT_ROOT_KEY, LISTENER_SETTINGS_KEY, ListenerSettings, listenerSettingsJson,
                        readListenerSettings, runtimePaths, validateSavedDataRoot)
 from .theme import applyOperatorTheme, setStatusTone
@@ -31,7 +33,7 @@ class PathSummary(QPlainTextEdit):
         self.setReadOnly(True)
         self.setWordWrapMode(QTextOption.WrapAnywhere)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.setFixedHeight(72)
+        self.setFixedHeight(64)
         self.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Fixed)
 
     def text(self):
@@ -48,6 +50,7 @@ class StorageSettings(QGroupBox):
         self.preferences, self.resolution = preferences, resolution
         self.savedDefault = str(preferences.value(DEFAULT_ROOT_KEY, "") or "")
         layout = QVBoxLayout(self)
+        layout.setSpacing(5)
         self.currentLabel = PathSummary()
         self.currentLabel.setAccessibleName("当前 Runtime 本机目录")
         self.sourceLabel = plainLabel("来源：" + resolution.sourceLabel, role="hint")
@@ -57,11 +60,12 @@ class StorageSettings(QGroupBox):
         self.detailsButton.setText("展开实际目录与覆盖诊断")
         self.detailsButton.setCheckable(True)
         self.details = QPlainTextEdit()
+        self.details.setProperty("operatorRole", "path")
         self.details.setReadOnly(True)
         self.details.setMaximumHeight(170)
         self.details.hide()
         self.detailsButton.toggled.connect(self.details.setVisible)
-        layout.addWidget(self.detailsButton)
+        layout.addWidget(self.detailsButton, alignment=Qt.AlignLeft)
         layout.addWidget(self.details)
         layout.addWidget(plainLabel("下次启动默认目录（只保存本机设置）"))
         self.nextEdit = QLineEdit(self.savedDefault)
@@ -72,8 +76,12 @@ class StorageSettings(QGroupBox):
         self.browseButton = QPushButton("选择目录…")
         self.defaultButton = QPushButton("使用系统默认")
         self.saveButton = QPushButton("保存下次设置")
-        for button in (self.browseButton, self.defaultButton, self.saveButton):
-            row.addWidget(button)
+        self.defaultButton.setProperty("operatorRole", "quiet")
+        self.saveButton.setProperty("operatorRole", "primary")
+        row.addWidget(self.browseButton)
+        row.addWidget(self.defaultButton)
+        row.addStretch()
+        row.addWidget(self.saveButton)
         layout.addLayout(row)
         self.feedback = plainLabel()
         layout.addWidget(self.feedback)
@@ -103,7 +111,9 @@ class StorageSettings(QGroupBox):
         return f"已保存：{target}\n下次启动生效；本次目录不变。"
 
     def _draftChanged(self):
-        unsaved = self.nextEdit.text() != self.savedDefault
+        path = self.nextEdit.text()
+        self.nextEdit.setToolTip(path)
+        unsaved = path != self.savedDefault
         self.feedback.setText("未保存；本次目录不变。" if unsaved else self._savedMessage())
         setStatusTone(self.feedback, "amber" if unsaved else "neutral")
 
@@ -156,12 +166,15 @@ class ListenerSettingsPanel(QGroupBox):
         self.current = current or readListenerSettings(preferences)
         self.saved = readListenerSettings(preferences)
         layout = QVBoxLayout(self)
+        layout.setSpacing(5)
         self.currentLabel = plainLabel(role="path")
         layout.addWidget(self.currentLabel)
         self.allowLan = QCheckBox("允许其他电脑通过局域网连接 Runtime")
         self.allowLan.setChecked(self.saved.allowLan)
         layout.addWidget(self.allowLan)
         form = QFormLayout()
+        form.setHorizontalSpacing(14)
+        form.setVerticalSpacing(4)
         self.host = QLineEdit(self.saved.host)
         self.port = QSpinBox()
         self.port.setRange(1, 65535)
@@ -176,9 +189,10 @@ class ListenerSettingsPanel(QGroupBox):
         layout.addWidget(plainLabel("0.0.0.0 监听本机全部 IPv4 地址。连接未加密，仅用于受信任局域网。"
                                    "关闭局域网接入时使用本机动态端口。", role="hint"))
         self.saveButton = QPushButton("保存下次监听设置")
+        self.saveButton.setProperty("operatorRole", "primary")
         self.saveButton.clicked.connect(self.save)
-        layout.addWidget(self.saveButton)
-        self.feedback = plainLabel()
+        layout.addWidget(self.saveButton, alignment=Qt.AlignRight)
+        self.feedback = OptionalWrapLabel()
         layout.addWidget(self.feedback)
         self.allowLan.toggled.connect(self._enabled)
         self._enabled()
@@ -231,8 +245,9 @@ class StartupPage(QScrollArea):
         super().__init__(parent)
         self.setWidgetResizable(True)
         self.setFrameShape(QScrollArea.NoFrame)
-        self.setObjectName("operatorStartup")
         content = QWidget()
+        content.setAttribute(Qt.WA_StyledBackground, True)
+        content.setProperty("operatorRole", "page")
         self.columns = QBoxLayout(QBoxLayout.LeftToRight, content)
         self.columns.setContentsMargins(0, 0, 0, 0)
         self.columns.setSpacing(12)
@@ -242,6 +257,7 @@ class StartupPage(QScrollArea):
         leftLayout.setSpacing(12)
         project = QGroupBox("工程")
         layout = QVBoxLayout(project)
+        layout.setSpacing(8)
         self.chooseButton = QPushButton("选择工程…")
         self.chooseButton.setProperty("operatorRole", "primary")
         self.chooseButton.clicked.connect(self.chooseRequested)
@@ -251,7 +267,7 @@ class StartupPage(QScrollArea):
         layout.addWidget(self.recentProject)
         self.archiveLabel = plainLabel("业务留档：未加载工程。", role="hint")
         layout.addWidget(self.archiveLabel)
-        self.failureLabel = plainLabel()
+        self.failureLabel = OptionalWrapLabel()
         setStatusTone(self.failureLabel, "red")
         layout.addWidget(self.failureLabel)
         self.retryButton = QPushButton("重试本次初始化")
@@ -261,6 +277,7 @@ class StartupPage(QScrollArea):
         leftLayout.addWidget(project)
         recent = QGroupBox("最近日志")
         layout = QVBoxLayout(recent)
+        layout.setSpacing(8)
         self.recentLogs = QPlainTextEdit()
         self.recentLogs.setReadOnly(True)
         self.recentLogs.setMaximumHeight(160)
@@ -283,8 +300,7 @@ class StartupPage(QScrollArea):
         self.columns.addWidget(left, 1)
         self.columns.addWidget(right, 1)
         self.setWidget(content)
-        applyOperatorTheme(content, "operatorStartupContent")
-        self.setStyleSheet("#operatorStartup { background: transparent; }")
+        applyOperatorTheme(self, "operatorStartup")
 
     def resizeEvent(self, event):
         self.columns.setDirection(QBoxLayout.TopToBottom if event.size().width() < 920 else QBoxLayout.LeftToRight)

@@ -332,7 +332,7 @@ class RuntimeJobLogs(QWidget):
         self.rangeStatus = _label()
         filterStatus = QHBoxLayout()
         filterStatus.addWidget(self.rangeStatus, 1)
-        self.clearFilters = _button(filterStatus, "清除筛选", self._resetFilters)
+        self.clearFilters = _button(filterStatus, "清除筛选", self.resetFilters)
         self.clearFilters.hide()
         panel.addLayout(filterStatus)
 
@@ -598,8 +598,6 @@ class RuntimeJobLogs(QWidget):
 
     def _toggleHistory(self):
         self._historyMode = not self._historyMode
-        self.catalogFilters.setVisible(self._historyMode)
-        self.catalogHistory.setText("返回任务首页" if self._historyMode else "更早历史")
         self._renderCatalog()
         self._refreshCatalog()
 
@@ -632,6 +630,8 @@ class RuntimeJobLogs(QWidget):
                    accept, self.catalogHint)
 
     def _renderCatalog(self):
+        self.catalogFilters.setVisible(self._historyMode)
+        self.catalogHistory.setText("返回任务首页" if self._historyMode else "更早历史")
         selected = self._selectedJob()
         selectedKey = _jobKey(selected)
         scroll = self.directory.verticalScrollBar().value()
@@ -824,7 +824,7 @@ class RuntimeJobLogs(QWidget):
 
         self._read(request, accept, self.catalogHint)
 
-    def home(self):
+    def home(self, *, resetCatalog=False):
         self._cancel()
         self.redraw.stop()
         self._opening = False
@@ -836,8 +836,18 @@ class RuntimeJobLogs(QWidget):
         self.returnSourceButton.hide()
         self._upper = self._before = None
         self._closeDrawer()
+        if resetCatalog:
+            self._historyMode = False
+            self.catalogProject.clear()
+            self.catalogStatus.setCurrentIndex(0)
+            self.catalogDateRange.setBounds(None, None)
+            self.history = []
+            self.historyCursor = ""
+            self.historyScope.clear()
+            self._renderCatalog()
         self.pages.setCurrentWidget(self.catalog)
-        self._refreshCatalog()
+        if self.isVisible():
+            self._refreshCatalog()
 
     def _openSelectedJob(self):
         job = self._selectedJob()
@@ -871,7 +881,7 @@ class RuntimeJobLogs(QWidget):
             self.exportFeedback("", False)
         self.filters.hide()
         self.technicalToggle.setChecked(False)
-        self._resetFilters()
+        self.resetFilters()
         self.mode.setCurrentIndex(0)
         if restore is not None:
             self._restoreFilters(restore["filters"])
@@ -1192,7 +1202,7 @@ class RuntimeJobLogs(QWidget):
         self._toggleTechnicalFilters(state["technical"])
         self._scheduleRender()
 
-    def _resetFilters(self):
+    def resetFilters(self):
         self._restoreFilters(dict(values={}, search="", warning=False, level=0, draft=(None, None), dates=(None, None),
                                   advanced=not self.filters.isHidden(), technical=self.technicalToggle.isChecked()))
 
@@ -1303,13 +1313,14 @@ class RuntimeJobLogs(QWidget):
         if not self.filters.isHidden():
             updateIdentityChoices(self.inputs, self.window.entries)
         matches = self._scopePredicate()
-        self._items.clear()
-        self._branches.clear()
         self.events.blockSignals(True)
         self.events.setUpdatesEnabled(False)
         scrollBar = self.events.verticalScrollBar()
         try:
+            # Keep the Python item wrappers alive until Qt has removed the native items.
             self.events.clear()
+            self._items.clear()
+            self._branches.clear()
             if self.mode.currentIndex():
                 for entry in sorted(filter(matches, self.window.entries), key=lambda row: (row.timestampMs, row.eventId)):
                     self.events.addTopLevelItem(self._entryItem(entry))

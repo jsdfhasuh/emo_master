@@ -3,7 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from threading import Event
 
-from PySide2.QtCore import QTimer
+from PySide2.QtCore import Qt, QTimer
 from PySide2.QtWidgets import QFileDialog, QMessageBox, QStackedWidget, QTabBar, QVBoxLayout, QWidget
 
 from emo_master.clients.runtime.calls import DisplayCallContext
@@ -35,6 +35,7 @@ class RuntimeLogSources(QWidget):
         self.sources = QTabBar()
         self.sources.setObjectName("operatorLogSources")
         self.sources.setDrawBase(False)
+        self.sources.setExpanding(False)
         for title in ("运行任务", "Runtime 系统事件", "本机 JSONL"):
             self.sources.addTab(title)
         layout.addWidget(self.sources)
@@ -42,12 +43,27 @@ class RuntimeLogSources(QWidget):
         self.jobLogs = RuntimeJobLogs(10000, StructuredLogEntry.fromRuntimeEvent, allowStop=False,
                                       allowAdvancedHistory=False, filteredExport=True, showJobIdentity=True)
         self.jobLogs.detail.operatorLookup = self._operatorLookup
+        self.jobLogs.catalogTitle.setProperty("operatorRole", "section")
+        self.jobLogs.jobTitle.setProperty("operatorRole", "section")
+        self.jobLogs.openButton.setProperty("operatorRole", "primary")
+        self.jobLogs.catalogHistory.setProperty("operatorRole", "quiet")
+        self.jobLogs.clearFilters.setProperty("operatorRole", "quiet")
+        for label in (self.jobLogs.catalogHint, self.jobLogs.rangeStatus, self.jobLogs.jobHint,
+                      self.jobLogs.deviceHistoryNote, self.jobLogs.detail.notice):
+            label.setProperty("operatorRole", "hint")
+        for panel, role in ((self.jobLogs.filters, "filterPanel"), (self.jobLogs.drawer, "detailPanel")):
+            panel.setAttribute(Qt.WA_StyledBackground, True)
+            panel.setProperty("operatorRole", role)
+            panel.layout().setContentsMargins(9, 7, 9, 7)
+        for tree in (self.jobLogs.directory, self.jobLogs.events, self.jobLogs.detail.readable):
+            tree.setAlternatingRowColors(True)
+        self.jobLogs.events.setColumnWidth(3, 112)
+        self.jobLogs.detail.title.setProperty("operatorRole", "section")
         self.systemLogs = RuntimeSystemLogs()
         for page in (self.jobLogs, self.systemLogs, localFiles):
             self.pages.addWidget(page)
         layout.addWidget(self.pages, 1)
         self.sources.currentChanged.connect(self._selectSource)
-        self.sources.setCurrentIndex(2)
 
         self.timer = QTimer(self)
         self.timer.setInterval(75)
@@ -83,13 +99,14 @@ class RuntimeLogSources(QWidget):
 
     def _ensureReader(self):
         if not self._toolVisible or self.sources.currentIndex() != 0 or self.client is None:
+            if self.reader is not None and not self.reader.finished.is_set():
+                self.reader.requestStop()
             return
         if self.reader is not None:
-            if not self.reader.finished.is_set() or self.reader.unsupported:
+            if self.reader.thread.is_alive() or self.reader.unsupported:
                 return
             self._drain()
-        instance = self.jobLogs.instance
-        cursor = self._delivery[1] if self._delivery is not None else None
+        instance, cursor = self._delivery or (self.jobLogs.instance, None)
         self.reader = RuntimeGlobalLogs(self.client.runtimeService, afterEventId=cursor, runtimeInstanceId=instance)
         self._readerReady = False
         self.timer.start()
@@ -97,22 +114,27 @@ class RuntimeLogSources(QWidget):
     def _drain(self):
         reader = self.reader
         previous = self._delivery
-        self.jobLogs.synchronize(self.client, reader.runtimeInstanceId)
-        self.systemLogs.setRuntime(self.client, reader.runtimeInstanceId)
+        batch = reader.take(includeProgress=True)
+        instance = reader.runtimeInstanceId
+        self.jobLogs.synchronize(self.client, instance)
+        self.systemLogs.setRuntime(self.client, instance)
         if not self._readerReady and reader.supported:
-            self._readerReady = True
             position = reader.initialPosition or previous
-            if position is not None:
+            if position is not None and position[0] == instance:
+                self._readerReady = True
                 self._delivery = position
                 self.jobLogs.progress(*position)
-        for kind, value in reader.take(includeProgress=True):
+        for kind, value in batch:
             if kind == "event":
                 self.jobLogs.appendEntry(StructuredLogEntry.fromRuntimeEvent(value))
             elif kind == "progress":
-                self._delivery = value
-                self.jobLogs.progress(*value)
+                if value[0] == instance:
+                    self._readerReady = True
+                    self._delivery = value
+                    self.jobLogs.progress(*value)
             elif kind == "reset":
-                self._readerReady, self._delivery = False, None
+                if self._delivery is None or self._delivery[0] != value["runtimeInstanceId"]:
+                    self._readerReady, self._delivery = False, None
             else:
                 if value.get("code") in {"GLOBAL_LOG_DISCONNECTED", "GLOBAL_LOG_STOPPED"}:
                     self.jobLogs.interrupted()
@@ -172,9 +194,13 @@ class RuntimeLogSources(QWidget):
             context.cancel()
 
     def _poll(self):
-        readerFinished = self.reader is None or self.reader.finished.is_set()
-        if self.reader is not None:
+        reader = self.reader
+        readerFinished = reader is None or not reader.thread.is_alive()
+        if reader is not None:
             self._drain()
+            if readerFinished and reader.stop.is_set() and not reader.unsupported:
+                self.reader = None
+                self._ensureReader()
         if self.export is not None and self.export[0].done():
             future, _, cancellation, path, scopeText = self.export
             self.export = None
@@ -188,7 +214,7 @@ class RuntimeLogSources(QWidget):
             else:
                 message = f"已导出 {count} 条 · {scopeText} · {path}"
             self.jobLogs.exportFeedback(message, False)
-        if readerFinished and self.export is None:
+        if readerFinished and self.reader in (None, reader) and self.export is None:
             self.timer.stop()
 
     def beginClose(self):

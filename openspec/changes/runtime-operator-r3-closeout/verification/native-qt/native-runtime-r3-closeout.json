@@ -1,0 +1,146 @@
+{
+  "head": "6253c4b60a02e081eb3960e01b606895ce90ec11",
+  "modified": [],
+  "automation": "Windows native Qt via QTest",
+  "humanDesktopAcceptance": false,
+  "platform": "Windows-10-10.0.26200-SP0",
+  "qpa": "windows",
+  "python": "3.10.21",
+  "pyside": "5.15.2.1",
+  "grpc": "1.78.0",
+  "pywin32": "312",
+  "pillow": "12.3.0",
+  "screen": [
+    1920,
+    1080
+  ],
+  "screenshots": {
+    "01-startup": {
+      "method": "PrintWindow",
+      "pixels": [
+        1076,
+        839
+      ],
+      "logicalClientSize": [
+        1060,
+        800
+      ]
+    },
+    "02-runtime-settings": {
+      "method": "PrintWindow",
+      "pixels": [
+        1076,
+        839
+      ],
+      "logicalClientSize": [
+        1060,
+        800
+      ]
+    },
+    "03-log-default": {
+      "method": "PrintWindow",
+      "pixels": [
+        1076,
+        839
+      ],
+      "logicalClientSize": [
+        1060,
+        800
+      ]
+    },
+    "04-log-detail": {
+      "method": "PrintWindow",
+      "pixels": [
+        1076,
+        839
+      ],
+      "logicalClientSize": [
+        1060,
+        800
+      ]
+    },
+    "05-log-filters": {
+      "method": "PrintWindow",
+      "pixels": [
+        1076,
+        859
+      ],
+      "logicalClientSize": [
+        1060,
+        820
+      ]
+    },
+    "06-device-management": {
+      "method": "PrintWindow",
+      "pixels": [
+        936,
+        828
+      ],
+      "logicalClientSize": [
+        920,
+        789
+      ]
+    },
+    "07-production": {
+      "method": "PrintWindow",
+      "pixels": [
+        1076,
+        952
+      ],
+      "logicalClientSize": [
+        1060,
+        913
+      ]
+    }
+  },
+  "result": "PASS",
+  "startupEntry": {
+    "source": "运行任务",
+    "preferredFont": "Microsoft YaHei UI",
+    "resolvedFont": "Microsoft YaHei UI",
+    "fontMatches": true,
+    "compactSettingsReachable": true
+  },
+  "settingsEntry": {
+    "checkedAndFocused": true,
+    "disabledFields": true,
+    "source": "运行任务",
+    "sourceTabWidth": 309,
+    "sourceBarWidth": 1032
+  },
+  "logs": {
+    "jobIds": [
+      "f160a662-4f15-4425-a5d9-3a6dc98569d9",
+      "63c842ee-64e4-4721-8341-c33120d47a68"
+    ],
+    "sources": 3,
+    "clearedFilters": true,
+    "retainedReadingPosition": true,
+    "compactLogActionsReachable": true,
+    "switchedCursor": [
+      "b753d948e30d44a9b8fa2d31414472b2",
+      198
+    ],
+    "reopenedCursor": [
+      "b753d948e30d44a9b8fa2d31414472b2",
+      198
+    ],
+    "selectedEventId": 127,
+    "resumedEventId": 407,
+    "readerDeliveriesForEvent": 1,
+    "hiddenQueries": 6
+  },
+  "device": {
+    "connected": true,
+    "diagnosticRecords": 2,
+    "explicitLocalSource": true,
+    "startupClearsPriorFilters": true,
+    "logDiagnosticDevice": "software-camera"
+  },
+  "production": {
+    "customQtStyle": true,
+    "viewed": "63c842ee-64e4-4721-8341-c33120d47a68",
+    "stopped": "f160a662-4f15-4425-a5d9-3a6dc98569d9",
+    "otherJobStillRunning": true
+  }
+}

@@ -1,0 +1,22 @@
+name: Phase 4 focused broker proof (no dispatch)
+on:
+  push:
+    branches: [dot/phase4-contract-proof]
+    paths:
+      - .github/workflows/phase4-contract-proof.yml
+      - scripts/ci_cutover/**
+permissions:
+  contents: read
+jobs:
+  broker-contract:
+    if: github.repository_id == '1343796337' && github.ref == 'refs/heads/dot/phase4-contract-proof'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          sparse-checkout: scripts/ci_cutover
+      - name: Verify bounded receipt intake and three status recovery cases
+        run: python3 -m unittest discover -s scripts/ci_cutover -p 'test_*.py' -v

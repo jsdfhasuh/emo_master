@@ -1,1 +1,2 @@
-Isolated GitHub native event receipt. No private source and no production route.
+Isolated GitHub native event receipt after protected Stage 4 Broker deployment.
+No private source, production route, or product workload.

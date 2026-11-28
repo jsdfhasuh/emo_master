@@ -58,6 +58,12 @@ def member(key):
 
 
 class StateStore:
+    # Fixed codecs define protected ledger namespaces. Both use the exact same
+    # bounded ancestry and compare-and-swap implementation below.
+    _member = staticmethod(member)
+    _encode = staticmethod(canonical)
+    _decode = staticmethod(decode)
+    _limit = MAX_STATE
     def __init__(self,github,anchor):
         self.github=github
         self.anchor=sha(anchor)
@@ -80,7 +86,7 @@ class StateStore:
         self.check_anchor(tip)
         return self._read_at(key,tip)
     def _read_at(self,key,tip):
-        path=member(key)
+        path=self._member(key)
         try:
             row=self._data("GET",f"/contents/{path}?ref={tip}")
         except Rejected as e:
@@ -94,15 +100,15 @@ class StateStore:
                 return tip,None
             raise
         need(row.get("path")==path and row.get("type")=="file" and row.get("encoding")=="base64" and
-             0<row.get("size",0)<=MAX_STATE,"invalid claim member")
+             0<row.get("size",0)<=self._limit,"invalid claim member")
         data=base64.b64decode("".join(row["content"].splitlines()),validate=True)
         need(len(data)==row["size"],"claim size mismatch")
-        return tip,decode(key,data)
+        return tip,self._decode(key,data)
     def cas(self,key,expected,new,nonce):
         expected=sha(expected)
         need(type(nonce) is str and NONCE.fullmatch(nonce),"candidate nonce refused")
-        path=member(key)
-        content=canonical(key,new)
+        path=self._member(key)
+        content=self._encode(key,new)
         if self.tip()!=expected:
             return False
         self.check_anchor(expected)
@@ -157,3 +163,4 @@ class StateStore:
             _,observed=self._read_at(key,cursor)
         need(cursor==commit and observed==new,diagnostic)
         return True
+

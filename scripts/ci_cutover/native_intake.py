@@ -9,7 +9,8 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urlsplit
 from urllib.request import Request
 
-from candidate_dispatch import MAX_ZIP, dispatch_or_read_back, prepare
+from candidate_dispatch import MAX_ZIP, prepare
+from native_journal import admit_and_dispatch
 from github_broker_transport import HOST, PRODUCT, Refused, ident, need, sha
 
 
@@ -109,8 +110,10 @@ def bind_native(gh, lane, worker_path, owner, rid, attempt, *, clock=time, fetch
         resolve_runtime_packager=lambda requested: resolve("jsdfhasuh/python_build_scripts", requested))
 
 
-def accept_native(gh, store, lane, worker_path, owner, rid, attempt):
+def accept_native(gh, store, journal, lane, worker_path, owner, rid, attempt, *, budget_seconds):
     """Call only from reviewed private deployment after real owner-coordination preflight."""
     need(gh._authorized and gh._writer_id == owner, "private preflight missing")
     bound, request = bind_native(gh, lane, worker_path, owner, rid, attempt)
-    return bound, request.identifier(), dispatch_or_read_back(gh, store, bound, request)
+    now=int(time())
+    need(type(budget_seconds) is int and 0<budget_seconds<=86400, "bad private settlement budget")
+    return admit_and_dispatch(gh, store, journal, bound, request, now=now, deadline=now+budget_seconds)

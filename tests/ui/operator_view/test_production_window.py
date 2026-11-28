@@ -5,16 +5,21 @@ import subprocess
 import sys
 import threading
 from pathlib import Path
+from uuid import uuid4
 
+import grpc
 import pytest
 from PySide2.QtCore import QSettings, QTimer, Qt
 from PySide2.QtTest import QTest
 from PySide2.QtWidgets import QPushButton
 
+from emo_master.apps.designer.state.project_store import saveProject
 from emo_master.apps.operator_runtime.controller import ProductionRuntime
 from emo_master.apps.operator_runtime.main import OperatorWindow
+from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb, runtime_pb2_grpc as rpc
 from emo_master.core.project.delivery_store import DirectoryOwner
 from emo_master.core.project.runtime_package import buildRuntimePackage, installRuntimePackage
+from tests.runtime.current_production_fixture import currentProductionProject
 from tests.runtime.production_fixture import productionProject, saveDocument
 from tests.ui.operator_view.test_view import waitFor
 
@@ -94,17 +99,99 @@ def testOperatorOnlyProjectPagesContinuousAutoStartStopRestartAndClose(qtApp, tm
     assert window.session is None
 
 
-def testRememberedProjectLoadsWithoutStartingAndCheckIgnoresAutoStart(qtApp, tmp_path):
-    root = tmp_path / "project"
-    productionProject(root, autoStart=False)
+@pytest.mark.parametrize('autoStart', [False, True])
+def testRestartUsesRememberedProjectAndAutoStart(qtApp, tmp_path, autoStart):
+    path, document = currentProductionProject(tmp_path / 'project', mode='continuous', autoStart=autoStart)
     prefs = preferences(tmp_path)
-    prefs.setValue("projectPath", str(root))
-    window = OperatorWindow(dataRoot=tmp_path / "data", preferences=prefs)
+    identities = []
+    for requested in (path, None):
+        window = OperatorWindow(requested, dataRoot=tmp_path / 'data', preferences=prefs)
+        window.show()
+        try:
+            waitFor(lambda: (window.pages is not None and not window.busy) or window.error)
+            assert not window.error
+            if autoStart:
+                waitFor(lambda: not window.busy and window.state.get('jobStatus') == 'RUNNING')
+            runtime = window.controller.runtime
+            identities.append(runtime.runtimeInstanceId)
+            info = runtime.GetRuntimeInfo(pb.RuntimeInfoRequest(), None)
+            assert info.project_id == window.controller.document.project.projectId == document.project.projectId
+            assert info.document_revision == window.state['documentRevision']
+            assert Path(window.projectPath) == Path(prefs.value('projectPath')) == path
+            jobs = runtime.jobRepository.all()
+            assert len(jobs) == int(autoStart)
+            assert bool(window.pages.hub) == bool(window.controller.jobId) == autoStart
+        finally:
+            closeWindow(window)
+    assert identities[0] != identities[1]
+
+
+def testAutoStartSharesCapacityDecisionUntilManualStart(qtApp, tmp_path, monkeypatch):
+    from copy import deepcopy
+
+    from emo_master.core.project.models import ProjectDocument
+
+    path, document = currentProductionProject(tmp_path / 'project', mode='continuous', autoStart=True)
+    payload = document.model_dump(mode='json')
+    payload['workflows']['second'] = deepcopy(payload['workflows']['main'])
+    payload['workflowOrder'].append('second')
+    payload['runtime']['maxConcurrentJobs'] = 1
+    document = ProjectDocument.model_validate(payload)
+    saveProject(path, document.model_dump(mode='json'))
+    originalLoad = ProductionRuntime.load
+    runtimeStarts = []
+    concurrentJobs = []
+
+    def loadWithOccupiedSlot(owner, *args, **kwargs):
+        loaded = originalLoad(owner, *args, **kwargs)
+        with grpc.insecure_channel(owner.address) as channel:
+            client = rpc.RuntimeServiceStub(channel)
+            result = client.StartJob(pb.StartJobRequest(project_id=loaded.project.projectId,
+                workflow_id='second', expected_runtime_instance_id=owner.runtime.runtimeInstanceId,
+                start_request_id=uuid4().hex, legacy_snapshot_policy='NONE'), timeout=10)
+            assert result.ok, result.message
+            concurrentJobs.append(result.job_id)
+        originalStart = owner.runtime.StartJob
+
+        def recordStart(request, context):
+            runtimeStarts.append(request.workflow_id)
+            return originalStart(request, context)
+
+        monkeypatch.setattr(owner.runtime, 'StartJob', recordStart)
+        return loaded
+
+    monkeypatch.setattr(ProductionRuntime, 'load', loadWithOccupiedSlot)
+    window = OperatorWindow(path, dataRoot=tmp_path / 'data', preferences=preferences(tmp_path))
     window.show()
     try:
-        waitFor(lambda: window.pages is not None or window.error)
-        assert not window.error and not window.controller.jobId
-        assert window.pages.hub is None and not window.controller.runtime.jobRepository.all()
+        waitFor(lambda: (window.workflowTabs is not None and not window.busy) or window.error)
+        assert not window.error and window.selectedWorkflowIds == ['main']
+        [otherJobId] = concurrentJobs
+        runtime = window.controller.runtime
+        with grpc.insecure_channel(window.controller.address) as channel:
+            client = rpc.RuntimeServiceStub(channel)
+            workflows = client.ListWorkflows(pb.ListWorkflowsRequest(project_id=document.project.projectId), timeout=5)
+            main = next(row for row in workflows.workflows if row.workflow_id == 'main')
+            assert not main.can_start and main.start_block_reason == 'E_MAX_CONCURRENT_JOBS'
+            assert window.state['workflowStart']['main'] == dict(canStart=False, startBlockReason=main.start_block_reason)
+            assert not window.startButton.isEnabled() and not window.workflowControls['main']['start'].isEnabled()
+            assert 'E_MAX_CONCURRENT_JOBS' in window.message.text() and '并发运行名额不足' in window.message.text()
+            assert not runtimeStarts and {row.jobId for row in runtime.jobRepository.all()} == {otherJobId}
+
+            stopped = client.StopJob(pb.StopJobRequest(job_id=otherJobId, expected_project_id=document.project.projectId,
+                expected_runtime_instance_id=runtime.runtimeInstanceId), timeout=5)
+            assert stopped.ok, stopped.message
+            waitFor(lambda: not window.busy and window.startButton.isEnabled())
+            assert runtime.jobRepository.get(otherJobId).isTerminal
+            assert not runtime.jobSupervisor.ownsJobResources(otherJobId)
+            assert not runtimeStarts and {row.jobId for row in runtime.jobRepository.all()} == {otherJobId}
+            assert 'E_MAX_CONCURRENT_JOBS' not in window.message.text()
+
+        QTest.mouseClick(window.startButton, Qt.LeftButton)
+        waitFor(lambda: not window.busy and window.state['workflows']['main'].get('jobStatus') == 'RUNNING')
+        ownJobId = window.state['workflows']['main']['jobId']
+        assert runtimeStarts == ['main']
+        assert {row.jobId for row in runtime.jobRepository.all()} == {otherJobId, ownJobId}
     finally:
         closeWindow(window)
 
@@ -149,22 +236,49 @@ def testSourceEntryImportsNoDesignerAndCheckNeverExecutes(tmp_path):
                             cwd=tmp_path, capture_output=True, text=True, timeout=30)
     assert result.returncode == 0, result.stderr
     assert "no Job started" in result.stdout and not (root / "outputs/result.png").exists()
+    source, _ = currentProductionProject(tmp_path / "log-source", autoStart=True)
     code = """
-import sys, json
+import sys, json, time
 from pathlib import Path
-from emo_master.apps.operator_runtime.controller import ProductionRuntime
-import emo_master.apps.operator_runtime.main
-owner = ProductionRuntime(Path(sys.argv[1]))
+from PySide2.QtCore import QSettings, Qt
+from PySide2.QtTest import QTest
+from PySide2.QtWidgets import QApplication
+from emo_master.apps.operator_runtime.main import OperatorWindow
+
+def wait(predicate):
+    deadline = time.monotonic() + 20
+    while time.monotonic() < deadline:
+        app.processEvents()
+        if predicate():
+            return
+        time.sleep(.01)
+    raise AssertionError(window.error or 'standalone Operator did not finish the log step')
+
+data = Path(sys.argv[1])
+app = QApplication([])
+window = OperatorWindow(Path(sys.argv[2]), dataRoot=data,
+    preferences=QSettings(str(data.parent / 'operator-import-check.ini'), QSettings.IniFormat))
+window.show()
 try:
+    wait(lambda: window.pages is not None and window.controller.jobId and not window.busy)
+    window.showLogs()
+    logs = window.logView
+    job = window.controller.jobId
+    assert logs.sources.currentIndex() == 0
+    wait(lambda: any(row.job_id == job for row in logs.jobLogs.recent))
+    QTest.mouseClick(logs.sources, Qt.LeftButton, pos=logs.sources.tabRect(1).center())
+    wait(lambda: logs.systemLogs.page is not None and logs.systemLogs.page['ok'])
     print(json.dumps([s for s in sys.modules if s.startswith('emo_master.apps.designer')]))
 finally:
-    owner.close()
+    window.close()
+    wait(lambda: window.done)
 """
     env = os.environ.copy()
     sourceRoot = str(script.parents[1] / "src")
     env["PYTHONPATH"] = os.pathsep.join(filter(None, (sourceRoot, env.get("PYTHONPATH"))))
-    result = subprocess.run([sys.executable, "-c", code, str(tmp_path / "import-check")],
-                            cwd=tmp_path, env=env, capture_output=True, text=True, timeout=30)
+    env.setdefault("QT_QPA_PLATFORM", "offscreen")
+    result = subprocess.run([sys.executable, "-c", code, str(tmp_path / "import-check"), str(source)],
+                            cwd=tmp_path, env=env, capture_output=True, text=True, timeout=60)
     assert result.returncode == 0, result.stderr
     assert json.loads(result.stdout.strip()) == []
 
@@ -254,7 +368,7 @@ def testStatusPollDoesNotDiscardOperatorStartOrAdmitTwice(qtApp, tmp_path):
 @pytest.mark.parametrize("autoStart", [False, True])
 def testWindowUpdatePreservesOutputsAndUsesNewAutoStartPolicy(qtApp, tmp_path, autoStart):
     source = tmp_path / "engineering"
-    document = productionProject(source)
+    sourceFile, document = currentProductionProject(source, mode="continuous", declared=True)
     destination = tmp_path / "installed"
     installRuntimePackage(buildRuntimePackage(source, tmp_path / "packages"), destination)
     (destination / "outputs").mkdir()
@@ -267,7 +381,7 @@ def testWindowUpdatePreservesOutputsAndUsesNewAutoStartPolicy(qtApp, tmp_path, a
         assert not window.error and window.updateButton.isEnabled()
         document.production.autoStart = autoStart
         document.production.cycleIntervalMs = 200
-        saveDocument(source, document)
+        saveProject(sourceFile, document.model_dump(mode="json"))
         window.updateProject(buildRuntimePackage(source, tmp_path / "packages"))
         waitFor(lambda: not window.busy and window.controller.settings.cycleIntervalMs == 200 or window.error)
         assert not window.error and history.read_bytes() == b"site history"

@@ -23,7 +23,8 @@ def exportLogs(path: Path, records: Iterable[dict], *, formatName: str, scope: s
         metadata["retainedCount"] = retainedCount
     labels = dict(filtered="当前显示筛选记录", all_cached="全部缓存日志",
                   runtime_history="Runtime 历史（固定筛选与上界）", local_files="选定本机文件范围",
-                  device_cache="已返回的设备诊断缓存")
+                  device_cache="已返回的设备诊断缓存", filtered_job="当前 Job 已加载且匹配的记录",
+                  whole_job="完整 Job（固定上界内仍可查询的记录）")
     count, temporary = 0, None
     def checkCancelled():
         if cancelled():

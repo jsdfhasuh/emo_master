@@ -136,6 +136,7 @@ def testExportCompletionWaitsForFutureBeforeUpdatingControls(qtApp, tmp_path, mo
     feed, path = fixtureFeed(tmp_path)
     path.write_bytes(line("first"))
     view = RuntimeLogView(feed)
+    view.sources.setCurrentIndex(2)
     view.show()
     try:
         feed.exportFiles(tmp_path / "export.jsonl", formatName="jsonl", paths=[path])
@@ -164,6 +165,7 @@ def testHistoryExportCancelDoesNotUseBusinessBusyOrReportSuccess(qtApp, tmp_path
     feed, path = fixtureFeed(tmp_path)
     path.write_bytes(line('first'))
     view = RuntimeLogView(feed)
+    view.sources.setCurrentIndex(2)
     view.show()
     feed.setVisible(True)
     target = tmp_path / 'cancelled.jsonl'

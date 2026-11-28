@@ -3,7 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 import json
 
 from PySide2.QtCore import QTimer, Qt
-from PySide2.QtWidgets import QComboBox, QDialog, QHBoxLayout, QLabel, QPushButton, QTextBrowser, QVBoxLayout
+from PySide2.QtWidgets import QComboBox, QDialog, QGroupBox, QHBoxLayout, QLabel, QPushButton, QTextBrowser, QVBoxLayout
 
 
 class DeviceManagementDialog(QDialog):
@@ -20,13 +20,25 @@ class DeviceManagementDialog(QDialog):
         self.scope = None
         self.nextState = 0
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(14, 12, 14, 12)
+        layout.setSpacing(10)
+        devices = QGroupBox('设备状态与控制')
+        deviceLayout = QVBoxLayout(devices)
+        deviceLayout.setSpacing(7)
         self.status = QLabel('选择设备后查看当前 Runtime 中的状态与日志')
         self.status.setWordWrap(True)
+        self.status.setProperty('operatorRole', 'hint')
         self.selector = QComboBox()
+        self.selector.setAccessibleName('已发布设备')
         self.selector.addItem('请选择设备', None)
         self.selector.currentIndexChanged.connect(self.showDevice)
-        layout.addWidget(self.status)
-        layout.addWidget(self.selector)
+        self.deviceStatus = QLabel()
+        self.deviceStatus.setTextFormat(Qt.PlainText)
+        self.deviceStatus.setWordWrap(True)
+        self.deviceStatus.setProperty('operatorRole', 'section')
+        deviceLayout.addWidget(self.selector)
+        deviceLayout.addWidget(self.deviceStatus)
+        deviceLayout.addWidget(self.status)
         row = QHBoxLayout()
         self.actions = {}
         for action, title in [('connect', '连接'), ('disconnect', '断开'), ('maintenance', '维护'),
@@ -35,23 +47,38 @@ class DeviceManagementDialog(QDialog):
             button.clicked.connect(lambda _checked=False, action=action: self.control(action))
             row.addWidget(button)
             self.actions[action] = button
-        layout.addLayout(row)
+        deviceLayout.addLayout(row)
         self.business = QPushButton('业务动作')
         self.business.clicked.connect(self.managementAction)
         row.addWidget(self.business)
+        row.addStretch()
+        self.actions['recover'].setProperty('operatorRole', 'caution')
         self.detail = QTextBrowser()
+        self.detail.setAccessibleName('设备状态数据')
+        self.detail.setProperty('operatorRole', 'path')
         from emo_master.ui.communication_panel import TcpChannelStatusTable, DeviceDiagnosticsView
         self.channelStatus = TcpChannelStatusTable()
         self.diagnostics = DeviceDiagnosticsView()
+        self.diagnostics.notice.setProperty('operatorRole', 'hint')
+        self.diagnostics.records.setColumnWidth(0, 96)
+        self.diagnostics.records.setColumnWidth(1, 166)
+        self.diagnostics.records.setColumnWidth(2, 110)
+        self.diagnostics.records.setAlternatingRowColors(True)
         from emo_master.ui.communication_panel import exportDeviceCache
         self.diagnostics.exportRequested.connect(lambda: exportDeviceCache(self.diagnostics))
         self.diagnostics.runtimeLogsRequested.connect(self.openRuntimeLogs)
-        layout.addWidget(self.detail)
-        layout.addWidget(self.channelStatus)
-        layout.addWidget(self.diagnostics)
+        deviceLayout.addWidget(self.detail)
+        layout.addWidget(devices, 2)
+        self.channelGroup = QGroupBox('TCP 通道')
+        QVBoxLayout(self.channelGroup).addWidget(self.channelStatus)
+        layout.addWidget(self.channelGroup, 1)
+        diagnostics = QGroupBox('近期设备诊断')
+        QVBoxLayout(diagnostics).addWidget(self.diagnostics)
+        layout.addWidget(diagnostics, 3)
         self.timer = QTimer(self)
         self.timer.setInterval(100)
         self.timer.timeout.connect(self.poll)
+        self.showDevice()
 
     def showEvent(self, event):
         super().showEvent(event)
@@ -130,9 +157,16 @@ class DeviceManagementDialog(QDialog):
         server = state.get('deviceTypeId') == 'device.tcp.server'
         self.actions['connect'].setText('启动服务' if server else '连接')
         self.actions['disconnect'].setText('停止服务' if server else '断开')
+        connected = state.get('lifecycleConnected')
+        connectionText = {True: '已连接', False: '未连接', None: '连接状态未知'}[connected]
+        admission = {'CONTROL_PENDING': '控制处理中', 'PAUSED': '维护中', 'REPLACING': '配置切换中',
+                     'READY': '可接受设备请求'}.get(state.get('admissionState'))
+        availability = '工程中已禁用' if state.get('enabled') is False else admission
+        self.deviceStatus.setText(' · '.join(part for part in (connectionText, availability) if part) if state else '')
+        self.deviceStatus.setVisible(bool(state))
         self.detail.setPlainText(json.dumps(state, ensure_ascii=False, indent=2) if state else '请选择设备')
         channels = state.get('driverState', {}).get('channels', [])
-        self.channelStatus.setVisible(server)
+        self.channelGroup.setVisible(server)
         self.channelStatus.setChannels(channels)
         page = self.logs.get((state.get('projectLoadGeneration'), key), {})
         self.diagnostics.setPage(page, channels)
@@ -145,9 +179,7 @@ class DeviceManagementDialog(QDialog):
     def openRuntimeLogs(self):
         host = self.parent()
         if host is not None and hasattr(host, 'showLogs'):
-            host.showLogs()
-            if hasattr(host, 'logView'):
-                host.logView.setDevice(self.selector.currentData() or '')
+            host.showLogs(deviceId=self.selector.currentData() or '')
             self.hide()
         else:
             self.status.setText('请从 Runtime 本机日志窗口查看所选设备的持久化文件记录。')

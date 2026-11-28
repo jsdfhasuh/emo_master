@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EmoMaster Runtime · R1 修订交互原型</title>
+<style>
+:root{--bg:#f3f5f9;--surface:#fff;--line:#dce3ed;--text:#17243a;--muted:#62738a;--blue:#2459d1;--bluebg:#eaf0ff;--green:#167448;--greenbg:#e8f7ee;--red:#ad263a;--redbg:#fdeff0;--amber:#8b5900;--amberbg:#fff4dc;--shadow:0 3px 14px rgba(30,48,78,.06)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:13px/1.5 "Microsoft YaHei UI","Microsoft YaHei",sans-serif}button,input,select{font:inherit}button{cursor:pointer}button:disabled{opacity:.45;cursor:not-allowed}
+.app{max-width:1440px;margin:auto;padding:0 16px 18px}.head{height:58px;background:white;border-bottom:1px solid var(--line);margin:0 -16px;padding:0 18px;display:flex;align-items:center;gap:11px}.logo{width:34px;height:34px;border-radius:9px;background:var(--bluebg);display:grid;place-items:center;color:var(--blue);font-weight:800}.brand{font-size:15px;font-weight:700}.project{max-width:360px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font-size:11px}.spacer{flex:1}.btn{background:white;border:1px solid var(--line);border-radius:7px;padding:7px 10px;color:var(--text);min-height:31px}.btn:hover:not(:disabled){background:#f6f8fc}.btn.primary{background:var(--blue);border-color:var(--blue);color:white}.btn.danger{color:var(--red);border-color:#efc8cf}.btn.small{padding:5px 8px;min-height:27px;font-size:11px}
+.toolbar{display:flex;gap:7px;align-items:center;flex-wrap:wrap;padding:12px 0 8px}.toolbar2{display:flex;gap:7px;align-items:center;flex-wrap:wrap;padding-bottom:9px}.status{background:white;border:1px solid var(--line);border-radius:8px;padding:8px 10px;display:flex;align-items:center;gap:9px;color:var(--muted);font-size:11px}.pill{display:inline-flex;align-items:center;gap:6px;border-radius:18px;padding:4px 8px;font-size:10px;background:#eef2f8;color:#586a83;font-weight:650}.pill.green{background:var(--greenbg);color:var(--green)}.pill.red{background:var(--redbg);color:var(--red)}.pill.amber{background:var(--amberbg);color:var(--amber)}
+.page{display:none}.page.active{display:block}.card{background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:14px;min-width:0;box-shadow:var(--shadow)}.pagehead{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;margin:15px 0 12px}.pagehead h1{font-size:20px;margin:0}.pagehead p{font-size:11px;color:var(--muted);margin:3px 0 0}.muted{color:var(--muted)}.tiny{font-size:10px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.section-title{font-weight:700;font-size:14px;margin:0 0 9px}.field{display:block;margin:10px 0}.field span{display:block;color:var(--muted);font-size:11px;margin-bottom:5px}.input,.select{width:100%;border:1px solid var(--line);border-radius:7px;padding:8px 9px;background:white;color:var(--text)}.hint{font-size:10px;color:var(--muted);background:#f5f7fb;border-radius:7px;padding:9px;margin-top:9px}.kv{display:grid;grid-template-columns:105px minmax(0,1fr);gap:8px;padding:8px 9px;border-top:1px solid #edf1f6;font-size:11px}.kv span{color:var(--muted)}.kv b{overflow-wrap:anywhere}.detail{border:1px solid #e8edf4;border-radius:8px;overflow:hidden;margin-top:9px}.detail h3{font-size:11px;margin:0;padding:8px 9px;background:#f5f7fb}.nav{display:flex;gap:5px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin:0 0 11px}.nav button{border:0;border-bottom:2px solid transparent;background:transparent;padding:8px 11px;color:var(--muted)}.nav button.active{color:var(--blue);border-color:var(--blue);font-weight:700}
+.loglayout{display:grid;grid-template-columns:220px minmax(300px,1fr) 290px;gap:10px}.job{border:1px solid var(--line);border-radius:8px;padding:9px;margin-top:7px;cursor:pointer;background:white}.job:hover{background:#f6f8fc}.job.selected{background:var(--bluebg);border-color:#9eb7ee}.jobmeta{display:flex;justify-content:space-between;gap:6px;font-size:10px;color:var(--muted);margin-top:5px}.tag{font-size:10px;padding:3px 6px;border-radius:5px;background:#eef2f8;color:#64748b;white-space:nowrap}.tag.ERROR{background:var(--redbg);color:var(--red)}.tag.WARN{background:var(--amberbg);color:var(--amber)}.tag.INFO{background:var(--greenbg);color:var(--green)}
+.subnav{display:flex;gap:5px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin:10px 0}.subnav button{border:0;border-bottom:2px solid transparent;background:transparent;padding:7px 9px;color:var(--muted);font-size:11px}.subnav button.active{color:var(--blue);border-color:var(--blue);font-weight:700}.seg{display:flex;gap:4px;background:#f0f3f8;padding:3px;border-radius:7px}.seg button{border:0;background:transparent;border-radius:5px;padding:5px 8px;color:var(--muted);font-size:10px}.seg button.active{background:white;color:var(--blue);box-shadow:0 1px 4px #253d5e18}.toolbarline{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin:10px 0}.toolbarline .search{flex:1;min-width:120px}.eventlist{border:1px solid var(--line);border-radius:8px;overflow:auto;max-height:420px}.branch{padding:7px 9px;background:#f4f6fa;font-weight:650;font-size:11px}.event{padding:9px;display:flex;align-items:flex-start;gap:8px;border-bottom:1px solid #edf1f6;cursor:pointer}.event:last-child{border:0}.event:hover{background:#f7f9fc}.event.selected{background:var(--bluebg)}.event .when{font:10px Consolas,monospace;color:var(--muted);white-space:nowrap}.eventmain{flex:1;min-width:0}.eventmain b{font-size:11px}.eventmain small{display:block;color:var(--muted);font-size:10px;overflow-wrap:anywhere}.filters{display:none;background:#f7f9fc;border:1px solid #e7edf5;border-radius:8px;padding:9px;margin-bottom:9px}.filters.show{display:block}.filtergrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.filtergrid label{font-size:10px;color:var(--muted)}.filtergrid input,.filtergrid select{margin-top:4px}.detailtabs{display:flex;gap:4px;border-bottom:1px solid var(--line)}.detailtabs button{border:0;border-bottom:2px solid transparent;background:transparent;padding:7px 9px;color:var(--muted);font-size:11px}.detailtabs button.active{color:var(--blue);border-color:var(--blue)}.detail-scroll{max-height:430px;overflow:auto}.detailblock{border:1px solid #e8edf4;border-radius:7px;margin:8px 0;overflow:hidden}.detailblock h4{font-size:11px;background:#f5f7fb;padding:7px 9px;margin:0}.raw{background:#f5f7fb;border-radius:7px;padding:9px;font:10px/1.5 Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere;max-height:430px;overflow:auto}.table{width:100%;border-collapse:collapse;font-size:11px}.table th,.table td{text-align:left;padding:8px;border-bottom:1px solid #edf1f6}.table th{background:#f4f6fa;color:var(--muted)}.tablewrap{border:1px solid var(--line);border-radius:8px;overflow:auto;max-height:430px}.modal{position:fixed;inset:0;background:#19294066;display:none;align-items:center;justify-content:center;padding:16px;z-index:20}.modal.show{display:flex}.modalbox{width:min(560px,100%);background:white;border:1px solid var(--line);border-radius:12px;padding:16px;box-shadow:0 20px 55px #14243e44}.modalbox h2{font-size:15px;margin:0 0 10px}.modalfoot{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}.toast{display:none;position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#203653;color:white;padding:9px 13px;border-radius:8px;z-index:30;font-size:11px;max-width:90vw}.footer{text-align:center;color:#8b97a8;font-size:10px;margin-top:12px}
+@media(max-width:1050px){.loglayout{grid-template-columns:190px minmax(0,1fr)}.detailcol{grid-column:1/-1}.detail-scroll,.raw{max-height:260px}}
+@media(max-width:700px){.app{padding:0 9px 12px}.head{margin:0 -9px;padding:0 10px}.project{max-width:140px}.grid2,.loglayout{grid-template-columns:1fr}.detailcol{grid-column:auto}.filtergrid{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="head"><div class="logo">emo</div><div class="brand">EmoMaster Runtime</div><div class="project" id="project-label">未加载工程</div><div class="spacer"></div><span class="pill green" id="runtime-pill">● Runtime 已就绪</span></header>
+<div class="toolbar">
+ <button class="btn" data-action="choose-project">选择工程…</button><button class="btn" data-action="reload">重新加载</button><button class="btn" data-action="update">更新工程包</button><button class="btn" data-action="targets">运行目标…</button>
+ <div class="spacer"></div><button class="btn primary" id="start-button" data-action="start" disabled>▶ 开始</button><button class="btn danger" id="stop-button" data-action="stop" disabled>■ 停止</button>
+</div>
+<div class="toolbar2">
+ <button class="btn small" data-action="view-run">查看已有运行…</button><button class="btn small" id="return-current" data-action="return-current" hidden>返回当前运行</button><span class="muted tiny" id="viewing-label"></span><div class="spacer"></div><button class="btn small" data-action="devices">设备状态与控制…</button><button class="btn small" data-action="settings">Runtime 设置</button><button class="btn small" data-action="logs">查看日志</button>
+</div>
+<div class="status"><span class="pill" id="job-status">未加载工程</span><span id="status-message">Runtime 已启动；选择工程后可加载运行。</span><span class="spacer"></span><span class="muted tiny" id="target-label">运行目标：未选择</span></div>
+<button class="btn small" id="back-button" data-action="back" hidden style="margin:9px 0">← 返回</button>
+
+<section id="page-business" class="page active">
+ <div class="pagehead"><div><h1>工程运行页面</h1><p>正式运行页由工程 Presentation 配置决定；本原型不固定生产 Dashboard。</p></div><span class="pill">RuntimePages · 模拟画面</span></div>
+ <div class="card" style="min-height:440px;display:grid;place-items:center;text-align:center;background:#fbfcff">
+  <div><h2 style="font-size:18px">工程发布的生产监控页面</h2><p class="muted">实际内容由当前工程的页面配置、Runtime 结果和设备状态决定。</p>
+   <div class="grid2" style="max-width:600px;margin:18px auto 0">
+    <div class="card"><b>当前工程</b><p id="business-project" class="muted">未加载</p></div>
+    <div class="card"><b>当前 Job</b><p id="business-job" class="muted">无活动任务</p></div>
+   </div>
+  </div>
+ </div>
+</section>
+
+<section id="page-settings" class="page">
+ <div class="pagehead"><div><h1>Runtime 设置</h1><p>保留现有起始/设置页职责，不创建第二套设置服务。</p></div></div>
+ <div class="grid2">
+  <div class="card"><h2 class="section-title">工程与最近日志</h2><p class="muted">选择现有工程；自动开始规则仍由工程正式配置决定。</p><button class="btn primary" data-action="choose-project">选择工程…</button>
+   <div class="detail"><h3>最近成功工程</h3><div class="kv"><span>工程</span><b id="recent-project">暂无</b></div><div class="kv"><span>路径</span><b id="recent-path">—</b></div></div>
+   <div class="detail"><h3>最近 Runtime 日志</h3><div class="kv"><span>17:19:58</span><b>Runtime 已就绪（模拟）</b></div><div class="kv"><span>17:19:55</span><b>本次启动目录已解析（模拟）</b></div></div>
+   <button class="btn small" data-action="logs">查看全部日志</button>
+  </div>
+  <div class="card"><h2 class="section-title">Runtime 本机目录</h2>
+   <label class="field"><span>本次有效目录</span><input class="input" value="C:\ProgramData\EmoMaster\Runtime" readonly></label>
+   <label class="field"><span>下次启动默认目录</span><input class="input" id="next-directory" value="C:\ProgramData\EmoMaster\Runtime"></label>
+   <button class="btn small" data-action="save-directory">保存下次设置</button>
+   <div class="hint">保存不会切换本次目录、停止任务或搬迁文件。</div>
+   <h2 class="section-title" style="margin-top:17px">Runtime 远程接入</h2>
+   <label class="field"><span><input type="checkbox" id="lan-enabled"> 允许受信任局域网连接</span></label>
+   <label class="field"><span>监听 IP</span><input class="input" id="listen-host" value="0.0.0.0" disabled></label>
+   <label class="field"><span>固定端口</span><input class="input" id="listen-port" value="50051" disabled></label>
+   <label class="field"><span>每 Job 展示订阅数</span><input class="input" id="subscription-count" value="4"></label>
+   <button class="btn small" data-action="save-listener">保存下次监听设置</button>
+   <div class="hint">当前模拟为受信任 LAN 的明文 gRPC，不代表公网安全接入。</div>
+  </div>
+ </div>
+</section>
+
+<section id="page-logs" class="page">
+ <div class="pagehead"><div><h1>Runtime 日志与诊断</h1><p>运行任务是主要入口；Runtime 系统事件和本机文件日志保持独立来源。</p></div><span class="pill">模拟数据</span></div>
+ <div class="card">
+  <div class="nav"><button class="active" data-log-source="jobs">运行任务</button><button data-log-source="system">Runtime 系统事件</button><button data-log-source="files">本机日志文件</button></div>
+  <div id="log-source-jobs">
+   <div class="loglayout">
+    <aside>
+     <div style="display:flex;justify-content:space-between;align-items:center"><b>运行任务</b><button class="btn small" data-action="refresh-jobs">↻</button></div>
+     <div class="muted tiny" style="margin-top:9px">运行中 / 最近已结束</div>
+     <div id="job-list"></div>
+     <button class="btn small" data-action="older-jobs" style="margin-top:10px">更早历史任务</button>
+     <div class="hint">按真实 Job 身份去重；查看任务不改变停止目标。</div>
+    </aside>
+    <main>
+     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap">
+      <div><b id="selected-job-title">未选择任务</b><div class="muted tiny" id="selected-job-meta">—</div></div>
+      <button class="btn small" data-action="export-job">导出 Job</button>
+     </div>
+     <div class="toolbarline">
+      <div class="seg"><button class="active" data-view-mode="tree">执行结构</button><button data-view-mode="time">时间顺序</button></div>
+      <input class="input search" id="event-search" placeholder="搜索事件 / 节点 / 消息">
+      <button class="btn small" data-action="toggle-filters">高级筛选⌄</button>
+      <button class="btn small" data-action="locate-current">定位当前</button>
+     </div>
+     <div class="filters" id="event-filters">
+      <div class="filtergrid">
+       <label>级别<select class="select" id="level-filter"><option value="all">全部</option><option>ERROR</option><option>WARN</option><option>INFO</option></select></label>
+       <label>设备 ID<input class="input" id="device-filter" placeholder="可选"></label>
+       <label>工作流 ID<input class="input" id="workflow-filter" placeholder="可选"></label>
+      </div>
+      <div style="margin-top:8px"><label><input type="checkbox" id="only-problems"> 仅告警 / 错误</label> <button class="btn small" data-action="clear-filters">清除筛选</button></div>
+     </div>
+     <div class="eventlist" id="event-list"></div>
+     <div class="toolbarline"><span class="muted tiny" id="event-range">—</span><div class="spacer"></div><button class="btn small" data-action="load-earlier">加载更早事件</button><button class="btn small" data-action="pause-follow">暂停跟随</button></div>
+    </main>
+    <aside class="detailcol">
+     <div style="display:flex;justify-content:space-between;gap:6px"><b>事件详情</b><span class="pill">只读</span></div>
+     <div class="muted tiny" id="selected-event-title" style="margin:5px 0">请选择一条事件</div>
+     <div class="detailtabs"><button class="active" data-detail-mode="readable">易读详情</button><button data-detail-mode="raw">原始 JSON</button></div>
+     <div id="readable-detail" class="detail-scroll"><div class="hint">选择事件后显示该记录的易读详情。</div></div>
+     <pre id="raw-detail" class="raw" hidden></pre>
+     <div class="toolbarline"><button class="btn small" data-action="copy-value">复制选中值</button><button class="btn small" data-action="copy-record">复制当前记录</button><button class="btn small" data-action="table-view">表格查看</button></div>
+     <div class="hint">易读详情与原始 JSON 始终绑定同一条当前选中事件；缺失字段不会推测补齐。</div>
+    </aside>
+   </div>
+  </div>
+  <div id="log-source-system" hidden>
+   <div class="toolbarline"><input class="input search" id="system-search" placeholder="搜索 Runtime 系统事件"><select class="select" id="system-level" style="width:130px"><option value="all">全部级别</option><option>ERROR</option><option>WARN</option><option>INFO</option></select></div>
+   <div class="tablewrap"><table class="table"><thead><tr><th>时间</th><th>级别</th><th>组件</th><th>事件</th><th>消息</th></tr></thead><tbody id="system-rows"></tbody></table></div>
+   <div class="hint">系统事件按可信来源和真实 Job 归属分类；Job-owned 事件留在其任务中。</div>
+  </div>
+  <div id="log-source-files" hidden>
+   <div class="toolbarline"><select class="select" id="file-select" style="max-width:330px"><option value="active">当前活动文件（跟随轮转）</option><option value="runtime-2026-11-26.jsonl">runtime-2026-11-26.jsonl（operational）</option><option value="runtime_app-2026-11-26.jsonl">runtime_app-2026-11-26.jsonl（application）</option></select><select class="select" id="file-level" style="width:130px"><option value="all">全部级别</option><option>ERROR</option><option>WARN</option><option>INFO</option></select><button class="btn small" data-action="refresh-files">刷新</button><button class="btn small" data-action="export-files">导出…</button></div>
+   <div class="tablewrap"><table class="table"><thead><tr><th>时间</th><th>级别</th><th>应用</th><th>模块</th><th>来源</th><th>消息</th></tr></thead><tbody id="file-rows"></tbody></table></div>
+   <div class="hint">保留 runtime-*.jsonl 和 runtime_app-*.jsonl；活动文件跟随轮转，历史文件选择固定。</div>
+  </div>
+ </div>
+</section>
+
+<div class="modal" id="modal"><div class="modalbox"><h2 id="modal-title">操作</h2><div id="modal-body"></div><div class="modalfoot"><button class="btn" data-action="modal-cancel">取消</button><button class="btn primary" data-action="modal-confirm">确定</button></div></div></div>
+<div class="toast" id="toast"></div>
+<div class="footer">交互原型 · 模拟工程、Job、日志和设备数据 · 不连接真实 Runtime / PLC · 不写入本机设置</div>
+</div>
+<script>
+(() => {
+ const $ = id => document.getElementById(id);
+ const $$ = sel => [...document.querySelectorAll(sel)];
+ const state = {
+   page:"business", stack:[], project:null, targets:["主流程"],
+   jobs:[
+    {id:"job-7f32a9",name:"脚垫装配 · 主流程",status:"RUNNING",duration:"00:02:31",workflow:"main",events:[
+     {id:"a1",time:"17:20:01.102",level:"INFO",type:"workflow.started",title:"工作流开始",workflowId:"main",nodeId:"",deviceId:"",summary:"主流程开始",payload:{workflowId:"main",workflowRunId:"wr-001"}},
+     {id:"a2",time:"17:20:02.014",level:"INFO",type:"node.completed",title:"采集图像完成",workflowId:"main",nodeId:"capture",deviceId:"cam-01",summary:"1920 × 1200 · cam-01",payload:{inputs:{camera:"cam-01"},outputs:{width:1920,height:1200}}},
+     {id:"a3",time:"17:20:02.018",level:"INFO",type:"node.completed",title:"数值比较",workflowId:"main",nodeId:"compare",deviceId:"",summary:"业务结果 false · 本次 right=5",operatorId:"vision.compare.number",operatorVersion:"1.0.0",payload:{status:"COMPLETED",ioSummary:{inputs:{left:0,right:5},outputs:{result:false}},parameterSummary:[{path:["right"],stage:"project",value:999},{path:["right"],stage:"call",value:5,source:"variable_override"},{path:["right"],stage:"effective",value:5}],metrics:{latencyMs:0.005}}},
+     {id:"a4",time:"17:20:02.023",level:"ERROR",type:"node.failed",title:"PLC 写入失败",workflowId:"main",nodeId:"plc-write",deviceId:"plc-01",summary:"E_PLC_WRITE_TIMEOUT · PLC-01",code:"E_PLC_WRITE_TIMEOUT",payload:{message:"PLC 写入等待超时",deviceId:"plc-01",channelId:"plc-main",requestId:"req-01"}},
+     {id:"a5",time:"17:20:02.025",level:"ERROR",type:"device.action.failed",title:"设备动作失败",workflowId:"main",nodeId:"plc-write",deviceId:"plc-01",summary:"PLC-01 · plc-main · req-01",code:"E_PLC_WRITE_TIMEOUT",payload:{deviceId:"plc-01",channelId:"plc-main",requestId:"req-01",message:"设备动作失败"}}
+    ]},
+    {id:"job-6c128d",name:"脚垫装配 · 主流程",status:"COMPLETED",duration:"00:00:04",workflow:"main",events:[
+     {id:"b1",time:"17:18:42.001",level:"INFO",type:"workflow.started",title:"工作流开始",workflowId:"main",nodeId:"",deviceId:"",summary:"历史任务开始",payload:{workflowId:"main",workflowRunId:"wr-010"}},
+     {id:"b2",time:"17:18:42.021",level:"INFO",type:"node.completed",title:"采集图像完成",workflowId:"main",nodeId:"capture",deviceId:"cam-01",summary:"历史图像已采集",payload:{outputs:{width:1920,height:1200}}},
+     {id:"b3",time:"17:18:46.100",level:"INFO",type:"workflow.completed",title:"工作流完成",workflowId:"main",nodeId:"",deviceId:"",summary:"Job 已完成",payload:{status:"COMPLETED"}}
+    ]},
+    {id:"job-5a40de",name:"脚垫装配 · 主流程",status:"FAILED",duration:"00:00:01",workflow:"main",events:[
+     {id:"c1",time:"17:14:06.010",level:"INFO",type:"workflow.started",title:"工作流开始",workflowId:"main",nodeId:"",deviceId:"",summary:"失败任务开始",payload:{workflowId:"main",workflowRunId:"wr-020"}},
+     {id:"c2",time:"17:14:06.115",level:"ERROR",type:"node.failed",title:"相机触发失败",workflowId:"main",nodeId:"capture",deviceId:"cam-01",summary:"CAMERA_TRIGGER_TIMEOUT",code:"CAMERA_TRIGGER_TIMEOUT",payload:{deviceId:"cam-01",message:"触发等待超时"}}
+    ]}
+   ],
+   selectedJobId:"job-7f32a9",selectedEventId:"a3",stopTargetJobId:"job-7f32a9",
+   viewMode:"tree",detailMode:"readable",filters:{level:"all",search:"",device:"",workflow:"",problems:false},
+   source:"jobs",follow:true,modal:null
+ };
+ const systemRows=[
+  {time:"17:19:58.210",level:"INFO",component:"runtime",event:"operator.runtime.ready",message:"Runtime 已就绪"},
+  {time:"17:19:55.001",level:"INFO",component:"runtime.storage",event:"operator.storage.resolved",message:"本次启动目标目录已解析"},
+  {time:"17:19:54.800",level:"WARN",component:"runtime.device",event:"device.health.summary",message:"设备状态等待刷新"}
+ ];
+ const fileRows=[
+  {time:"17:19:58.210",level:"INFO",app:"runtime",module:"operator",source:"operator.runtime.ready",message:"Runtime 已就绪",family:"operational"},
+  {time:"17:19:55.001",level:"INFO",app:"runtime",module:"storage",source:"operator.storage.resolved",message:"本次启动目标目录已解析",family:"operational"},
+  {time:"17:19:54.800",level:"WARN",app:"runtime",module:"device",source:"device.health.summary",message:"设备状态等待刷新",family:"application"},
+  {time:"17:19:53.800",level:"INFO",app:"runtime",module:"application",source:"runtime.application.started",message:"Runtime 应用日志 writer 已启动",family:"application"}
+ ];
+ let toastTimer=null;
+ function toast(message){const el=$("toast");el.textContent=message;el.style.display="block";clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.style.display="none",1800);}
+ function showPage(name){if(state.page!==name)state.stack.push(state.page);state.page=name;renderPage();}
+ function renderPage(){["business","settings","logs"].forEach(name=>$("page-"+name).classList.toggle("active",state.page===name));$("back-button").hidden=state.stack.length===0;}
+ function back(){state.page=state.stack.pop()||"business";renderPage();}
+ function selectedJob(){return state.jobs.find(j=>j.id===state.selectedJobId)||null;}
+ function stopTarget(){return state.jobs.find(j=>j.id===state.stopTargetJobId)||null;}
+ function statusLabel(status){return ({RUNNING:"运行中",COMPLETED:"已完成",FAILED:"执行失败",STOPPED:"已停止",STOPPING:"停止中"})[status]||status;}
+ function escapeHtml(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+ function renderHost(){
+  $("project-label").textContent=state.project?state.project.name:"未加载工程";
+  $("business-project").textContent=state.project?state.project.name:"未加载";
+  $("recent-project").textContent=state.project?state.project.name:"暂无";
+  $("recent-path").textContent=state.project?state.project.path:"—";
+  const target=stopTarget();
+  $("start-button").disabled=!state.project||state.targets.length===0;
+  $("stop-button").disabled=!target||target.status!=="RUNNING";
+  $("job-status").textContent=state.project?(target?statusLabel(target.status):"就绪"):"未加载工程";
+  $("status-message").textContent=!state.project?"Runtime 已就绪；选择工程后可加载运行。":(target?`停止目标：${target.id}`:"工程已加载，等待开始运行。");
+  $("target-label").textContent="运行目标："+(state.targets.length?state.targets.join("、"):"未选择");
+  $("business-job").textContent=target?`${target.id} · ${statusLabel(target.status)}`:"无活动任务";
+ }
+ function renderJobs(){
+  const list=$("job-list");list.innerHTML="";
+  const active=state.jobs.filter(j=>j.status==="RUNNING"||j.status==="STOPPING");
+  const ended=state.jobs.filter(j=>!active.includes(j));
+  const group=(label,items)=>{const h=document.createElement("div");h.className="muted tiny";h.style.marginTop="9px";h.textContent=label+" · "+items.length;list.append(h);items.forEach(j=>{const b=document.createElement("div");b.className="job"+(j.id===state.selectedJobId?" selected":"");b.innerHTML=`<div style="display:flex;justify-content:space-between;gap:5px"><b>${escapeHtml(j.name)}</b><span class="tag ${j.status}">${statusLabel(j.status)}</span></div><div class="jobmeta"><span>${j.id}</span><span>${j.duration}</span></div>`;b.addEventListener("click",()=>selectJob(j.id));list.append(b);});};
+  group("运行中",active);group("最近已结束",ended);
+  const job=selectedJob();$("selected-job-title").textContent=job?job.name:"未选择任务";$("selected-job-meta").textContent=job?`Job ${job.id} · Workflow ${job.workflow} · ${statusLabel(job.status)}`:"—";
+  renderEvents();
+ }
+ function selectJob(id){const job=state.jobs.find(j=>j.id===id);if(!job)return;state.selectedJobId=id;state.selectedEventId=job.events[0]?.id||null;renderJobs();renderHost();}
+ function selectedEvent(){const job=selectedJob();return job?.events.find(e=>e.id===state.selectedEventId)||null;}
+ function filteredEvents(){
+  const job=selectedJob();if(!job)return [];
+  let rows=[...job.events];const f=state.filters;
+  rows=rows.filter(e=>(f.level==="all"||e.level===f.level)&&(!f.problems||e.level==="WARN"||e.level==="ERROR")&&(!f.search||`${e.title} ${e.type} ${e.summary} ${e.nodeId}`.toLowerCase().includes(f.search.toLowerCase()))&&(!f.device||String(e.deviceId||"").includes(f.device))&&(!f.workflow||String(e.workflowId||"").includes(f.workflow)));
+  if(state.viewMode==="time")rows.sort((a,b)=>a.time.localeCompare(b.time));
+  return rows;
+ }
+ function renderEvents(){
+  const host=$("event-list");host.innerHTML="";const job=selectedJob();
+  if(!job){host.textContent="请选择任务";renderDetail();return;}
+  if(state.viewMode==="tree"){const b=document.createElement("div");b.className="branch";b.textContent=`工作流调用 · ${job.workflow}`;host.append(b);}
+  const rows=filteredEvents();
+  rows.forEach(e=>{const row=document.createElement("div");row.className="event"+(e.id===state.selectedEventId?" selected":"");row.innerHTML=`<span class="when">${escapeHtml(e.time)}</span><div class="eventmain"><b>${escapeHtml(e.type)} · ${escapeHtml(e.title)}</b><small>${escapeHtml(e.summary)}</small></div><span class="tag ${e.level}">${e.level}</span>`;row.addEventListener("click",()=>selectEvent(e.id));host.append(row);});
+  $("event-range").textContent=`当前 Job ${job.id} · ${rows.length}/${job.events.length} 条已加载 · ${state.follow?"实时跟随":"历史阅读"}`;
+  renderDetail();
+ }
+ function selectEvent(id){const job=selectedJob();if(!job||!job.events.some(e=>e.id===id))return;state.selectedEventId=id;renderEvents();}
+ function detailObject(e){return {eventId:e.id,jobId:selectedJob()?.id||null,timestamp:e.time,level:e.level,eventType:e.type,workflowId:e.workflowId,nodeId:e.nodeId||null,deviceId:e.deviceId||null,operatorId:e.operatorId||null,operatorVersion:e.operatorVersion||null,code:e.code||null,payload:e.payload};}
+ function renderDetail(){
+  const e=selectedEvent();$("selected-event-title").textContent=e?`${e.type} · ${e.title} · ${e.time}`:"请选择一条事件";
+  const readable=$("readable-detail");readable.innerHTML="";$("raw-detail").textContent=e?JSON.stringify(detailObject(e),null,2):"";
+  if(!e){readable.innerHTML='<div class="hint">当前任务没有选中事件。</div>';return;}
+  const addBlock=(title,rows)=>{const block=document.createElement("div");block.className="detailblock";const h=document.createElement("h4");h.textContent=title;block.append(h);rows.forEach(([k,v])=>{const row=document.createElement("div");row.className="kv";const a=document.createElement("span");a.textContent=k;const b=document.createElement("b");b.textContent=typeof v==="object"?JSON.stringify(v):String(v);row.append(a,b);block.append(row);});readable.append(block);};
+  addBlock("事件概览",[["事件类型",e.type],["时间",e.time],["级别",e.level],["消息",e.summary]]);
+  if(e.operatorId)addBlock("算子身份",[["算子 ID",e.operatorId],["版本",e.operatorVersion||"记录未提供"]]);
+  if(e.payload.ioSummary){addBlock("输入摘要",Object.entries(e.payload.ioSummary.inputs||{}));addBlock("输出摘要",Object.entries(e.payload.ioSummary.outputs||{}));}
+  if(e.payload.parameterSummary)addBlock("参数阶段",e.payload.parameterSummary.map(p=>[`${(p.path||[]).join(".")} · ${p.stage}`,p.value]));
+  if(e.payload.metrics)addBlock("运行指标",Object.entries(e.payload.metrics));
+  if(e.code)addBlock("诊断",[["错误代码",e.code],["设备",e.deviceId||"未记录"]]);
+  addBlock("记录身份",[["Job",selectedJob()?.id||"未记录"],["工作流",e.workflowId||"未记录"],["节点",e.nodeId||"未记录"],["设备",e.deviceId||"未记录"]]);
+  $("readable-detail").hidden=state.detailMode!=="readable";$("raw-detail").hidden=state.detailMode!=="raw";
+ }
+ function setDetailMode(mode){state.detailMode=mode;$$("[data-detail-mode]").forEach(b=>b.classList.toggle("active",b.dataset.detailMode===mode));renderDetail();}
+ function setSource(source){state.source=source;$$("[data-log-source]").forEach(b=>b.classList.toggle("active",b.dataset.logSource===source));["jobs","system","files"].forEach(k=>$("log-source-"+k).hidden=k!==source);}
+ function renderSystem(){const q=$("system-search").value.toLowerCase(),level=$("system-level").value;const rows=systemRows.filter(r=>(level==="all"||r.level===level)&&(!q||Object.values(r).join(" ").toLowerCase().includes(q)));$("system-rows").innerHTML=rows.map(r=>`<tr><td>${escapeHtml(r.time)}</td><td><span class="tag ${r.level}">${r.level}</span></td><td>${escapeHtml(r.component)}</td><td>${escapeHtml(r.event)}</td><td>${escapeHtml(r.message)}</td></tr>`).join("");}
+ function renderFiles(){const level=$("file-level").value,choice=$("file-select").value;let rows=fileRows.filter(r=>(level==="all"||r.level===level));if(choice==="runtime-2026-11-26.jsonl")rows=rows.filter(r=>r.family==="operational");if(choice==="runtime_app-2026-11-26.jsonl")rows=rows.filter(r=>r.family==="application");$("file-rows").innerHTML=rows.map(r=>`<tr><td>${escapeHtml(r.time)}</td><td><span class="tag ${r.level}">${r.level}</span></td><td>${escapeHtml(r.app)}</td><td>${escapeHtml(r.module)}</td><td>${escapeHtml(r.source)}</td><td>${escapeHtml(r.message)}</td></tr>`).join("");}
+ function openModal(title,body,kind){$("modal-title").textContent=title;$("modal-body").innerHTML=body;$("modal").classList.add("show");state.modal=kind;}
+ function closeModal(){$("modal").classList.remove("show");state.modal=null;}
+ function chooseProject(){openModal("选择工程（模拟）",`<label class="field"><span>工程</span><select class="select" id="project-choice"><option value="脚垫装配 · FootMat-01">脚垫装配 · FootMat-01</option><option value="冷凝器孔位识别 · W6">冷凝器孔位识别 · W6</option></select></label><div class="hint">选择后模拟加载正式工程；不创建 Job。</div>`,"choose-project");}
+ function chooseTargets(){const options=["主流程","图像采集","推理流程"];openModal("运行目标（模拟）",options.map(x=>`<label style="display:block;margin:8px 0"><input type="checkbox" class="target-option" value="${x}" ${state.targets.includes(x)?"checked":""}> ${x}</label>`).join("")+'<div class="hint">确认后保存当前选择；重新打开时保留选择。</div>',"targets");}
+ function viewRun(){const options=state.jobs.filter(j=>j.id!==state.selectedJobId);if(!options.length){toast("没有其他 Job 可供查看");return;}openModal("查看已有运行（只读）",options.map(j=>`<label style="display:block;margin:8px 0"><input type="radio" name="view-job" value="${j.id}"> ${j.id} · ${statusLabel(j.status)}</label>`).join("")+'<div class="hint">切换查看对象不会改变当前停止目标。</div>',"view-run");}
+ function openDeviceDiagnostics(overrideDeviceId=null){
+  const e=selectedEvent();const deviceId=e?.deviceId||overrideDeviceId;if(!deviceId){toast("当前事件没有可用设备身份");return;}
+  openModal("设备诊断 · "+deviceId,`<div class="detail"><h3>诊断范围</h3><div class="kv"><span>Runtime</span><b>local-operator</b></div><div class="kv"><span>工程</span><b>${escapeHtml(state.project?.id||"FootMat-01")}</b></div><div class="kv"><span>加载代次</span><b>3（模拟）</b></div><div class="kv"><span>设备</span><b>${escapeHtml(deviceId)}</b></div></div><div class="detail"><h3>近期诊断缓存（模拟）</h3><div class="kv"><span>17:20:02.025</span><b>device.action.failed · PLC 写入超时</b></div><div class="kv"><span>通道</span><b>plc-main</b></div><div class="kv"><span>请求 ID</span><b>req-01</b></div></div><div class="hint">这是近期设备诊断缓存，不冒充完整持久化 Job 历史。关闭后恢复原任务和事件。</div>`,"device");
+ }
+ function render(){renderHost();renderJobs();renderSystem();renderFiles();}
+ function doAction(action){
+  if(action==="choose-project")return chooseProject();
+  if(action==="reload"){if(!state.project){toast("请先选择工程");return;}toast("按当前工程路径重新加载（模拟）");return;}
+  if(action==="update"){openModal("更新工程包（模拟）","<p>选择工程包后进入现有校验和正式配置更新流程。</p><input type='file' class='input'>","update");return;}
+  if(action==="targets")return chooseTargets();
+  if(action==="start"){
+   if(!state.project){toast("尚未加载工程，不能开始");return;}
+   if(!state.targets.length){toast("请先选择运行目标");return;}
+   const id="job-"+Math.random().toString(16).slice(2,8);
+   const job={id,name:state.project.name+" · "+state.targets.join("、"),status:"RUNNING",duration:"00:00:01",workflow:state.targets.join(","),events:[
+    {id:id+"-1",time:"18:00:00.001",level:"INFO",type:"workflow.started",title:"工作流开始",workflowId:state.targets[0],nodeId:"",deviceId:"",summary:"运行目标："+state.targets.join("、"),payload:{targets:state.targets,workflowRunId:"wr-"+id}},
+    {id:id+"-2",time:"18:00:00.025",level:"INFO",type:"node.completed",title:"示例节点完成",workflowId:state.targets[0],nodeId:"sample-node",deviceId:"",summary:"模拟节点执行完成",payload:{outputs:{result:true}}}
+   ]};
+   state.jobs.unshift(job);state.selectedJobId=id;state.selectedEventId=job.events[0].id;state.stopTargetJobId=id;$("return-current").hidden=true;$("viewing-label").textContent="";render();toast("StartJob 已受理（模拟）");return;
+  }
+  if(action==="stop"){const target=stopTarget();if(!target||target.status!=="RUNNING"){toast("当前没有可停止的 Job");return;}openModal("停止指定 Job",`<p>停止目标：<b>${target.id}</b></p><div class="hint">停止请求受理、Job 终态和资源退休在正式 Runtime 中分别显示。</div>`,"stop");return;}
+  if(action==="view-run")return viewRun();
+  if(action==="return-current"){state.selectedJobId=state.stopTargetJobId;const j=selectedJob();state.selectedEventId=j?.events[0]?.id||null;$("return-current").hidden=true;$("viewing-label").textContent="";render();toast("已返回当前运行（模拟）");return;}
+  if(action==="settings"){showPage("settings");return;}
+  if(action==="logs"){showPage("logs");setSource("jobs");return;}
+  if(action==="devices"){openModal("设备状态与控制（模拟）",`<div class="detail"><h3>已发布设备</h3><div class="kv"><span>cam-01</span><b>已连接</b></div><div class="kv"><span>PLC-01</span><b>已连接</b></div><div class="kv"><span>TCP Server</span><b>已停止</b></div></div><p>设备定义由 Designer 编辑并发布；此处只展示 Runtime 状态和允许的动作。</p><button class="btn small" data-action="device-connect">连接 PLC</button> <button class="btn small" data-action="device-diagnostics">查看诊断</button>`,"devices");return;}
+  if(action==="back"){back();return;}
+  if(action==="refresh-jobs"){renderJobs();toast("任务目录已刷新（模拟）");return;}
+  if(action==="older-jobs"){if(!state.jobs.some(j=>j.id==="job-31a4c0")){state.jobs.push({id:"job-31a4c0",name:"脚垫装配 · 主流程",status:"COMPLETED",duration:"00:00:03",workflow:"main",events:[{id:"d1",time:"16:52:10.001",level:"INFO",type:"workflow.completed",title:"更早历史任务完成",workflowId:"main",nodeId:"",deviceId:"",summary:"更早历史 Job",payload:{status:"COMPLETED"}}]});renderJobs();}toast("已加载一条更早历史任务（模拟）");return;}
+  if(action==="toggle-filters"){$("event-filters").classList.toggle("show");return;}
+  if(action==="clear-filters"){state.filters={level:"all",search:"",device:"",workflow:"",problems:false};$("level-filter").value="all";$("event-search").value="";$("device-filter").value="";$("workflow-filter").value="";$("only-problems").checked=false;renderEvents();return;}
+  if(action==="locate-current"){const j=selectedJob();const e=j?.events.find(x=>x.level==="ERROR")||j?.events[0];if(e)selectEvent(e.id);toast("定位到当前 Job 已记录的关键事件（模拟）");return;}
+  if(action==="load-earlier"){const j=selectedJob();if(j&&!j.events.some(e=>e.id==="older-"+j.id)){j.events.unshift({id:"older-"+j.id,time:"17:19:59.500",level:"INFO",type:"workflow.resumed",title:"更早事件已加载",workflowId:j.workflow,nodeId:"",deviceId:"",summary:"按固定历史上界加载的更早事件",payload:{source:"historical-page"}});renderEvents();toast("已加载更早事件，当前选择保持不变（模拟）");}else toast("没有更多更早事件（模拟）");return;}
+  if(action==="pause-follow"){state.follow=!state.follow;$("event-range").textContent=state.follow?"实时跟随已开启":"已暂停跟随，历史阅读位置保持";return;}
+  if(action==="export-job"){const j=selectedJob();if(!j)return;openModal("导出 Job",`<p>导出任务：<b>${j.id}</b></p><label style="display:block;margin:8px 0"><input type="radio" name="export-scope" value="full" checked> 完整 Job 已持久化事件</label><label style="display:block;margin:8px 0"><input type="radio" name="export-scope" value="visible"> 当前筛选可见范围</label><div class="hint">完整 Job 导出不承诺恢复未持久化的大对象或图像。</div>`,"export-job");return;}
+  if(action==="copy-value"){const e=selectedEvent();toast(e?"复制当前事件选中值（模拟）":"没有选中事件");return;}
+  if(action==="copy-record"){const e=selectedEvent();toast(e?"复制 "+e.id+" 当前记录（模拟）":"没有选中事件");return;}
+  if(action==="table-view"){const e=selectedEvent();if(!e){toast("没有选中事件");return;}const rows=Object.entries(e.payload||{}).map(([k,v])=>`<tr><td>${escapeHtml(k)}</td><td>${escapeHtml(JSON.stringify(v))}</td></tr>`).join("");openModal("当前事件数据表",`<table class="table"><thead><tr><th>字段</th><th>值</th></tr></thead><tbody>${rows}</tbody></table>`,"table-view");return;}
+  if(action==="refresh-files"){renderFiles();toast("本机日志文件已刷新（模拟）");return;}
+  if(action==="export-files"){openModal("导出本机日志",`<p>当前文件：${escapeHtml($("file-select").value)}</p><p>保留当前显示记录与所选文件完整范围两种导出范围。</p>`,"export-files");return;}
+  if(action==="device-connect"){toast("设备连接动作已请求（模拟）");return;}
+  if(action==="device-diagnostics"){closeModal();openDeviceDiagnostics("PLC-01");return;}
+  if(action==="save-directory"){toast("已保存为下次启动目录（模拟）；本次目录不变");return;}
+  if(action==="save-listener"){toast("已保存下次监听设置（模拟）；当前监听不变");return;}
+  if(action==="modal-cancel"){closeModal();return;}
+  if(action==="modal-confirm"){
+   if(state.modal==="choose-project"){const name=$("project-choice").value;state.project={id:name.includes("FootMat")?"FootMat-01":"W6",name,path:"D:\\Projects\\"+name+".emoproj"};closeModal();render();if(state.page==="settings")back();toast("工程加载成功（模拟）；尚未创建 Job");return;}
+   if(state.modal==="targets"){state.targets=$$(".target-option").filter(x=>x.checked).map(x=>x.value);closeModal();renderHost();toast("运行目标已保存（模拟）");return;}
+   if(state.modal==="view-run"){const chosen=$$('input[name="view-job"]:checked')[0]?.value;if(!chosen){toast("请选择一个 Job");return;}state.selectedJobId=chosen;const j=selectedJob();state.selectedEventId=j?.events[0]?.id||null;$("return-current").hidden=false;$("viewing-label").textContent="只读查看："+chosen;closeModal();renderJobs();renderHost();return;}
+   if(state.modal==="stop"){const j=stopTarget();if(j)j.status="STOPPED";closeModal();render();toast("停止请求完成（模拟）；资源退休状态仍需 Runtime 确认");return;}
+   if(state.modal==="export-job"){const scope=$$('input[name="export-scope"]:checked')[0]?.value||"full";closeModal();toast(scope==="full"?"已选择完整 Job 持久化事件导出（模拟）":"已选择当前筛选范围导出（模拟）");return;}
+   if(state.modal==="export-files"){closeModal();toast("本机日志导出已请求（模拟）");return;}
+   closeModal();return;
+  }
+ }
+ function setSource(source){state.source=source;$$("[data-log-source]").forEach(b=>b.classList.toggle("active",b.dataset.logSource===source));["jobs","system","files"].forEach(k=>$("log-source-"+k).hidden=k!==source);}
+ document.addEventListener("click",e=>{
+  const action=e.target.closest("[data-action]")?.dataset.action;if(action){doAction(action);return;}
+  const source=e.target.closest("[data-log-source]")?.dataset.logSource;if(source){setSource(source);return;}
+  const mode=e.target.closest("[data-view-mode]")?.dataset.viewMode;if(mode){state.viewMode=mode;$$("[data-view-mode]").forEach(b=>b.classList.toggle("active",b.dataset.viewMode===mode));renderEvents();return;}
+  const detail=e.target.closest("[data-detail-mode]")?.dataset.detailMode;if(detail){state.detailMode=detail;$$("[data-detail-mode]").forEach(b=>b.classList.toggle("active",b.dataset.detailMode===detail));renderDetail();return;}
+ });
+ $("event-search").addEventListener("input",e=>{state.filters.search=e.target.value;renderEvents();});
+ $("level-filter").addEventListener("change",e=>{state.filters.level=e.target.value;renderEvents();});
+ $("device-filter").addEventListener("input",e=>{state.filters.device=e.target.value;renderEvents();});
+ $("workflow-filter").addEventListener("input",e=>{state.filters.workflow=e.target.value;renderEvents();});
+ $("only-problems").addEventListener("change",e=>{state.filters.problems=e.target.checked;renderEvents();});
+ $("system-search").addEventListener("input",renderSystem);$("system-level").addEventListener("change",renderSystem);
+ $("file-level").addEventListener("change",renderFiles);$("file-select").addEventListener("change",renderFiles);
+ $("lan-enabled").addEventListener("change",e=>{$("listen-host").disabled=!e.target.checked;$("listen-port").disabled=!e.target.checked;});
+ $("modal").addEventListener("click",e=>{if(e.target.id==="modal")closeModal();});
+ render();
+})();
+</script>
+</body></html>

@@ -1,0 +1,23 @@
+[
+  {
+    "id": "runtime-platform-overall",
+    "type": "spec",
+    "valid": true,
+    "issues": [],
+    "durationMs": 5
+  },
+  {
+    "id": "operator-runtime-visual-shell",
+    "type": "spec",
+    "valid": true,
+    "issues": [],
+    "durationMs": 6
+  },
+  {
+    "id": "runtime-log-workbench",
+    "type": "spec",
+    "valid": true,
+    "issues": [],
+    "durationMs": 8
+  }
+]

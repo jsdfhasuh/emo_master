@@ -1,0 +1,251 @@
+{
+  "head": "48b30191884ad5ef5d96e8d26591104d16d54a58",
+  "mode": "main chain",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "qpa": "windows",
+  "pyside": "5.15.2.1",
+  "python": "3.10.21",
+  "grpc": "1.78.0",
+  "screen": [
+    1920,
+    1080
+  ],
+  "screenshots": {
+    "01-startup-settings": {
+      "logicalSize": [
+        1060,
+        800
+      ],
+      "pixelSize": [
+        1060,
+        800
+      ],
+      "dpr": 1.0
+    },
+    "02-startup-900x700": {
+      "logicalSize": [
+        900,
+        700
+      ],
+      "pixelSize": [
+        900,
+        700
+      ],
+      "dpr": 1.0
+    },
+    "05-device-controls": {
+      "logicalSize": [
+        920,
+        620
+      ],
+      "pixelSize": [
+        920,
+        620
+      ],
+      "dpr": 1.0
+    },
+    "03-production-review": {
+      "logicalSize": [
+        1060,
+        800
+      ],
+      "pixelSize": [
+        1060,
+        800
+      ],
+      "dpr": 1.0
+    },
+    "04-job-log-workbench": {
+      "logicalSize": [
+        1060,
+        800
+      ],
+      "pixelSize": [
+        1060,
+        800
+      ],
+      "dpr": 1.0
+    },
+    "06-job-log-900x700": {
+      "logicalSize": [
+        900,
+        700
+      ],
+      "pixelSize": [
+        900,
+        700
+      ],
+      "dpr": 1.0
+    },
+    "07-job-device-diagnostics": {
+      "logicalSize": [
+        1060,
+        800
+      ],
+      "pixelSize": [
+        1060,
+        800
+      ],
+      "dpr": 1.0
+    },
+    "08-designer-same-job": {
+      "logicalSize": [
+        1200,
+        720
+      ],
+      "pixelSize": [
+        1200,
+        720
+      ],
+      "dpr": 1.0
+    }
+  },
+  "startup": {
+    "source": "saved",
+    "current": "本机运行数据 长目录长目录长目录长目录长目录长目录长目录长目录长目录长目录长目录长目录长目录长目录长目录长目录长目录",
+    "next": "下次启动 数据目录",
+    "saveFeedback": "已保存：本机自定义目录（见输入框）\n下次启动生效；本次目录不变。",
+    "narrowWidth": 900
+  },
+  "load": {
+    "invalidReason": "invalid project file: Expecting property name enclosed in double quotes: line 1 column 3 (char 2)",
+    "retrievedProjectId": "685908a2-3ead-4fb2-b1b4-32d45daaa0b4",
+    "documentRevision": 2,
+    "runtimeInstanceId": "9b52c580fb11452b97132157f25ecdc4",
+    "rootAndDiagnosticsHosts": true,
+    "customQss": true
+  },
+  "device": {
+    "runtimeInstanceId": "9b52c580fb11452b97132157f25ecdc4",
+    "projectId": "685908a2-3ead-4fb2-b1b4-32d45daaa0b4",
+    "projectLoadGeneration": "33d0570570724868b1c43798f43d4583",
+    "deviceId": "software-camera",
+    "state": "IDLE",
+    "connected": true,
+    "feedback": "设备控制完成；工程配置未改变"
+  },
+  "pages": {
+    "first": {
+      "pageId": "review",
+      "jobId": "1bb1f0b8-aca3-4f75-9c18-36de175ee2eb",
+      "imageSize": [
+        320,
+        240
+      ],
+      "capturePlanRevision": "f95075fe678fae395fcf77b862770fe9f50376afd15316b08aff666fe252c5cb"
+    },
+    "observed": {
+      "pageId": "main",
+      "jobId": "3f8ad7d7-b506-46f6-8403-c08828bfec71",
+      "imageSize": [
+        320,
+        240
+      ],
+      "capturePlanRevision": "f95075fe678fae395fcf77b862770fe9f50376afd15316b08aff666fe252c5cb"
+    },
+    "returned": {
+      "pageId": "review",
+      "jobId": "1bb1f0b8-aca3-4f75-9c18-36de175ee2eb",
+      "imageSize": [
+        320,
+        240
+      ],
+      "capturePlanRevision": "f95075fe678fae395fcf77b862770fe9f50376afd15316b08aff666fe252c5cb"
+    },
+    "frozenAndResumed": true
+  },
+  "logSelectionPreservesProduction": {
+    "logJobId": "3f8ad7d7-b506-46f6-8403-c08828bfec71",
+    "production": {
+      "pageId": "review",
+      "jobId": "1bb1f0b8-aca3-4f75-9c18-36de175ee2eb",
+      "imageSize": [
+        320,
+        240
+      ],
+      "capturePlanRevision": "f95075fe678fae395fcf77b862770fe9f50376afd15316b08aff666fe252c5cb"
+    },
+    "productionControlJobId": "1bb1f0b8-aca3-4f75-9c18-36de175ee2eb"
+  },
+  "nativeJsonl": {
+    "fileWriters": [
+      "runtime-20261127-020445-162500-0001.jsonl",
+      "runtime_app-20261127-020444-162500-0001.jsonl"
+    ],
+    "fixedSelection": true,
+    "exportedWarnings": 2,
+    "saveDialogCancelled": true,
+    "folderRequest": true
+  },
+  "diagnostics": {
+    "runtimeInstanceId": "9b52c580fb11452b97132157f25ecdc4",
+    "projectId": "685908a2-3ead-4fb2-b1b4-32d45daaa0b4",
+    "projectLoadGeneration": "33d0570570724868b1c43798f43d4583",
+    "deviceId": "software-camera",
+    "selectedEvent": 138,
+    "rejectedEvent": 139,
+    "rejectedReason": "近期设备缓存不可用于此记录：Runtime、工程或设备已变化，请刷新设备状态",
+    "restored": true
+  },
+  "nativeDetail": {
+    "eventId": 279,
+    "jobId": "3f8ad7d7-b506-46f6-8403-c08828bfec71",
+    "copied": true,
+    "table": [
+      {
+        "name": "first",
+        "value": 37,
+        "ok": true
+      },
+      {
+        "name": "second",
+        "value": 0,
+        "ok": false
+      }
+    ]
+  },
+  "designer": {
+    "runtimeInstanceId": "9b52c580fb11452b97132157f25ecdc4",
+    "projectId": "685908a2-3ead-4fb2-b1b4-32d45daaa0b4",
+    "jobId": "3f8ad7d7-b506-46f6-8403-c08828bfec71",
+    "status": "RUNNING",
+    "eventId": 279,
+    "stopAvailable": true,
+    "remoteClosed": true,
+    "ownerRetained": true
+  },
+  "logs": {
+    "jobId": "3f8ad7d7-b506-46f6-8403-c08828bfec71",
+    "associatedEvent": 138,
+    "systemOnly": true,
+    "noJobStopAction": true,
+    "productionFocusRestored": true,
+    "copiedEventId": 138
+  },
+  "stop": {
+    "workflowId": "main",
+    "target": "1bb1f0b8-aca3-4f75-9c18-36de175ee2eb",
+    "observed": "3f8ad7d7-b506-46f6-8403-c08828bfec71",
+    "after": {
+      "1bb1f0b8-aca3-4f75-9c18-36de175ee2eb": "ABORTED",
+      "3f8ad7d7-b506-46f6-8403-c08828bfec71": "RUNNING"
+    },
+    "firstRetired": true
+  },
+  "owningRuntimeClosed": true,
+  "restartFalse": {
+    "projectId": "685908a2-3ead-4fb2-b1b4-32d45daaa0b4",
+    "jobs": 0,
+    "remembered": true
+  },
+  "restartTrue": {
+    "projectId": "81139148-d892-44d2-b1fb-d1ff908490e1",
+    "jobId": "f39faa00-5a20-43dc-8d89-84fcb1c68c32",
+    "jobs": 1,
+    "seedJobId": "5b01e00b-6340-4ec1-afa7-acfda92bbad4",
+    "remembered": true,
+    "rootControls": true,
+    "rootLogControlsHidden": true
+  },
+  "result": "PASS"
+}

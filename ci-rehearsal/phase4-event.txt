@@ -1,0 +1,1 @@
+Isolated GitHub native event receipt. No private source and no production route.

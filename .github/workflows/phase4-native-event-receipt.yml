@@ -1,0 +1,23 @@
+name: Phase 4 native event receipt rehearsal
+on:
+  push:
+    branches: [dot/phase4-event-head]
+    paths: [ci-rehearsal/phase4-event.txt]
+  pull_request:
+    branches: [dot/phase4-event-base]
+    paths: [ci-rehearsal/phase4-event.txt]
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  receipt:
+    if: >-
+      github.repository_id == '1343796337' &&
+      ((github.event_name == 'push' && github.ref == 'refs/heads/dot/phase4-event-head') ||
+       (github.event_name == 'pull_request' &&
+        github.head_ref == 'dot/phase4-event-head' && github.base_ref == 'dot/phase4-event-base' &&
+        github.event.pull_request.head.repo.id == '1343796337' &&
+        github.event.pull_request.base.repo.id == '1343796337') ||
+       (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/dot/phase4-event-head'))
+    uses: ./.github/workflows/emit-ci-cutover-request.yml

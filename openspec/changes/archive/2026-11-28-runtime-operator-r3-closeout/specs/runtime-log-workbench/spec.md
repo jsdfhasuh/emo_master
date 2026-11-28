@@ -9,34 +9,44 @@ Job 日志、Runtime 系统事件、本机 JSONL 和 Designer 日志合同。
 
 ### Requirement: Operator opens the Runtime Job workbench by default
 
-Operator SHALL open the existing Runtime Job workbench as the default
-source when the user enters the log tool. Resetting Job filters SHALL
-return to the Job workbench rather than switching to local JSONL.
-Explicit device-log navigation SHALL continue to open the local JSONL
-source.
+Operator SHALL select the Runtime Job workbench for ordinary log-tool entry.
+The StartupPage “view all logs” action SHALL clear previous Job directory
+history conditions, paging state and residual Job and local-file filters,
+and display the active and recently ended Job groups. Reopening logs from
+the production page SHALL preserve the existing Job reading context
+instead of resetting it. Resetting Job filters SHALL remain within the
+Job workbench. Explicit device-log navigation SHALL continue to open
+local JSONL filtered by the requested device.
 
-#### Scenario: Open logs from StartupPage
+#### Scenario: Open logs from StartupPage after browsing history
 
--   **WHEN** the user chooses to view all logs from StartupPage or the
-    Operator toolbar
--   **THEN** the log tool opens with the Runtime Job workbench selected
--   **AND** the user can immediately see active and recently ended Job
-    groups
+- **WHEN** the user has browsed older history with project, terminal-status
+  or date filters and opens all logs from StartupPage
+- **THEN** the log tool selects the Runtime Job workbench
+- **AND** the history conditions and directory paging state are reset
+- **AND** active and recently ended Job groups show the actual Runtime
+  catalog, including concurrent active Jobs
+- **AND** residual Job and local-file filters do not narrow the all-logs entry
+
+#### Scenario: Reopen logs from the production page
+
+- **WHEN** the user returns to production and reopens the ordinary log tool
+- **THEN** the Job source is selected
+- **AND** the previous Job, selected event, filters and reading position
+  are retained under the existing valid Runtime scope
 
 #### Scenario: Reset Job filters
 
--   **WHEN** the user resets filters from the Job workbench
--   **THEN** Job filters are reset
--   **AND** the selected source remains the Runtime Job workbench
+- **WHEN** the user resets filters from the Job workbench
+- **THEN** Job filters are reset
+- **AND** the selected source remains the Runtime Job workbench
 
 #### Scenario: Open device logs explicitly
 
--   **WHEN** an existing device-log action calls the Operator log view
-    with a device ID
--   **THEN** the local JSONL source is selected and filtered by that
-    device ID
--   **AND** the default Job source rule is not applied over this
-    explicit navigation
+- **WHEN** an existing device-log action calls the Operator log view
+  with a device ID
+- **THEN** the local JSONL source is selected and filtered by that device ID
+- **AND** the default Job source rule is not applied over this explicit navigation
 
 ### Requirement: Operator Runtime Job reader follows source and tool visibility
 

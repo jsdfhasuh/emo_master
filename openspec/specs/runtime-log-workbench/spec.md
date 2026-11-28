@@ -689,3 +689,104 @@ Designer SHALL retain its existing whole-Job export.
 -   **AND** whole-Job export excludes events after the bound and its
     scope description excludes pruned and never-recorded data
 -   **AND** cancellation or failure is not reported as a successful export
+
+### Requirement: Operator opens the Runtime Job workbench by default
+
+Operator SHALL select the Runtime Job workbench for ordinary log-tool entry.
+The StartupPage “view all logs” action SHALL clear previous Job directory
+history conditions, paging state and residual Job and local-file filters,
+and display the active and recently ended Job groups. Reopening logs from
+the production page SHALL preserve the existing Job reading context
+instead of resetting it. Resetting Job filters SHALL remain within the
+Job workbench. Explicit device-log navigation SHALL continue to open
+local JSONL filtered by the requested device.
+
+#### Scenario: Open logs from StartupPage after browsing history
+
+- **WHEN** the user has browsed older history with project, terminal-status
+  or date filters and opens all logs from StartupPage
+- **THEN** the log tool selects the Runtime Job workbench
+- **AND** the history conditions and directory paging state are reset
+- **AND** active and recently ended Job groups show the actual Runtime
+  catalog, including concurrent active Jobs
+- **AND** residual Job and local-file filters do not narrow the all-logs entry
+
+#### Scenario: Reopen logs from the production page
+
+- **WHEN** the user returns to production and reopens the ordinary log tool
+- **THEN** the Job source is selected
+- **AND** the previous Job, selected event, filters and reading position
+  are retained under the existing valid Runtime scope
+
+#### Scenario: Reset Job filters
+
+- **WHEN** the user resets filters from the Job workbench
+- **THEN** Job filters are reset
+- **AND** the selected source remains the Runtime Job workbench
+
+#### Scenario: Open device logs explicitly
+
+- **WHEN** an existing device-log action calls the Operator log view
+  with a device ID
+- **THEN** the local JSONL source is selected and filtered by that device ID
+- **AND** the default Job source rule is not applied over this explicit navigation
+
+### Requirement: Operator Runtime Job reader follows source and tool visibility
+
+The Operator Job event reader SHALL run only while the log tool is
+visible and the Runtime Job source is selected. When the user leaves the
+Job source, hides the log tool or closes the Operator, the current
+reader SHALL be asked to stop. The host SHALL preserve the last
+confirmed Runtime instance and cursor and SHALL NOT start a second
+reader until the previous reader has finished.
+
+#### Scenario: Leave the Job source
+
+-   **WHEN** the user switches from Runtime Job logs to Runtime system
+    events or local JSONL
+-   **THEN** the Job reader stops issuing new Runtime queries after the
+    current in-flight call is cancelled or completed
+-   **AND** queued events/progress are drained before the reader is
+    retired
+-   **AND** the local JSONL/system event view remains usable
+
+#### Scenario: Hide and reopen the log tool
+
+-   **WHEN** the user returns to the production page while the Job
+    reader is active
+-   **THEN** the Job reader is asked to stop and its last confirmed
+    Runtime instance/cursor is retained
+-   **AND** no new Job reader is created while the previous reader
+    remains active
+
+#### Scenario: Resume the Job source
+
+-   **WHEN** the user reopens the Job source after the previous reader
+    has finished
+-   **THEN** the reader resumes from the retained Runtime instance and
+    cursor
+-   **AND** already delivered event IDs are not duplicated
+-   **AND** events after the retained cursor are not skipped
+
+#### Scenario: An export is active while the Job source is hidden
+
+-   **WHEN** the user hides the Job workbench while a user-requested
+    export is in progress
+-   **THEN** reader pause does not silently cancel the export
+-   **AND** the existing export cancellation/close contract remains
+    authoritative
+
+### Requirement: Shared Runtime log connection notices use neutral event identity
+
+The shared Runtime log reader SHALL identify its local connection,
+disconnection, recovery and stop notices with a Runtime-neutral event
+type. It MUST NOT label the shared Runtime reader's notices as
+Designer-only events.
+
+#### Scenario: Runtime log reader disconnects and recovers
+
+-   **WHEN** the shared reader reports connection, disconnection or
+    recovery
+-   **THEN** the local notice uses `runtime.logs.connection`
+-   **AND** the existing level, error code, payload and retry behavior
+    remain unchanged

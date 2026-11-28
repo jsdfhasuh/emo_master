@@ -101,9 +101,7 @@ jobs:
     if: >-
       vars.EMO_CI_NATIVE_RECEIPTS == 'shadow' &&
       github.repository_id == '1343796337' &&
-      (github.event_name != 'pull_request' ||
-       (github.event.pull_request.head.repo.id == '1343796337' &&
-        github.event.pull_request.base.repo.id == '1343796337'))
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     permissions:
       contents: read
     uses: ./.github/workflows/emit-ci-cutover-request.yml

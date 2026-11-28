@@ -18,6 +18,6 @@ jobs:
     if: >-
       github.repository_id == '1343796337' &&
       github.ref == 'refs/heads/dot/runtime-buildonly-origin-20261127' &&
-      inputs.source_ref == '7fccb4988ad0e4abd390110dbb29c80151f5bb3b' &&
+      inputs.source_ref == '348a39f42a5f8d43d3319a894857db9e9e6ce059' &&
       inputs.packager_ref == 'e0204fe6fe83b0f31818d88e4f296c70e230d172'
     uses: ./.github/workflows/emit-ci-cutover-request.yml

@@ -37,10 +37,11 @@
 - [x] 3.1 优化 `StartupPage` 层次、长路径省略/Tooltip/复制；保留真实日志摘要、“查看全部日志”特殊重置入口、设置和原失败/重试路径。`ListenerSettingsPanel` 补齐本次有效值、已保存下次值、草稿及准确 CLI 覆盖提示；保存/失败/改回/往返均不影响当前监听和任务。
 - [x] 3.2 以本机 QSettings 记录最近 5 个成功工程（去重、成功才写、保留原 `projectPath`/在线恢复规则）及正常关闭窗口几何/最大化，恢复时当前屏幕边界收敛；最近工程走原加载入口和错误反馈。
 - [x] 3.3 Phase 3 定向回归：草稿与真实 CLI/下次设置差异、保存及失败、现有设置行为；最近项目成功/去重/上限/无效路径、窗口偏好隔离与屏幕边界。更新 `docs/operator-runtime.md`，尤其软件停止口径、顶栏、组合筛选和导出范围、设备健康、最近工程及监听设置。
-- [ ] 3.4 统一源码验证：受影响 `tests/ui/operator_view`、相关 runtime 设置/日志/设备（含 `test_tcp_device_integration.py`）、Designer 主题回归及修改文件 `ruff check`；按现行正式 Source CI 完成 Windows/Linux 检查，不额外改变 CI 或重复跑无关 Worker。记录提交 SHA、是否包含未提交修改、命令、通过/失败/跳过/未运行情况与实际证据链接。
+- [x] 3.4 统一源码验证：受影响 `tests/ui/operator_view`、相关 runtime 设置/日志/设备（含 `test_tcp_device_integration.py`）、Designer 主题回归及修改文件 `ruff check`；按现行正式 Source CI 完成 Windows/Linux 检查，不额外改变 CI 或重复跑无关 Worker。记录提交 SHA、是否包含未提交修改、命令、通过/失败/跳过/未运行情况与实际证据链接。
   - Windows 和 Linux 的 Operator UI 均为 117/117 通过。Windows 原生 Qt 在 100% 和模拟 150% 缩放下通过。Linux `runtime` 最终为 3,468 通过、10 跳过。
   - Linux `other` 在约 95% 处随任务暂停而停止，已记录 4 项 Designer 失败，归因待定。Windows 本地完整分片 `runtime` 和 `other` 分别有 2 项和 9 项失败。首轮与最新结果见上方验收记录。
-  - R4 已整合远端 `main` 的 R3 收尾改动。上述本地结果属于整合前快照，正式 Source CI 以推送到 `main` 的提交为准。按用户决定跳过人工试用，现场验收另行开展。
+  - 正式 Source CI 验证了主分支源码提交 `ea5aefa9cf62f0d7ee3ac0fb6fa4a14661dc663b`。Windows 与 Linux 的 `runtime`、`other` 和覆盖汇总均通过，Operator UI 各 126/126 通过。Windows `runtime` 首轮失败已保留，同一提交的分片重跑通过。[正式 Source CI](https://github.com/jsdfhasuh/emo_master/actions/runs/46119400083/attempts/2)
+  - 按用户决定跳过人工试用，现场验收另行开展。
 - [x] 3.5 Windows 原生 Qt 走查：临时工程和模拟设备，100%/150% DPI（记录真实或模拟探针口径），按下列验收表操作并保存可追踪截图/结果。无硬件/冻结 EXE 不写成通过，不把不可用环境虚构为已验收。
 - [x] 3.6 对照 proposal 与两份 delta spec 检查任务闭环；记录已知非阻断风险，不开启无关重构。提供最终变更清单、实际验证及未验证项；未授权不推送、合并或发布。获授权推送时在对应提交或 PR 附实际执行角色评论。
 

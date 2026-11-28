@@ -1,6 +1,6 @@
 # Operator Runtime R4 实施与验证
 
-**R4 功能开发收尾，按用户决定跳过人工试用。正式 Source CI 待验证，现场测试由用户后续安排。**
+**R4 已进入 `main`，正式 Windows 和 Linux Source CI 已通过。按用户决定跳过人工试用，现场测试由用户后续安排。** [正式 Source CI](https://github.com/jsdfhasuh/emo_master/actions/runs/46119400083/attempts/2)
 
 - 合入远端 R3 前的 R4 工作区在 Windows 和 Linux 上的 Operator UI 均为 117/117 通过。该工作区的 Windows 原生 Qt 在 100% 和模拟 150% 缩放下通过。
 - Linux `runtime` 最终复跑 3,468 通过、10 跳过。Linux `other` 随任务暂停，在约 95% 处停止，已记录 4 项 Designer 失败，归因待定。
@@ -76,7 +76,7 @@
 - Linux 在同一 Python 3.10.22／Qt offscreen 镜像、目录内容相同的 R4 快照和最后版运行选择测试下，将工作目录与测试临时目录置于隔离容器的 `/tmp` 内存文件系统。五会话、TCP 完整文件及 Designer 双 PLC 模拟工程打开共 13 项，48.66 秒全部通过。以前的超时和失败记录保留。正式 `runtime` 与 `other` 分片按原命令串行复核，原始结果另行记录。内存文件系统复核 `build/operator-runtime-r4/linux-tmpfs-recovery`
 - Linux `runtime` 按 `python scripts/ci_check.py --shard runtime` 复跑通过。3,468 通过、10 跳过、6,372 分片未选。pytest 18 分 52 秒，源码入口总计 19 分 24 秒，协议、Ruff、mypy 和 pytest 均通过。JUnit 确认 Operator UI 117 项和 TCP 集成 9 项全过。跳过为 8 项 Windows 专属路径和 2 项独立压力验收。完整分片记录 `build/operator-runtime-r4/linux-tmpfs-recovery/runtime`
 - Linux `other` 按同一 Source 入口续跑，在约 95% 处随任务暂停而停止。已记录 4 项 Designer 失败，归因待定，余下用例未运行。分片日志 `build/operator-runtime-r4/linux-tmpfs-recovery/other/console.log` · 退出记录 `build/operator-runtime-r4/linux-tmpfs-recovery/result.json`
-- Windows 本机的四项 Designer 提示框失败在干净 HEAD 与 R4 均复现。相同干净 HEAD 的 GitHub Actions 正式 Windows `other` 分片中，这四项、两项连线悬停及三项 SQLite 探针均通过。该托管结果用于证明环境差异下的干净基线可通过。R4 暂无托管结果。[干净基线正式 Windows 分片](https://github.com/jsdfhasuh/emo_master/actions/runs/45382159632/job/138431243483)
+- Windows 本机的四项 Designer 提示框失败在干净 HEAD 与 R4 均复现。相同干净 HEAD 的 GitHub Actions 正式 Windows `other` 分片中，这四项、两项连线悬停及三项 SQLite 探针均通过。该托管结果用于证明环境差异下的干净基线可通过。当时尚无 R4 托管结果，主分支交付的正式结果见下文。[干净基线正式 Windows 分片](https://github.com/jsdfhasuh/emo_master/actions/runs/45382159632/job/138431243483)
 
 ## 主分支整合验证
 
@@ -88,9 +88,20 @@
 - 初次主分支提交 `d342167001052cdee30317ac70a7432a06d0c157` 的 Linux `runtime` 通过，Linux `other` 在 Designer 窗口缩放场景中记录手动画布中心偏移 7 像素，超过原有 2 像素断言。96 DPI 定向对照中，整合前主分支通过，R4 初版偏移 4 像素，恢复 Designer 原尺寸计算后通过。[初次 Source CI](https://github.com/jsdfhasuh/emo_master/actions/runs/46116586117)
 - 兼容修正恢复 Designer 原有的窗口客户区尺寸计算，Operator Runtime 继续计入边框。Windows 原生 Qt 定向复核通过 31 项，覆盖 Designer 画布、工作区导航与 Operator 窗口恢复。
 
+- 修正提交 `ea5aefa9cf62f0d7ee3ac0fb6fa4a14661dc663b` 的正式 Source CI 已通过。首轮 Windows `runtime` 的 `parked-cycle` 用例因记录了多个 `artifact.created` 而失败。同一 SHA 只重跑该分片，随后通过，其他三个已通过的分片结果保留。Windows 和 Linux 两个平台各覆盖 9,905 个收集项，覆盖汇总均通过。[最终 Source CI](https://github.com/jsdfhasuh/emo_master/actions/runs/46119400083/attempts/2) · [Windows runtime 重跑](https://github.com/jsdfhasuh/emo_master/actions/runs/46119400083/job/140909830161)
+
+| 正式分片 | 通过 | 失败 | 跳过 |
+| --- | ---: | ---: | ---: |
+| Linux `runtime` | 3,487 | 0 | 10 |
+| Linux `other` | 6,378 | 0 | 30 |
+| Windows `runtime` | 3,495 | 0 | 2 |
+| Windows `other` | 6,404 | 0 | 4 |
+
+两平台的 `other` 各另有 66 个子测试通过。两平台的 Operator UI 各 126/126 通过。统一本地证据目录为 `build/r4-main-ci/46119400083`。
+
 ## 范围与剩余事项
 
 - 初次窄窗走查发现日志工具的最小高度可传到主窗口。工具区现在可以单独滚动，使用 440 逻辑像素高的探针验证。
 - OpenSpec 0.1–3.3、3.5 和 3.6 有相应历史证据。三阶段功能开发已收尾，人工试用按用户决定跳过。
-- OpenSpec 3.4 保持未勾选，待整合提交完成正式 Windows 和 Linux Source CI 后核对。
+- OpenSpec 3.4 已完成，正式结果对应源码提交 `ea5aefa9cf62f0d7ee3ac0fb6fa4a14661dc663b`。
 - 现场测试由用户后续安排。现有证据覆盖自动化、模拟设备和合成数据，真实相机、PLC、生产模型、现场工程及冻结 EXE 留待后续验证。

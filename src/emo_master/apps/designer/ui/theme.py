@@ -6,8 +6,13 @@ from PySide2.QtWidgets import QApplication, QDialog, QFileDialog
 
 from emo_master.ui.theme import (
     ACCENT as ACCENT, BACKGROUND as BACKGROUND, BORDER as BORDER, MUTED as MUTED, SURFACE as SURFACE, TEXT as TEXT,
-    fitWindowToScreen, lightPalette, uiFont,
+    fitWindowToScreen as _fitWindowToScreen, lightPalette, uiFont,
 )
+
+
+def fitWindowToScreen(widget) -> None:
+    """Keep the Designer canvas's established client-area sizing."""
+    _fitWindowToScreen(widget, containFrame=False)
 
 
 class _DialogSizingFilter(QObject):

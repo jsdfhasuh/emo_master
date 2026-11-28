@@ -83,6 +83,11 @@
 - 在 `13fb4ddb2d32b676d478e867fa87bfd5adae408f` 与本轮整合改动的隔离工作区运行 Windows 原生 Qt 定向回归。命令为 `python -m pytest -q --tb=short tests/ui/operator_view tests/runtime/test_operator_runtime_settings.py tests/runtime/test_operator_runtime_logs.py tests/runtime/test_tcp_device_integration.py tests/designer/test_package_gui_icons.py`，157 项通过。协议文件、全量 Ruff、mypy 和 OpenSpec 严格检查通过。
 - 以 `QT_QPA_PLATFORM=windows` 运行 `native_runtime_tools_probe` 和 `native_runtime_logs_probe`，100% 和以 `QT_SCALE_FACTOR=1.5` 模拟的 150% 均通过。R3 原生探针和收尾探针亦在 100% 通过。本机原始结果保存在 `build/r4-main-native`，定向回归结果为 `build/r4-main-focused.xml`。
 
+## 正式 Source CI
+
+- 初次主分支提交 `d342167001052cdee30317ac70a7432a06d0c157` 的 Linux `runtime` 通过，Linux `other` 在 Designer 窗口缩放场景中记录手动画布中心偏移 7 像素，超过原有 2 像素断言。96 DPI 定向对照中，整合前主分支通过，R4 初版偏移 4 像素，恢复 Designer 原尺寸计算后通过。[初次 Source CI](https://github.com/jsdfhasuh/emo_master/actions/runs/46116586117)
+- 兼容修正恢复 Designer 原有的窗口客户区尺寸计算，Operator Runtime 继续计入边框。Windows 原生 Qt 定向复核通过 31 项，覆盖 Designer 画布、工作区导航与 Operator 窗口恢复。
+
 ## 范围与剩余事项
 
 - 初次窄窗走查发现日志工具的最小高度可传到主窗口。工具区现在可以单独滚动，使用 440 逻辑像素高的探针验证。

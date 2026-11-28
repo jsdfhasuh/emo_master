@@ -28,7 +28,7 @@ def uiFont(*, bold: bool = False, points: float = 10.5) -> QFont:
     return font
 
 
-def fitWindowToScreen(widget, *, screen=None) -> None:
+def fitWindowToScreen(widget, *, screen=None, containFrame=True) -> None:
     import shiboken2
     if not shiboken2.isValid(widget):
         return
@@ -39,10 +39,12 @@ def fitWindowToScreen(widget, *, screen=None) -> None:
     if screen is None:
         return
     area = screen.availableGeometry().adjusted(12, 36, -12, -12)
-    frame = widget.frameGeometry()
-    frameWidth = frame.width() - widget.width()
-    frameHeight = frame.height() - widget.height()
-    widget.resize(min(widget.width(), area.width() - frameWidth), min(widget.height(), area.height() - frameHeight))
+    width, height = area.width(), area.height()
+    if containFrame:
+        frame = widget.frameGeometry()
+        width -= frame.width() - widget.width()
+        height -= frame.height() - widget.height()
+    widget.resize(min(widget.width(), width), min(widget.height(), height))
     frame = widget.frameGeometry()
     x = max(area.left(), min(frame.left(), area.right() - frame.width() + 1))
     y = max(area.top(), min(frame.top(), area.bottom() - frame.height() + 1))

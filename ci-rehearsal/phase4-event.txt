@@ -1,1 +1,1 @@
-Phase 4 isolated transport: fresh manual receipt for broker follow-up 2026-11-28.
+Phase 4 isolated transport: new manual-only origin for diagnostics v2. No push/PR replay.

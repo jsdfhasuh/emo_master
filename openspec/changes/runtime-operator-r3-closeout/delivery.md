@@ -72,3 +72,13 @@ python -m tests.ui.operator_view.native_runtime_r3_closeout_probe --output D:/tm
 ## GitHub 交付
 
 PR 以 `codex/runtime-overall-r3` 为目标。创建时 GitHub 返回 `MERGEABLE` 和 `CLEAN`，未返回远端检查。独立源码复核和定向验证未发现合并阻塞。[PR #27](https://github.com/jsdfhasuh/emo_master/pull/27) · [Codex 验证评论](https://github.com/jsdfhasuh/emo_master/pull/27#issuecomment-7216761871)
+
+## 2026-11-28 起始页日志入口复验
+
+在 `ab4f26ac9dc92435cba532095919425d956905d4` 上，用户从「更早历史」返回设置再点「查看全部日志」，仍会看到上次的历史筛选。即使有任务正在运行，列表也可能显示「暂无任务」。
+
+修复提交为 `12e557dd0d294daaa51dfc7b81729689c8f4d2b5`。起始页入口现在清空目录历史条件和分页游标，打开「运行中」「最近已结束」两组。生产页「查看日志」仍可接着阅读上次的任务、筛选和选中事件，设备日志入口继续按设备打开本机 JSONL。
+
+- 扩展的已有回归先在修复前复现失败。修复后，在上述干净提交启动交付清单的 79 项测试，全部通过。另跑生产窗口和 Designer 日志集成的其余 28 项，全部通过。Designer 任务目录单项回归也通过，该单项执行时工作区仅增加验收文档和证据。合计 108 项，0 失败、0 错误、0 跳过。
+- Windows 原生 QTest 使用软件 Runtime，通过实际按钮查询带工程、状态和日期条件的历史，返回起始页再次打开日志后，看到了两个正在运行的任务。从生产页重开保留了选中事件和阅读位置，暂停期间的新事件只交付一次。原生测试启动时工作区干净。[重开后的任务目录](verification/startup-catalog/03-log-default.png) · [本次原生走查数据](verification/startup-catalog/native-runtime-r3-closeout.json)
+- Ruff、mypy（677 个源码文件）、OpenSpec strict 及差异格式检查通过。定向回归和原生走查沿用上文命令。人工桌面、真实设备、现场工程、冻结包和 Web 验收均未执行。
